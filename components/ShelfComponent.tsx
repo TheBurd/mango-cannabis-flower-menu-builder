@@ -1,0 +1,161 @@
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { Shelf, Strain, SortCriteria } from '../types';
+import { StrainInputRow } from './StrainInputRow';
+import { Button } from './common/Button';
+import { PlusIcon, TrashIcon, MinusCircleIcon, SortAscendingIcon, SortDescendingIcon } from './common/Icon';
+
+interface ShelfComponentProps {
+  shelf: Shelf; // shelf.strains is pre-sorted
+  onAddStrain: () => void;
+  onUpdateStrain: (strainId: string, updatedStrain: Partial<Strain>) => void;
+  onRemoveStrain: (strainId: string) => void;
+  onCopyStrain: (strainId: string, direction: 'above' | 'below') => void;
+  onClearStrains: () => void;
+  newlyAddedStrainId: string | null;
+  onUpdateShelfSortCriteria: (key: SortCriteria['key']) => void;
+}
+
+const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
+
+const SortButtonShelf: React.FC<{
+  label: string;
+  sortKey: SortCriteria['key'];
+  currentSortCriteria: SortCriteria | null;
+  onClick: () => void;
+  shelfColor?: string; // To slightly adapt button color
+}> = ({ label, sortKey, currentSortCriteria, onClick, shelfColor }) => {
+  const isActive = currentSortCriteria?.key === sortKey;
+  const direction = isActive ? currentSortCriteria.direction : null;
+  // Basic color adaptation, could be more sophisticated
+  const activeColor = shelfColor ? 'bg-white/30 hover:bg-white/40' : 'bg-orange-500 hover:bg-orange-600';
+  const inactiveColor = shelfColor ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-500 hover:bg-gray-400';
+  const buttonColor = isActive ? activeColor : inactiveColor;
+
+  return (
+    <Button
+      onClick={onClick}
+      variant="custom"
+      size="sm"
+      className={`flex items-center space-x-1 text-current text-xs !py-0.5 px-1.5 ${buttonColor}`}
+      title={`Sort by ${label}`}
+    >
+      <span>{label}</span>
+      {isActive && direction === 'asc' && <SortAscendingIcon className="w-3 h-3" />}
+      {isActive && direction === 'desc' && <SortDescendingIcon className="w-3 h-3" />}
+    </Button>
+  );
+};
+
+export const ShelfComponent: React.FC<ShelfComponentProps> = ({
+  shelf,
+  onAddStrain,
+  onUpdateStrain,
+  onRemoveStrain,
+  onCopyStrain,
+  onClearStrains,
+  newlyAddedStrainId,
+  onUpdateShelfSortCriteria,
+}) => {
+  const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const handleClearStrainsClick = useCallback(() => {
+    if (confirmClear) {
+      onClearStrains();
+      setConfirmClear(false);
+    } else {
+      setConfirmClear(true);
+    }
+  }, [confirmClear, onClearStrains]);
+
+  useEffect(() => {
+    let timer: number;
+    if (confirmClear) {
+      timer = window.setTimeout(() => setConfirmClear(false), CONFIRMATION_TIMEOUT);
+    }
+    return () => clearTimeout(timer);
+  }, [confirmClear]);
+  
+  const handleDeleteLastStrain = () => {
+    if (shelf.strains.length > 0) {
+      const lastStrainId = shelf.strains[shelf.strains.length - 1].id;
+      onRemoveStrain(lastStrainId); 
+    }
+  };
+  
+  const sortOptions: Array<{ label: string; key: SortCriteria['key'] }> = [
+    { label: "Name", key: "name" },
+    { label: "Grower", key: "grower" },
+    { label: "Class", key: "type" },
+    { label: "THC%", key: "thc" },
+    { label: "Last Jar", key: "isLastJar" },
+  ];
+
+  return (
+    <div className={`rounded-lg shadow-md overflow-hidden border border-gray-700 ${shelf.color}`}>
+      <div className={`p-3 ${shelf.textColor} flex flex-col`}>
+        <div className="flex justify-between items-start mb-1.5">
+            <div>
+                <h3 className="text-xl font-semibold">{shelf.name}</h3>
+                <p className="text-xs opacity-90">
+                {formatPrice(shelf.pricing.g)}/g | {formatPrice(shelf.pricing.eighth)}/8th | {formatPrice(shelf.pricing.quarter)}/Qtr | {formatPrice(shelf.pricing.half)}/Half | {formatPrice(shelf.pricing.oz)}/Oz
+                </p>
+            </div>
+            <Button 
+                onClick={handleClearStrainsClick} 
+                variant="custom" 
+                size="sm" 
+                className={`bg-white/10 hover:bg-white/20 text-current !py-1 !px-2 flex items-center space-x-1 min-w-[80px] justify-center ${confirmClear ? 'bg-red-500/30 hover:bg-red-400/30' : ''}`}
+            >
+              <TrashIcon className="w-4 h-4" />
+              <span className="text-xs">{confirmClear ? "Sure?" : "Clear"}</span>
+            </Button>
+        </div>
+        {/* Shelf Sort Controls */}
+        <div className="flex items-center space-x-1 border-t border-white/10 pt-1.5 mt-1 flex-wrap gap-y-1">
+            <span className="text-xs opacity-80 mr-1">Sort this shelf:</span>
+            {sortOptions.map(opt => (
+                <SortButtonShelf
+                  key={opt.key}
+                  label={opt.label}
+                  sortKey={opt.key}
+                  currentSortCriteria={shelf.sortCriteria}
+                  onClick={() => onUpdateShelfSortCriteria(opt.key)}
+                  shelfColor={shelf.color}
+                />
+            ))}
+        </div>
+      </div>
+      <div className="bg-gray-700 p-3 space-y-2">
+        {shelf.strains.map((strain, index) => (
+            <StrainInputRow
+              key={strain.id}
+              strain={strain}
+              onUpdate={(updatedStrain) => onUpdateStrain(strain.id, updatedStrain)}
+              onRemove={() => onRemoveStrain(strain.id)} 
+              onCopy={(direction) => onCopyStrain(strain.id, direction)}
+              isFirst={index === 0 && shelf.strains.length === 1} 
+              isLast={index === shelf.strains.length - 1 && shelf.strains.length === 1} 
+              isNewlyAdded={newlyAddedStrainId === strain.id}
+            />
+        ))}
+        <Button onClick={onAddStrain} variant="secondary" size="sm" className="w-full flex items-center justify-center space-x-2 mt-2 !bg-gray-600 hover:!bg-gray-500 text-gray-300 hover:text-white">
+          <PlusIcon className="w-5 h-5" />
+          <span>Add Strain to {shelf.name}</span>
+        </Button>
+        {shelf.strains.length > 0 && (
+           <Button 
+            onClick={handleDeleteLastStrain} 
+            variant="danger" 
+            size="sm" 
+            className="w-full flex items-center justify-center space-x-2 mt-1 !bg-red-700/80 hover:!bg-red-600/80 text-red-100 hover:text-white"
+          >
+            <MinusCircleIcon className="w-5 h-5" />
+            <span>Delete Last Strain</span>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};

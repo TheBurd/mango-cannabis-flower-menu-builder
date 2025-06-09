@@ -1,0 +1,132 @@
+import React, { forwardRef, useMemo } from 'react';
+import { Shelf, PreviewSettings, ArtboardSize, HeaderImageSize } from '../types';
+import { ARTBOARD_DIMENSIONS_MAP, HEADER_IMAGE_CONFIGS } from '../constants';
+import { MenuTable } from './MenuTable';
+
+interface PreviewArtboardProps {
+  shelves: Shelf[];
+  settings: PreviewSettings;
+  needsRefreshSignal: boolean; 
+}
+
+const getScaledValue = (base: number, multiplier: number, min: number = 0) => Math.max(min, base * multiplier);
+
+const MIN_STRAINS_TO_CONSIDER_SPLITTING = 7; 
+
+const getHeaderImageDetails = (artboardSize: ArtboardSize, headerSize: HeaderImageSize): { src?: string; height: number; } => {
+  if (headerSize === HeaderImageSize.NONE) {
+    return { height: 0 };
+  }
+  const configSet = HEADER_IMAGE_CONFIGS[artboardSize];
+  if (!configSet) return { height: 0 };
+
+  const config = configSet[headerSize as Exclude<HeaderImageSize, HeaderImageSize.NONE>];
+  if (config) {
+    return { src: config.src, height: config.naturalHeight };
+  }
+  return { height: 0 }; // Fallback if a specific size (Large/Small) is missing for an artboard
+};
+
+
+export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>((
+  { shelves, settings }, ref
+) => {
+  const { artboardSize, baseFontSizePx, columns, forceShelfFit, headerImageSize, linePaddingMultiplier } = settings;
+  const artboardSpecs = ARTBOARD_DIMENSIONS_MAP[artboardSize];
+
+  const headerImageDetails = useMemo(() => 
+    getHeaderImageDetails(artboardSize, headerImageSize), 
+    [artboardSize, headerImageSize]
+  );
+
+  const artboardStyle: React.CSSProperties = {
+    position: 'absolute',
+    width: `${artboardSpecs.naturalWidth}px`,
+    height: `${artboardSpecs.naturalHeight}px`,
+    left: `-${artboardSpecs.naturalWidth / 2}px`,
+    top: `-${artboardSpecs.naturalHeight / 2}px`,
+    backgroundColor: 'white',
+    boxShadow: '0 0 15px rgba(0,0,0,0.3)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+  };
+
+  const contentPadding = useMemo(() => getScaledValue(baseFontSizePx, 2, 10), [baseFontSizePx]);
+  const columnGap = useMemo(() => getScaledValue(baseFontSizePx, 1.5, 8), [baseFontSizePx]);
+  const rowGap = useMemo(() => getScaledValue(baseFontSizePx, 1.5, 8), [baseFontSizePx]);
+  const rowGapPx = `${rowGap}px`;
+
+  const contentAreaStyle: React.CSSProperties = {
+    padding: `${contentPadding}px`,
+    width: '100%',
+    height: `calc(100% - ${headerImageDetails.height}px)`, // Adjust height for header
+    boxSizing: 'border-box',
+    columnCount: columns,
+    columnGap: `${columnGap}px`,
+    overflow: 'hidden', // Prevent content from overflowing its designated area
+  };
+
+  const shelvesWithStrains = useMemo(() => shelves.filter(shelf => shelf.strains.length > 0), [shelves]);
+
+  const renderableShelves = useMemo(() => {
+    return shelvesWithStrains.map(shelf => {
+      // When forceShelfFit is true (tighten shelves ON), allow table rows to flow across columns
+      // When forceShelfFit is false (tighten shelves OFF), prevent tables from breaking across columns  
+      const applyAvoidBreak = !forceShelfFit;
+      
+      return (
+        <MenuTable
+          key={shelf.id}
+          shelf={shelf}
+          strainsToRender={shelf.strains}
+          baseFontSizePx={baseFontSizePx}
+          linePaddingMultiplier={linePaddingMultiplier}
+          marginBottomStyle={rowGapPx}
+          applyAvoidBreakStyle={applyAvoidBreak}
+        />
+      );
+    });
+  }, [shelvesWithStrains, forceShelfFit, baseFontSizePx, linePaddingMultiplier, rowGapPx]);
+
+
+  return (
+    <div
+      ref={ref}
+      style={artboardStyle}
+      className="print-artboard-outer"
+      data-testid="preview-artboard"
+    >
+      {headerImageDetails.src && headerImageDetails.height > 0 && (
+        <img 
+          src={headerImageDetails.src} 
+          alt="Menu Header" 
+          style={{ 
+            width: '100%', 
+            height: `${headerImageDetails.height}px`, 
+            objectFit: 'cover', // Ensures the image covers the area, might crop
+            display: 'block', // Removes any extra space below the image
+          }} 
+        />
+      )}
+      {renderableShelves.length > 0 ? (
+        <div style={contentAreaStyle} className="menu-content-area">
+          {renderableShelves}
+        </div>
+      ) : (
+        <div style={{
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: `calc(100% - ${headerImageDetails.height}px)`, // Also adjust placeholder height
+            color: '#aaa', 
+            fontSize: getScaledValue(baseFontSizePx, 2.5)
+        }}>
+          Add strains to shelves to see your menu.
+        </div>
+      )}
+    </div>
+  );
+});
+
+PreviewArtboard.displayName = 'PreviewArtboard';
