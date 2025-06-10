@@ -30,6 +30,7 @@ import { WelcomeModal } from './components/WelcomeModal';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
 import { UpdateNotification } from './components/UpdateNotification';
+import { DebugConsole } from './components/DebugConsole';
 import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme } from './types';
 import { 
   INITIAL_PREVIEW_SETTINGS, 
@@ -140,7 +141,53 @@ const App: React.FC = () => {
   // Update notification handler
   const handleUpdateDismissed = useCallback(() => {
     setUpdateDismissed(true);
+    // Reset all manual check states
+    setIsManualCheck(false);
+    setIsCheckingForUpdates(false);
+    setNoUpdatesFound(false);
     // Note: We don't save to localStorage so the notification will show again next app launch
+  }, []);
+
+  // Manual check for updates handler
+  const handleManualCheckForUpdates = useCallback(async () => {
+    if (!window.electronAPI) return;
+    
+    // Reset states and show checking popup
+    setUpdateDismissed(false);
+    setIsManualCheck(true);
+    setIsCheckingForUpdates(true);
+    setNoUpdatesFound(false);
+    setUpdateAvailable(false);
+    
+    try {
+      console.log('Starting manual update check...');
+      const result = await window.electronAPI.checkForUpdates();
+      console.log('Manual check result:', result);
+      
+      // Give a moment for the spinner to show, then check state
+      setTimeout(() => {
+        setIsCheckingForUpdates(false);
+        
+        // Use a second timeout to check the state after React has updated
+        manualCheckTimeoutRef.current = setTimeout(() => {
+          // Check if update was found by seeing if updateAvailable became true
+          setUpdateAvailable(currentUpdateAvailable => {
+            if (!currentUpdateAvailable) {
+              // No update was found, show "no updates" message
+              setNoUpdatesFound(true);
+            }
+            return currentUpdateAvailable;
+          });
+        }, 100);
+      }, 1500); // 1.5 second minimum check time for UX
+      
+    } catch (error) {
+      console.error('Manual check failed:', error);
+      setTimeout(() => {
+        setIsCheckingForUpdates(false);
+        setNoUpdatesFound(true);
+      }, 1500);
+    }
   }, []);
 
   // Update click handler (from header button)
@@ -268,8 +315,11 @@ const App: React.FC = () => {
   const [isDownloadingUpdate, setIsDownloadingUpdate] = useState<boolean>(false);
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number>(0);
   const [isUpdateDownloaded, setIsUpdateDownloaded] = useState<boolean>(false);
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
-  const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);
+  const [isManualCheck, setIsManualCheck] = useState<boolean>(false);
+  const [isCheckingForUpdates, setIsCheckingForUpdates] = useState<boolean>(false);
+  const [noUpdatesFound, setNoUpdatesFound] = useState<boolean>(false);
+  const manualCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
 
   // Helper function to check if the menu has any content
   const hasMenuContent = useCallback((): boolean => {
@@ -367,6 +417,15 @@ const App: React.FC = () => {
       setUpdateVersion(updateInfo.version);
       setIsUpdateDownloaded(false);
       setIsDownloadingUpdate(false);
+      
+      // Clear manual check timeout if it's running
+      if (manualCheckTimeoutRef.current) {
+        clearTimeout(manualCheckTimeoutRef.current);
+        manualCheckTimeoutRef.current = null;
+      }
+      
+      // If this was a manual check, clear the checking state
+      setIsCheckingForUpdates(false);
     };
 
     const handleDownloadProgress = (_event: any, progress: { percent: number; transferred: number; total: number; bytesPerSecond: number }) => {
@@ -380,9 +439,7 @@ const App: React.FC = () => {
     };
 
     const handleUpdateDebug = (_event: any, debug: { type: string; message: string; [key: string]: any }) => {
-      const timestamp = new Date().toLocaleTimeString();
-      const debugMessage = `[${timestamp}] ${debug.type}: ${debug.message}`;
-      setDebugInfo(prev => [...prev.slice(-9), debugMessage]); // Keep last 10 messages
+      // Debug messages now handled by DebugConsole component
       console.log('Update Debug:', debug);
     };
 
@@ -394,12 +451,12 @@ const App: React.FC = () => {
     // Also manually trigger an update check for debugging
     const triggerManualCheck = async () => {
       const timestamp = new Date().toLocaleTimeString();
-      setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] startup: Triggering manual update check...`]);
+      console.log(`[${timestamp}] startup: Triggering manual update check...`);
       try {
         const result = await window.electronAPI!.checkForUpdates();
-        setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] startup: Manual check result: ${JSON.stringify(result)}`]);
+        console.log(`[${timestamp}] startup: Manual check result:`, result);
       } catch (error) {
-        setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] startup: Manual check failed: ${error}`]);
+        console.log(`[${timestamp}] startup: Manual check failed:`, error);
       }
     };
     
@@ -1037,6 +1094,10 @@ const App: React.FC = () => {
           setShowWelcomeModal(true);
           break;
 
+        case 'check-for-updates-manual':
+          handleManualCheckForUpdates();
+          break;
+
         case 'test-connection':
           alert('Menu communication is working!');
           break;
@@ -1077,7 +1138,8 @@ const App: React.FC = () => {
     theme, 
     previewSettings, 
     currentAppState, 
-    recordChange
+    recordChange,
+    handleManualCheckForUpdates
   ]);
 
       return (
@@ -1201,59 +1263,13 @@ const App: React.FC = () => {
             updateDownloaded={isUpdateDownloaded}
             updateVersion={updateVersion}
             theme={theme}
+            isManualCheck={isManualCheck}
+            isCheckingForUpdates={isCheckingForUpdates}
+            noUpdatesFound={noUpdatesFound}
           />
         )}
         
-        {/* Debug Panel */}
-        <div className="fixed bottom-4 right-4 z-50">
-          <button
-            onClick={() => setShowDebugPanel(!showDebugPanel)}
-            className="mb-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            🔍 Debug Updates
-          </button>
-          
-          {window.electronAPI && (
-            <button
-              onClick={async () => {
-                const timestamp = new Date().toLocaleTimeString();
-                setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] manual: Manually checking for updates...`]);
-                                 try {
-                   const result = await window.electronAPI!.checkForUpdates();
-                   setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] manual: Check result: ${JSON.stringify(result)}`]);
-                 } catch (error) {
-                   setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] manual: Check failed: ${error}`]);
-                 }
-              }}
-              className="block w-full mb-2 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-            >
-              🔄 Manual Check
-            </button>
-          )}
-          
-          {showDebugPanel && (
-            <div className="w-80 max-h-60 overflow-y-auto bg-gray-800 text-green-400 p-4 rounded-lg text-xs font-mono">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-white font-bold">Auto-Updater Debug</h3>
-                <button
-                  onClick={() => setDebugInfo([])}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  Clear
-                </button>
-              </div>
-              {debugInfo.length === 0 ? (
-                <p className="text-gray-500">No debug info yet...</p>
-              ) : (
-                debugInfo.map((info, index) => (
-                  <div key={index} className="mb-1 break-words">
-                    {info}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+        <DebugConsole theme={theme} />
       </div>
     );
   };

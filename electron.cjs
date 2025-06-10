@@ -327,6 +327,11 @@ function createMenu(dynamicData = { shelves: [], darkMode: false }) {
       label: 'Help',
       submenu: [
         {
+          label: 'Check for Updates...',
+          click: () => sendToRenderer('check-for-updates-manual')
+        },
+        { type: 'separator' },
+        {
           label: 'Instructions',
           accelerator: 'F1',
           click: () => sendToRenderer('show-instructions')
@@ -413,7 +418,7 @@ if (!isDev) {
   autoUpdater.on('update-available', (info) => {
     console.log('🎉 Update available:', JSON.stringify(info, null, 2));
     updateInfo = info;
-    // Send update available info to renderer
+    // Send update available info to renderer (don't auto-download)
     if (mainWindow && mainWindow.webContents) {
       mainWindow.webContents.send('update-available', {
         version: info.version,
@@ -422,10 +427,11 @@ if (!isDev) {
       });
       mainWindow.webContents.send('update-debug', {
         type: 'available',
-        message: `Update available: ${info.version}`,
+        message: `Update available: ${info.version} - waiting for user choice`,
         info: info
       });
     }
+    // NOTE: Removed auto-download - user must choose to download
   });
 
   autoUpdater.on('update-not-available', (info) => {

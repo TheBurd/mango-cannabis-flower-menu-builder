@@ -20,6 +20,9 @@ interface UpdateNotificationProps {
   updateDownloaded: boolean;
   updateVersion: string;
   theme: Theme;
+  isManualCheck?: boolean;
+  isCheckingForUpdates?: boolean;
+  noUpdatesFound?: boolean;
 }
 
 export const UpdateNotification: React.FC<UpdateNotificationProps> = ({ 
@@ -27,7 +30,10 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
   updateAvailable,
   updateDownloaded,
   updateVersion,
-  theme
+  theme,
+  isManualCheck = false,
+  isCheckingForUpdates = false,
+  noUpdatesFound = false
 }) => {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
@@ -36,6 +42,7 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isSlideIn, setIsSlideIn] = useState(false);
+  const [autoDismissTimer, setAutoDismissTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!window.electronAPI) return;
@@ -70,13 +77,30 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
     };
   }, []);
 
-  // Show when update is available or downloaded
+  // Show when update is available, downloaded, or manual check states
   useEffect(() => {
-    if (updateAvailable || updateDownloaded) {
+    if (updateAvailable || updateDownloaded || isManualCheck || isCheckingForUpdates || noUpdatesFound) {
       setIsVisible(true);
       setTimeout(() => setIsSlideIn(true), 100);
+      
+      // Auto-dismiss for "no updates found" after 4 seconds
+      if (noUpdatesFound && !autoDismissTimer) {
+        const timer = setTimeout(() => {
+          handleMaybeLater();
+        }, 4000);
+        setAutoDismissTimer(timer);
+      }
     }
-  }, [updateAvailable, updateDownloaded]);
+  }, [updateAvailable, updateDownloaded, isManualCheck, isCheckingForUpdates, noUpdatesFound]);
+
+  // Cleanup auto-dismiss timer
+  useEffect(() => {
+    return () => {
+      if (autoDismissTimer) {
+        clearTimeout(autoDismissTimer);
+      }
+    };
+  }, [autoDismissTimer]);
 
   const handleDownloadUpdate = async () => {
     if (!window.electronAPI) return;
@@ -103,6 +127,12 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
   };
 
   const handleMaybeLater = () => {
+    // Clear auto-dismiss timer if active
+    if (autoDismissTimer) {
+      clearTimeout(autoDismissTimer);
+      setAutoDismissTimer(null);
+    }
+    
     setIsSlideIn(false);
     setTimeout(() => {
       setIsVisible(false);
@@ -173,11 +203,15 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
             <div className={`w-10 h-10 ${iconBgClasses} rounded-lg flex items-center justify-center`}>
-              {isDownloaded ? (
+              {noUpdatesFound ? (
                 <svg className={`w-6 h-6 text-green-600 ${theme === 'dark' ? 'text-green-400' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-              ) : isDownloading ? (
+              ) : isDownloaded ? (
+                <svg className={`w-6 h-6 text-green-600 ${theme === 'dark' ? 'text-green-400' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (isDownloading || isCheckingForUpdates) ? (
                 <svg className={`w-6 h-6 ${iconClasses} animate-spin`} fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -192,16 +226,44 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
           
           <div className="flex-1 min-w-0">
             <div className={`text-sm font-semibold ${textClasses}`}>
-              {isDownloaded ? 'Update Ready!' : isDownloading ? 'Downloading Update...' : 'New Update Available!'}
+              {noUpdatesFound 
+                ? 'You have the latest version!' 
+                : isCheckingForUpdates 
+                ? 'Checking for Updates...' 
+                : isDownloaded 
+                ? 'Update Ready!' 
+                : isDownloading 
+                ? 'Downloading Update...' 
+                : 'New Update Available!'
+              }
             </div>
             <div className={`text-sm ${subtextClasses} mt-1`}>
-              {isDownloaded 
+              {noUpdatesFound 
+                ? `You're running version ${updateVersion}. No updates available.`
+                : isCheckingForUpdates 
+                ? 'Please wait while we check for new updates...'
+                : isDownloaded 
                 ? `Version ${updateVersion} is ready to install.`
                 : isDownloading 
                 ? `Downloading version ${updateVersion}...`
                 : `Version ${updateVersion} is available for download.`
               }
             </div>
+            
+            {/* GitHub release link for available updates */}
+            {updateAvailable && !isDownloading && !isDownloaded && !isCheckingForUpdates && (
+              <div className="mt-2">
+                <button
+                  onClick={() => window.open(`https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/tag/v${updateVersion}`, '_blank')}
+                  className={`text-xs ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} underline transition-colors flex items-center space-x-1`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span>View release notes & changes</span>
+                </button>
+              </div>
+            )}
             
             {isDownloading && downloadProgress && (
               <div className="mt-3">
@@ -220,48 +282,58 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
               </div>
             )}
             
-            <div className="mt-4 flex space-x-2">
-              {isDownloaded ? (
-                <>
-                  <button
-                    onClick={handleInstallUpdate}
-                    disabled={isInstalling}
-                    className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                  >
-                    {isInstalling ? 'Installing...' : 'Install & Restart'}
-                  </button>
-                  <button
-                    onClick={handleMaybeLater}
-                    disabled={isInstalling}
-                    className={`text-xs px-3 py-1.5 ${laterButtonClasses} rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    Later
-                  </button>
-                </>
-              ) : isDownloading ? (
-                <div className={`text-xs ${subtextClasses} px-3 py-1.5`}>
-                  Downloading in progress...
-                </div>
-              ) : (
-                <>
-                  <button
-                    onClick={handleDownloadUpdate}
-                    className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    Download Now
-                  </button>
+            {/* Only show buttons if not in checking state */}
+            {!isCheckingForUpdates && (
+              <div className="mt-4 flex space-x-2">
+                {noUpdatesFound ? (
                   <button
                     onClick={handleMaybeLater}
                     className={`text-xs px-3 py-1.5 ${laterButtonClasses} rounded-md transition-colors`}
                   >
-                    Maybe Later
+                    Dismiss
                   </button>
-                </>
-              )}
-            </div>
+                ) : isDownloaded ? (
+                  <>
+                    <button
+                      onClick={handleInstallUpdate}
+                      disabled={isInstalling}
+                      className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    >
+                      {isInstalling ? 'Installing...' : 'Install & Restart'}
+                    </button>
+                    <button
+                      onClick={handleMaybeLater}
+                      disabled={isInstalling}
+                      className={`text-xs px-3 py-1.5 ${laterButtonClasses} rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      Later
+                    </button>
+                  </>
+                ) : isDownloading ? (
+                  <div className={`text-xs ${subtextClasses} px-3 py-1.5`}>
+                    Downloading in progress...
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleDownloadUpdate}
+                      className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Download Now
+                    </button>
+                    <button
+                      onClick={handleMaybeLater}
+                      className={`text-xs px-3 py-1.5 ${laterButtonClasses} rounded-md transition-colors`}
+                    >
+                      Maybe Later
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
           
-          {!isDownloading && !isInstalling && (
+          {!isDownloading && !isInstalling && !isCheckingForUpdates && (
             <button
               onClick={handleMaybeLater}
               className={`flex-shrink-0 ${closeButtonClasses} transition-colors`}
