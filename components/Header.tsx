@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
             marginBottom: '0.5rem' // Add bottom margin to account for visual weight at bottom
           }}
         />
-        <h1 className="text-3xl font-bold tracking-tight" style={{fontFamily: "'Poppins', sans-serif"}}>{appName} v1.0.1</h1>
+        <h1 className="text-3xl font-bold tracking-tight" style={{fontFamily: "'Poppins', sans-serif"}}>{appName} v1.0.2</h1>
       </div>
       <div className="flex items-center space-x-2">
         <img 
