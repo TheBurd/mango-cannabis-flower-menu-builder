@@ -54,4 +54,4 @@ if (Test-Path "release") {
         $size = [math]::Round($_.Length / 1MB, 1)
         Write-Host "   - $($_.Name) ($size MB)" -ForegroundColor White
     }
-} 
+}

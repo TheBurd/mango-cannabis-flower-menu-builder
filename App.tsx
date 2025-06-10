@@ -10,6 +10,15 @@ declare global {
       updateMenuState: (updates: any) => void;
       readFile: (filePath: string) => Promise<string>;
       updateDynamicMenus: (menuData: { shelves: Array<{id: string, name: string}>, darkMode: boolean }) => Promise<void>;
+      // Update-related methods
+      checkForUpdates: () => Promise<any>;
+      downloadUpdate: () => Promise<boolean>;
+      installUpdate: () => Promise<boolean>;
+      getUpdateInfo: () => Promise<any>;
+      onUpdateAvailable: (callback: (event: any, updateInfo: { version: string; releaseDate: string; releaseNotes: string }) => void) => void;
+      onDownloadProgress: (callback: (event: any, progress: { percent: number; transferred: number; total: number; bytesPerSecond: number }) => void) => void;
+      onUpdateDownloaded: (callback: (event: any, updateInfo: { version: string }) => void) => void;
+      removeUpdateListeners: () => void;
     };
   }
 }
@@ -19,6 +28,7 @@ import { InstructionsModal } from './components/InstructionsModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
+import { UpdateNotification } from './components/UpdateNotification';
 import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme } from './types';
 import { 
   INITIAL_PREVIEW_SETTINGS, 
@@ -126,6 +136,12 @@ const App: React.FC = () => {
     setShowInstructions(true);
   }, []);
 
+  // Update notification handler
+  const handleUpdateDismissed = useCallback(() => {
+    setUpdateDismissed(true);
+    // Note: We don't save to localStorage so the notification will show again next app launch
+  }, []);
+
   // Drag and drop handlers
   const handleDragStart = useCallback((strainId: string, shelfId: string, strainIndex: number) => {
     setDragState({ strainId, shelfId, strainIndex });
@@ -214,6 +230,7 @@ const App: React.FC = () => {
   const [lastInteractedShelfId, setLastInteractedShelfId] = useState<string | null>(null);
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
   const [dragState, setDragState] = useState<{ strainId: string; shelfId: string; strainIndex: number } | null>(null);
+  const [updateDismissed, setUpdateDismissed] = useState<boolean>(false);
 
   // Helper function to check if the menu has any content
   const hasMenuContent = useCallback((): boolean => {
@@ -1077,6 +1094,11 @@ const App: React.FC = () => {
           onClose={handleWelcomeModalClose}
           theme={theme}
         />
+        {!updateDismissed && (
+          <UpdateNotification
+            onUpdateDismissed={handleUpdateDismissed}
+          />
+        )}
       </div>
     );
   };

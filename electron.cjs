@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -381,10 +382,132 @@ ipcMain.handle('update-dynamic-menus', async (event, menuData) => {
   }
 });
 
+// Auto-updater configuration and handlers
+let updateInfo = null;
+
+// Configure auto-updater (only in production)
+if (!isDev) {
+  // Configure GitHub releases
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'TheBurd',
+    repo: 'mango-cannabis-flower-menu-builder'
+  });
+
+  // Auto-updater event handlers
+  autoUpdater.on('checking-for-update', () => {
+    console.log('Checking for update...');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('Update available:', info);
+    updateInfo = info;
+    // Send update available info to renderer
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update-available', {
+        version: info.version,
+        releaseDate: info.releaseDate,
+        releaseNotes: info.releaseNotes
+      });
+    }
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('Update not available:', info);
+    updateInfo = null;
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err);
+    updateInfo = null;
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+    console.log(log_message);
+    
+    // Send progress to renderer
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('download-progress', {
+        percent: progressObj.percent,
+        transferred: progressObj.transferred,
+        total: progressObj.total,
+        bytesPerSecond: progressObj.bytesPerSecond
+      });
+    }
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded');
+    // Send update downloaded info to renderer
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update-downloaded', {
+        version: info.version
+      });
+    }
+  });
+}
+
+// IPC handlers for update functionality
+ipcMain.handle('check-for-updates', async () => {
+  if (!isDev) {
+    try {
+      return await autoUpdater.checkForUpdatesAndNotify();
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+      throw error;
+    }
+  }
+  return null;
+});
+
+ipcMain.handle('download-update', async () => {
+  if (!isDev && updateInfo) {
+    try {
+      await autoUpdater.downloadUpdate();
+      return true;
+    } catch (error) {
+      console.error('Error downloading update:', error);
+      throw error;
+    }
+  }
+  return false;
+});
+
+ipcMain.handle('install-update', async () => {
+  if (!isDev) {
+    // This will quit the app and install the update
+    autoUpdater.quitAndInstall();
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('get-update-info', async () => {
+  return updateInfo;
+});
+
+// Function to check for updates on startup
+function checkForUpdatesOnStartup() {
+  if (!isDev) {
+    // Check for updates 5 seconds after app is ready
+    setTimeout(() => {
+      autoUpdater.checkForUpdatesAndNotify().catch(err => {
+        console.error('Error checking for updates on startup:', err);
+      });
+    }, 5000);
+  }
+}
+
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   createWindow();
   createMenu();
+  
+  // Check for updates on startup
+  checkForUpdatesOnStartup();
 
   app.on('activate', () => {
     // On macOS, re-create window when dock icon is clicked

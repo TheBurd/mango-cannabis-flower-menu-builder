@@ -99,6 +99,3 @@ docs/build/
 .git/
 .gitattributes
 .github/
-
-# Ignore this file itself
-.cursorignore 
