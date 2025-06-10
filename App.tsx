@@ -1093,10 +1093,6 @@ const App: React.FC = () => {
         theme={theme} 
         onThemeChange={handleThemeChange} 
         onShowInstructions={handleShowInstructions}
-        updateAvailable={updateAvailable && !updateDismissed}
-        onUpdateClick={handleUpdateClick}
-        updateDownloading={isDownloadingUpdate}
-        downloadProgress={updateDownloadProgress}
       />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}
@@ -1204,6 +1200,7 @@ const App: React.FC = () => {
             updateAvailable={updateAvailable}
             updateDownloaded={isUpdateDownloaded}
             updateVersion={updateVersion}
+            theme={theme}
           />
         )}
         
