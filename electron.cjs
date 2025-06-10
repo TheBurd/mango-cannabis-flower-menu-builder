@@ -391,16 +391,28 @@ if (!isDev) {
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'TheBurd',
-    repo: 'mango-cannabis-flower-menu-builder'
+    repo: 'mango-cannabis-flower-menu-builder',
+    private: true, // Enable private repository support
+    token: process.env.GH_TOKEN // GitHub token for private repo access
   });
 
   // Auto-updater event handlers
   autoUpdater.on('checking-for-update', () => {
-    console.log('Checking for update...');
+    console.log('🔍 Checking for update...');
+    console.log('Feed URL:', autoUpdater.getFeedURL());
+    // Send debug info to renderer
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update-debug', {
+        type: 'checking',
+        message: 'Checking for updates...',
+        currentVersion: app.getVersion(),
+        feedUrl: autoUpdater.getFeedURL()
+      });
+    }
   });
 
   autoUpdater.on('update-available', (info) => {
-    console.log('Update available:', info);
+    console.log('🎉 Update available:', JSON.stringify(info, null, 2));
     updateInfo = info;
     // Send update available info to renderer
     if (mainWindow && mainWindow.webContents) {
@@ -409,17 +421,42 @@ if (!isDev) {
         releaseDate: info.releaseDate,
         releaseNotes: info.releaseNotes
       });
+      mainWindow.webContents.send('update-debug', {
+        type: 'available',
+        message: `Update available: ${info.version}`,
+        info: info
+      });
     }
   });
 
   autoUpdater.on('update-not-available', (info) => {
-    console.log('Update not available:', info);
+    console.log('❌ Update not available:', JSON.stringify(info, null, 2));
+    console.log('Current version:', app.getVersion());
     updateInfo = null;
+    // Send debug info to renderer
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update-debug', {
+        type: 'not-available',
+        message: 'No updates available',
+        currentVersion: app.getVersion(),
+        info: info
+      });
+    }
   });
 
   autoUpdater.on('error', (err) => {
-    console.error('Auto-updater error:', err);
+    console.error('🚨 Auto-updater error:', err);
+    console.error('Error stack:', err.stack);
     updateInfo = null;
+    // Send error info to renderer
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update-debug', {
+        type: 'error',
+        message: `Update error: ${err.message}`,
+        error: err.toString(),
+        stack: err.stack
+      });
+    }
   });
 
   autoUpdater.on('download-progress', (progressObj) => {

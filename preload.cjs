@@ -65,11 +65,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.on('update-downloaded', callback);
   },
   
+  onUpdateDebug: (callback) => {
+    return ipcRenderer.on('update-debug', callback);
+  },
+  
   // Remove update listeners
   removeUpdateListeners: () => {
     ipcRenderer.removeAllListeners('update-available');
     ipcRenderer.removeAllListeners('download-progress');
     ipcRenderer.removeAllListeners('update-downloaded');
+    ipcRenderer.removeAllListeners('update-debug');
   }
 });
 
