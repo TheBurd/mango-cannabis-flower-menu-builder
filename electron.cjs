@@ -391,9 +391,8 @@ if (!isDev) {
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'TheBurd',
-    repo: 'mango-cannabis-flower-menu-builder',
-    private: true, // Enable private repository support
-    token: process.env.GH_TOKEN // GitHub token for private repo access
+    repo: 'mango-cannabis-flower-menu-builder'
+    // Repository is public, no token needed
   });
 
   // Auto-updater event handlers

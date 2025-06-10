@@ -18,6 +18,7 @@ declare global {
       onUpdateAvailable: (callback: (event: any, updateInfo: { version: string; releaseDate: string; releaseNotes: string }) => void) => void;
       onDownloadProgress: (callback: (event: any, progress: { percent: number; transferred: number; total: number; bytesPerSecond: number }) => void) => void;
       onUpdateDownloaded: (callback: (event: any, updateInfo: { version: string }) => void) => void;
+      onUpdateDebug?: (callback: (event: any, debug: { type: string; message: string; [key: string]: any }) => void) => void;
       removeUpdateListeners: () => void;
     };
   }
@@ -267,6 +268,8 @@ const App: React.FC = () => {
   const [isDownloadingUpdate, setIsDownloadingUpdate] = useState<boolean>(false);
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number>(0);
   const [isUpdateDownloaded, setIsUpdateDownloaded] = useState<boolean>(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);
 
   // Helper function to check if the menu has any content
   const hasMenuContent = useCallback((): boolean => {
@@ -376,11 +379,35 @@ const App: React.FC = () => {
       setUpdateDownloadProgress(100);
     };
 
+    const handleUpdateDebug = (_event: any, debug: { type: string; message: string; [key: string]: any }) => {
+      const timestamp = new Date().toLocaleTimeString();
+      const debugMessage = `[${timestamp}] ${debug.type}: ${debug.message}`;
+      setDebugInfo(prev => [...prev.slice(-9), debugMessage]); // Keep last 10 messages
+      console.log('Update Debug:', debug);
+    };
+
     window.electronAPI.onUpdateAvailable(handleUpdateAvailable);
     window.electronAPI.onDownloadProgress(handleDownloadProgress);
     window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
+    window.electronAPI.onUpdateDebug?.(handleUpdateDebug);
+
+    // Also manually trigger an update check for debugging
+    const triggerManualCheck = async () => {
+      const timestamp = new Date().toLocaleTimeString();
+      setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] startup: Triggering manual update check...`]);
+      try {
+        const result = await window.electronAPI!.checkForUpdates();
+        setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] startup: Manual check result: ${JSON.stringify(result)}`]);
+      } catch (error) {
+        setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] startup: Manual check failed: ${error}`]);
+      }
+    };
+    
+    // Trigger check after a short delay
+    const timer = setTimeout(triggerManualCheck, 2000);
 
     return () => {
+      clearTimeout(timer);
       window.electronAPI?.removeUpdateListeners();
     };
   }, []);
@@ -1179,6 +1206,57 @@ const App: React.FC = () => {
             updateVersion={updateVersion}
           />
         )}
+        
+        {/* Debug Panel */}
+        <div className="fixed bottom-4 right-4 z-50">
+          <button
+            onClick={() => setShowDebugPanel(!showDebugPanel)}
+            className="mb-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            🔍 Debug Updates
+          </button>
+          
+          {window.electronAPI && (
+            <button
+              onClick={async () => {
+                const timestamp = new Date().toLocaleTimeString();
+                setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] manual: Manually checking for updates...`]);
+                                 try {
+                   const result = await window.electronAPI!.checkForUpdates();
+                   setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] manual: Check result: ${JSON.stringify(result)}`]);
+                 } catch (error) {
+                   setDebugInfo(prev => [...prev.slice(-9), `[${timestamp}] manual: Check failed: ${error}`]);
+                 }
+              }}
+              className="block w-full mb-2 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            >
+              🔄 Manual Check
+            </button>
+          )}
+          
+          {showDebugPanel && (
+            <div className="w-80 max-h-60 overflow-y-auto bg-gray-800 text-green-400 p-4 rounded-lg text-xs font-mono">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-white font-bold">Auto-Updater Debug</h3>
+                <button
+                  onClick={() => setDebugInfo([])}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  Clear
+                </button>
+              </div>
+              {debugInfo.length === 0 ? (
+                <p className="text-gray-500">No debug info yet...</p>
+              ) : (
+                debugInfo.map((info, index) => (
+                  <div key={index} className="mb-1 break-words">
+                    {info}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
