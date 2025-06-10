@@ -15,10 +15,13 @@ declare global {
       downloadUpdate: () => Promise<boolean>;
       installUpdate: () => Promise<boolean>;
       getUpdateInfo: () => Promise<any>;
+      getCurrentVersion: () => Promise<string>;
+      openExternal: (url: string) => Promise<boolean>;
       onUpdateAvailable: (callback: (event: any, updateInfo: { version: string; releaseDate: string; releaseNotes: string }) => void) => void;
       onDownloadProgress: (callback: (event: any, progress: { percent: number; transferred: number; total: number; bytesPerSecond: number }) => void) => void;
       onUpdateDownloaded: (callback: (event: any, updateInfo: { version: string }) => void) => void;
       onUpdateDebug?: (callback: (event: any, debug: { type: string; message: string; [key: string]: any }) => void) => void;
+      onUpdateNotAvailable?: (callback: (event: any, info: any) => void) => void;
       removeUpdateListeners: () => void;
     };
   }
@@ -158,27 +161,27 @@ const App: React.FC = () => {
     setIsCheckingForUpdates(true);
     setNoUpdatesFound(false);
     setUpdateAvailable(false);
+    setIsUpdateDownloaded(false);
     
     try {
       console.log('Starting manual update check...');
       const result = await window.electronAPI.checkForUpdates();
       console.log('Manual check result:', result);
       
-      // Give a moment for the spinner to show, then check state
-      setTimeout(() => {
+      // Set timeout to complete the check
+      manualCheckTimeoutRef.current = setTimeout(() => {
         setIsCheckingForUpdates(false);
         
-        // Use a second timeout to check the state after React has updated
-        manualCheckTimeoutRef.current = setTimeout(() => {
-          // Check if update was found by seeing if updateAvailable became true
+        // If no update was found by now, show "no updates" message
+        // The updateAvailable state will be set by the event handler if there's an update
+        setTimeout(() => {
           setUpdateAvailable(currentUpdateAvailable => {
             if (!currentUpdateAvailable) {
-              // No update was found, show "no updates" message
               setNoUpdatesFound(true);
             }
             return currentUpdateAvailable;
           });
-        }, 100);
+        }, 50); // Brief delay to let update events settle
       }, 1500); // 1.5 second minimum check time for UX
       
     } catch (error) {
@@ -190,34 +193,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Update click handler (from header button)
-  const handleUpdateClick = useCallback(async () => {
-    if (!window.electronAPI) return;
-    
-    // Use functional state updates to avoid dependency issues
-    setIsDownloadingUpdate(currentDownloading => {
-      if (!currentDownloading) {
-        setIsUpdateDownloaded(currentDownloaded => {
-          if (!currentDownloaded) {
-            // Start download
-            window.electronAPI!.downloadUpdate().catch(error => {
-              console.error('Error downloading update:', error);
-              setIsDownloadingUpdate(false);
-            });
-            return false;
-          } else {
-            // Install update
-            window.electronAPI!.installUpdate().catch(error => {
-              console.error('Error installing update:', error);
-            });
-            return currentDownloaded;
-          }
-        });
-        return true;
-      }
-      return currentDownloading;
-    });
-  }, []);
+
 
 
 
@@ -314,6 +290,7 @@ const App: React.FC = () => {
   const [updateVersion, setUpdateVersion] = useState<string>('');
   const [isDownloadingUpdate, setIsDownloadingUpdate] = useState<boolean>(false);
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number>(0);
+  const [updateDownloadProgressFull, setUpdateDownloadProgressFull] = useState<{ percent: number; transferred: number; total: number; bytesPerSecond: number } | null>(null);
   const [isUpdateDownloaded, setIsUpdateDownloaded] = useState<boolean>(false);
   const [isManualCheck, setIsManualCheck] = useState<boolean>(false);
   const [isCheckingForUpdates, setIsCheckingForUpdates] = useState<boolean>(false);
@@ -413,6 +390,9 @@ const App: React.FC = () => {
     if (!window.electronAPI) return;
 
     const handleUpdateAvailable = (_event: any, updateInfo: { version: string; releaseDate: string; releaseNotes: string }) => {
+      console.log('🎉 Update available event received:', updateInfo);
+      console.log('📄 This should NOT trigger any downloads automatically');
+      
       setUpdateAvailable(true);
       setUpdateVersion(updateInfo.version);
       setIsUpdateDownloaded(false);
@@ -429,13 +409,40 @@ const App: React.FC = () => {
     };
 
     const handleDownloadProgress = (_event: any, progress: { percent: number; transferred: number; total: number; bytesPerSecond: number }) => {
+      console.log('📦 Download progress:', progress);
+      setIsDownloadingUpdate(true); // Ensure downloading state is set
       setUpdateDownloadProgress(progress.percent);
+      setUpdateDownloadProgressFull(progress);
     };
 
     const handleUpdateDownloaded = (_event: any, info: { version: string }) => {
+      console.log('✅ Update download completed!', info);
       setIsDownloadingUpdate(false);
       setIsUpdateDownloaded(true);
       setUpdateDownloadProgress(100);
+      setUpdateDownloadProgressFull(null); // Clear progress since download is complete
+      console.log('📌 States after download completion: downloading=false, downloaded=true');
+    };
+
+    const handleUpdateNotAvailable = (_event: any, info: any) => {
+      console.log('No updates available:', info);
+      
+      // Reset update states to ensure we show current running version
+      setUpdateAvailable(false);
+      setIsUpdateDownloaded(false);
+      setIsDownloadingUpdate(false);
+      
+      // If this was a manual check, immediately stop checking and show "no updates"
+      if (isManualCheck && isCheckingForUpdates) {
+        if (manualCheckTimeoutRef.current) {
+          clearTimeout(manualCheckTimeoutRef.current);
+          manualCheckTimeoutRef.current = null;
+        }
+        setIsCheckingForUpdates(false);
+        setNoUpdatesFound(true);
+        
+        // No need to set version for "no updates" display since we simplified the message
+      }
     };
 
     const handleUpdateDebug = (_event: any, debug: { type: string; message: string; [key: string]: any }) => {
@@ -443,28 +450,13 @@ const App: React.FC = () => {
       console.log('Update Debug:', debug);
     };
 
-    window.electronAPI.onUpdateAvailable(handleUpdateAvailable);
-    window.electronAPI.onDownloadProgress(handleDownloadProgress);
-    window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
-    window.electronAPI.onUpdateDebug?.(handleUpdateDebug);
-
-    // Also manually trigger an update check for debugging
-    const triggerManualCheck = async () => {
-      const timestamp = new Date().toLocaleTimeString();
-      console.log(`[${timestamp}] startup: Triggering manual update check...`);
-      try {
-        const result = await window.electronAPI!.checkForUpdates();
-        console.log(`[${timestamp}] startup: Manual check result:`, result);
-      } catch (error) {
-        console.log(`[${timestamp}] startup: Manual check failed:`, error);
-      }
-    };
-    
-    // Trigger check after a short delay
-    const timer = setTimeout(triggerManualCheck, 2000);
+          window.electronAPI.onUpdateAvailable(handleUpdateAvailable);
+      window.electronAPI.onDownloadProgress(handleDownloadProgress);
+      window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
+      window.electronAPI.onUpdateDebug?.(handleUpdateDebug);
+      window.electronAPI.onUpdateNotAvailable?.(handleUpdateNotAvailable);
 
     return () => {
-      clearTimeout(timer);
       window.electronAPI?.removeUpdateListeners();
     };
   }, []);
@@ -1266,6 +1258,8 @@ const App: React.FC = () => {
             isManualCheck={isManualCheck}
             isCheckingForUpdates={isCheckingForUpdates}
             noUpdatesFound={noUpdatesFound}
+            isDownloading={isDownloadingUpdate}
+            downloadProgress={updateDownloadProgressFull}
           />
         )}
         

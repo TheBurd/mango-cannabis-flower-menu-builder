@@ -51,6 +51,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUpdateInfo: () => {
     return ipcRenderer.invoke('get-update-info');
   },
+
+  getCurrentVersion: () => {
+    return ipcRenderer.invoke('get-current-version');
+  },
+
+  openExternal: (url) => {
+    return ipcRenderer.invoke('open-external', url);
+  },
   
   // Listen for update events
   onUpdateAvailable: (callback) => {
@@ -68,6 +76,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateDebug: (callback) => {
     return ipcRenderer.on('update-debug', callback);
   },
+
+  onUpdateNotAvailable: (callback) => {
+    return ipcRenderer.on('update-not-available', callback);
+  },
   
   // Remove update listeners
   removeUpdateListeners: () => {
@@ -75,6 +87,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('download-progress');
     ipcRenderer.removeAllListeners('update-downloaded');
     ipcRenderer.removeAllListeners('update-debug');
+    ipcRenderer.removeAllListeners('update-not-available');
   }
 });
 

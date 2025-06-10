@@ -400,6 +400,10 @@ if (!isDev) {
     // Repository is public, no token needed
   });
 
+  // Configure auto-updater to download but not apply automatically
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+
   // Auto-updater event handlers
   autoUpdater.on('checking-for-update', () => {
     console.log('🔍 Checking for update...');
@@ -438,8 +442,9 @@ if (!isDev) {
     console.log('❌ Update not available:', JSON.stringify(info, null, 2));
     console.log('Current version:', app.getVersion());
     updateInfo = null;
-    // Send debug info to renderer
+    // Send not-available event to renderer
     if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update-not-available', info);
       mainWindow.webContents.send('update-debug', {
         type: 'not-available',
         message: 'No updates available',
@@ -482,11 +487,16 @@ if (!isDev) {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded');
+    console.log('✅ Update downloaded successfully:', JSON.stringify(info, null, 2));
     // Send update downloaded info to renderer
     if (mainWindow && mainWindow.webContents) {
       mainWindow.webContents.send('update-downloaded', {
         version: info.version
+      });
+      mainWindow.webContents.send('update-debug', {
+        type: 'downloaded',
+        message: `Update ${info.version} downloaded and ready to install`,
+        info: info
       });
     }
   });
@@ -496,7 +506,7 @@ if (!isDev) {
 ipcMain.handle('check-for-updates', async () => {
   if (!isDev) {
     try {
-      return await autoUpdater.checkForUpdatesAndNotify();
+      return await autoUpdater.checkForUpdates();
     } catch (error) {
       console.error('Error checking for updates:', error);
       throw error;
@@ -531,12 +541,22 @@ ipcMain.handle('get-update-info', async () => {
   return updateInfo;
 });
 
+ipcMain.handle('get-current-version', async () => {
+  return app.getVersion();
+});
+
+ipcMain.handle('open-external', async (event, url) => {
+  const { shell } = require('electron');
+  await shell.openExternal(url);
+  return true;
+});
+
 // Function to check for updates on startup
 function checkForUpdatesOnStartup() {
   if (!isDev) {
     // Check for updates 5 seconds after app is ready
     setTimeout(() => {
-      autoUpdater.checkForUpdatesAndNotify().catch(err => {
+      autoUpdater.checkForUpdates().catch(err => {
         console.error('Error checking for updates on startup:', err);
       });
     }, 5000);

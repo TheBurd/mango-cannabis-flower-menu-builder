@@ -23,6 +23,8 @@ interface UpdateNotificationProps {
   isManualCheck?: boolean;
   isCheckingForUpdates?: boolean;
   noUpdatesFound?: boolean;
+  isDownloading?: boolean;
+  downloadProgress?: DownloadProgress | null;
 }
 
 export const UpdateNotification: React.FC<UpdateNotificationProps> = ({ 
@@ -33,49 +35,20 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
   theme,
   isManualCheck = false,
   isCheckingForUpdates = false,
-  noUpdatesFound = false
+  noUpdatesFound = false,
+  isDownloading = false,
+  downloadProgress = null
 }) => {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isDownloaded, setIsDownloaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isSlideIn, setIsSlideIn] = useState(false);
   const [autoDismissTimer, setAutoDismissTimer] = useState<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (!window.electronAPI) return;
+  // Use updateDownloaded prop instead of local isDownloaded state
+  const isDownloaded = updateDownloaded;
 
-    // Listen for update events
-    const handleUpdateAvailable = (_event: any, info: UpdateInfo) => {
-      setUpdateInfo(info);
-      setIsVisible(true);
-      setIsDownloaded(false);
-      setIsDownloading(false);
-      // Trigger slide-in animation
-      setTimeout(() => setIsSlideIn(true), 100);
-    };
-
-    const handleDownloadProgress = (_event: any, progress: DownloadProgress) => {
-      setDownloadProgress(progress);
-      setIsDownloading(true);
-    };
-
-    const handleUpdateDownloaded = (_event: any, info: { version: string }) => {
-      setIsDownloading(false);
-      setIsDownloaded(true);
-      setDownloadProgress(null);
-    };
-
-    window.electronAPI.onUpdateAvailable(handleUpdateAvailable);
-    window.electronAPI.onDownloadProgress(handleDownloadProgress);
-    window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
-
-    return () => {
-      window.electronAPI?.removeUpdateListeners();
-    };
-  }, []);
+  // Remove duplicate event listeners - these are now handled in App.tsx
 
   // Show when update is available, downloaded, or manual check states
   useEffect(() => {
@@ -105,12 +78,10 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
   const handleDownloadUpdate = async () => {
     if (!window.electronAPI) return;
     
-    setIsDownloading(true);
     try {
       await window.electronAPI.downloadUpdate();
     } catch (error) {
       console.error('Error downloading update:', error);
-      setIsDownloading(false);
     }
   };
 
@@ -239,7 +210,7 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
             </div>
             <div className={`text-sm ${subtextClasses} mt-1`}>
               {noUpdatesFound 
-                ? `You're running version ${updateVersion}. No updates available.`
+                ? "You're running the latest version!"
                 : isCheckingForUpdates 
                 ? 'Please wait while we check for new updates...'
                 : isDownloaded 
@@ -250,11 +221,18 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
               }
             </div>
             
-            {/* GitHub release link for available updates */}
-            {updateAvailable && !isDownloading && !isDownloaded && !isCheckingForUpdates && (
+            {/* GitHub release link for available updates AND downloaded updates */}
+            {(updateAvailable || isDownloaded) && !isDownloading && !isCheckingForUpdates && (
               <div className="mt-2">
                 <button
-                  onClick={() => window.open(`https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/tag/v${updateVersion}`, '_blank')}
+                  onClick={() => {
+                    const url = `https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/tag/v${updateVersion}`;
+                    if (window.electronAPI?.openExternal) {
+                      window.electronAPI.openExternal(url).catch(console.error);
+                    } else {
+                      window.open(url, '_blank');
+                    }
+                  }}
                   className={`text-xs ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} underline transition-colors flex items-center space-x-1`}
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

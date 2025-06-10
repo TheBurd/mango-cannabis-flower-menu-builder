@@ -202,4 +202,18 @@ export const getCrossStateShelfConflicts = (fromState: SupportedStates, toState:
   
   return conflicts;
 };
+
+// EmailJS Configuration for Feedback Form
+// To set up EmailJS:
+// 1. Go to https://www.emailjs.com/ and create a free account
+// 2. Create a new service (Gmail, Outlook, or any email provider)
+// 3. Create an email template with the following variables:
+//    - {{from_name}}, {{from_email}}, {{feedback_type}}, {{subject}}, {{message}}, {{app_name}}, {{app_version}}, {{timestamp}}
+// 4. Replace the values below with your actual EmailJS credentials
+export const EMAILJS_CONFIG = {
+  SERVICE_ID: 'service_of3tntm', // Replace with your EmailJS service ID
+  TEMPLATE_ID: 'template_1hbgmlf', // Replace with your EmailJS template ID  
+  PUBLIC_KEY: 'ZgKeb7PLVvudKcZMJ', // Replace with your EmailJS public key
+  TO_EMAIL: 'brad@mangocannabis.com' // This is where feedback will be sent
+};
     

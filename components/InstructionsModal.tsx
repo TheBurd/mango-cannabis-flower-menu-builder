@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Theme } from '../types';
+import { FeedbackPopup } from './FeedbackPopup';
 
 interface InstructionsModalProps {
   isOpen: boolean;
@@ -8,6 +9,9 @@ interface InstructionsModalProps {
 }
 
 export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, onClose, theme }) => {
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const feedbackButtonRef = useRef<HTMLButtonElement>(null);
+
   if (!isOpen) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -20,6 +24,14 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
     if (e.key === 'Escape') {
       onClose();
     }
+  };
+
+  const handleToggleFeedback = () => {
+    setShowFeedbackForm(!showFeedbackForm);
+  };
+
+  const handleCloseFeedback = () => {
+    setShowFeedbackForm(false);
   };
 
   return (
@@ -51,7 +63,7 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-160px)]">
           <div className="p-6 space-y-6">
             
             {/* Quick Start */}
@@ -236,8 +248,24 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
         <div className={`px-6 py-4 border-t flex justify-between items-center ${
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
-          <div className="text-sm text-gray-500">
-            🥭 Mango Cannabis Flower Menu Builder v1.0.0
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              🥭 Mango Cannabis Flower Menu Builder v1.0.0
+            </div>
+            <button
+              ref={feedbackButtonRef}
+              onClick={handleToggleFeedback}
+              className={`text-sm font-medium transition-colors flex items-center gap-1 ${
+                showFeedbackForm 
+                  ? 'text-orange-500 hover:text-orange-600' 
+                  : theme === 'dark' 
+                    ? 'text-gray-400 hover:text-gray-300' 
+                    : 'text-gray-600 hover:text-gray-700'
+              }`}
+            >
+              <span>📧</span>
+              {showFeedbackForm ? 'Hide Feedback' : 'Leave Feedback'}
+            </button>
           </div>
           <button
             onClick={onClose}
@@ -246,6 +274,14 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
             Got it!
           </button>
         </div>
+
+        {/* Feedback Popup */}
+        <FeedbackPopup 
+          theme={theme}
+          isOpen={showFeedbackForm}
+          onClose={handleCloseFeedback}
+          triggerRef={feedbackButtonRef}
+        />
       </div>
     </div>
   );

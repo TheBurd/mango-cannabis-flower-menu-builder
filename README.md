@@ -1,206 +1,164 @@
-# 🥭 Mango Cannabis Menu Builder
+# 🥭 Mango Cannabis Flower Menu Builder
 
-> **Professional cannabis flower menu builder with dynamic pricing, state compliance, and beautiful export capabilities.**
+> **Professional flower menu creation tool for Mango Cannabis Management team**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-orange.svg)](https://github.com/mangocannabis/menu-builder)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Built with React](https://img.shields.io/badge/built%20with-React-61dafb.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/language-TypeScript-blue.svg)](https://www.typescriptlang.org/)
+Create beautiful, compliant flower menus for in-store display and inventory logging across Oklahoma, Michigan, and New Mexico locations.
 
-Create stunning dispensary menus with real-time strain management, THC compliance indicators, and multi-format export options. Built specifically for cannabis businesses operating across multiple state regulations.
+---
 
-## ✨ Features
+## 📥 **Download & Install** (Start Here!)
 
-### 🌿 **Strain Management**
-- **Real-time editing** - Add, edit, and organize cannabis strains instantly
-- **Smart categorization** - Organize strains by shelf/price tier
-- **Last jar tracking** - Visual indicators for low inventory items
-- **Strain type indicators** - Clear visual markers for Sativa, Indica, Hybrid varieties
-- **Bulk operations** - Import/export via CSV, clear all shelves, copy strains
+### **Step 1: Download the App**
+1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
+2. Find the latest version (v1.0.0)
+3. Download **ONE** of these files:
 
-### 🎨 **Professional Menu Design**
-- **Multiple layouts** - Letter Portrait/Landscape, 16:9 Screen formats
-- **Dynamic columns** - 1-4 column layouts that adapt to content
-- **Custom headers** - Beautiful Mango Cannabis branded headers in multiple sizes
-- **Responsive typography** - Scalable fonts that maintain readability
-- **THC compliance icons** - State-specific regulatory symbols
+#### **🎯 Recommended: Full Installer**
+- **`Mango-Cannabis-Flower-Menu-Builder-Setup-1.0.0.exe`** *(~81 MB)*
+- **Best choice for most users** - Creates Start menu shortcuts, handles updates automatically
+- Just double-click to install, then launch from Start menu
 
-### 📊 **State Compliance**
-- **Multi-state support** - Oklahoma, Michigan, New Mexico configurations
-- **Regulatory compliance** - THC icons and formatting per state requirements
-- **Pricing tiers** - Customizable pricing structures (g, eighth, quarter, half, oz)
+#### **⚡ Alternative: Portable App**
+- **`Mango-Cannabis-Flower-Menu-Builder-1.0.0.exe`** *(~81 MB)*
+- **No installation required** - Just download and run directly
+- Good for testing or if you can't install software on your computer
 
-### 📤 **Export Options**
-- **High-quality images** - PNG and JPEG export at print resolution
-- **CSV data export** - Spreadsheet-compatible strain data
-- **Native file dialogs** - Professional file operations
-- **Batch processing** - Export multiple formats simultaneously
+#### **❌ Files You DON'T Need**
+- `*.blockmap` - Technical file, ignore this
+- `latest.yml` - Update configuration, ignore this  
+- `*.zip` - Developer files, ignore this
 
-### ⚡ **Advanced Controls**
-- **Interactive preview** - Pan, zoom, and fit-to-window controls
-- **Keyboard shortcuts** - `Ctrl+F` (fit to window), `Ctrl+=/−` (zoom)
-- **Live sorting** - Sort by name, grower, THC%, strain type, or last jar status
-- **Dark/light themes** - Professional appearance in any environment
-- **Dynamic menus** - Context-aware Electron menus that adapt to content
+### **Step 2: Install & Run**
+- **Installer**: Double-click the Setup file → Follow prompts → Launch from Start menu
+- **Portable**: Double-click the `.exe` file → App opens immediately
 
-## 🚀 Quick Start
+### **Step 3: Start Creating Menus!**
+1. Choose your state (Oklahoma, Michigan, New Mexico)
+2. Add strains to shelves using the **+ Add Strain** buttons
+3. Customize your menu layout using the controls on the right
+4. Export as PNG/JPEG for printing or digital display
 
-### For End Users
+---
 
-1. **Download** the latest release from the [Releases page](https://github.com/mangocannabis/menu-builder/releases)
-2. **Install** by running `Mango Cannabis Menu Builder Setup 1.0.0.exe`
-3. **Launch** the application from your Start menu
-4. **Import** your strain data via CSV or start building manually
-5. **Export** your professional menu as PNG, JPEG, or CSV
+## ✨ **What This App Does**
 
-### Sample Workflow
-1. Select your state (Oklahoma, Michigan, or New Mexico)
-2. Import existing strain data or add strains manually to shelves
-3. Adjust layout settings (columns, header size, typography)
-4. Use fit-to-window (`Ctrl+F`) to preview your menu
-5. Export as high-resolution image for printing or digital display
+### **🎯 Main Purpose**
+- **Create professional flower menus** for in-store displays
+- **Log strain inventory** for management tracking
+- **Ensure state compliance** with proper THC labeling
+- **Export high-quality images** for printing and digital use
 
-## 🛠️ Development Setup
+### **🌟 Key Features**
 
-### Prerequisites
-- **Node.js** 18+ ([Download](https://nodejs.org/))
-- **npm** 9+ (included with Node.js)
-- **Git** ([Download](https://git-scm.com/))
+#### **📋 Strain Management**
+- **Add/edit strains instantly** - Name, grower, THC%, type, pricing
+- **Organize by shelves** - Top, Mid, Bottom (or custom categories)
+- **Mark "Last Jar"** - Visual indicator for low inventory
+- **Import from CSV** - Bulk upload strain data from spreadsheets
+- **Sort & organize** - By name, grower, THC%, type, or last jar status
 
-### Installation
+#### **🎨 Professional Menu Design**
+- **Multiple layouts** - 1-4 columns, portrait/landscape
+- **Mango branding** - Beautiful headers with logo
+- **State compliance** - Automatic THC icons per state regulations
+- **Custom typography** - Adjustable fonts and spacing
+- **Dark/light themes** - Matches your preference
 
-```bash
-# Clone the repository
-git clone https://github.com/mangocannabis/menu-builder.git
-cd menu-builder
+#### **📤 Export Options**
+- **PNG images** - High-quality for printing (recommended)
+- **JPEG images** - Smaller files for digital displays
+- **CSV data** - Export strain data back to spreadsheets
 
-# Install dependencies
-npm install
+#### **🚀 New in v1.0.0: Feedback System**
+- **Report bugs** directly from the app
+- **Request features** for future updates
+- **Send feedback** to development team
+- Access via **Help → Instructions → Leave Feedback**
 
-# Start development server
-npm run dev
+#### **⚡ Advanced Features**
+- **Live preview** - See your menu as you build it
+- **Pan & zoom** - Navigate large menus easily
+- **Keyboard shortcuts** - `Ctrl+F` (fit to window), `Ctrl +/-` (zoom)
+- **Auto-save** - Your work is preserved between sessions
 
-# Run Electron app in development
-npm run electron-dev
-```
+---
 
-### Available Scripts
+## 🌍 **State Compliance Features**
 
-```bash
-npm run dev          # Start Vite development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run electron-dev # Run Electron app with hot reload
-npm run dist         # Build and package Electron app
-npm test             # Run test suite (if implemented)
-```
+### **Oklahoma**
+- Red THC triangle symbols
+- Top/Mid/Bottom shelf pricing structure
+- Compliant labeling format
 
-### Building for Distribution
+### **Michigan** 
+- Green THC triangle symbols
+- Premium/Value tier pricing
+- Michigan-specific regulations
 
-```bash
-# Build installer and portable app
-npm run dist
+### **New Mexico**
+- Red THC diamond symbols  
+- Flexible shelf configurations
+- New Mexico compliance standards
 
-# Output files:
-# - release-new/Mango Cannabis Menu Builder Setup 1.0.0.exe (installer)
-# - release-new/win-unpacked/Mango Cannabis Menu Builder.exe (portable)
-```
+---
 
-## 🏗️ Architecture
+## 🆘 **Need Help?**
 
-### Technology Stack
-- **Frontend**: React 18, TypeScript, Tailwind CSS
-- **Desktop**: Electron 28
-- **Build**: Vite, electron-builder
-- **Export**: dom-to-image for high-quality image generation
-- **State Management**: React hooks and context
+### **Getting Started**
+1. **Watch the app tour** - Open Help → Instructions for full walkthrough
+2. **Import sample data** - Use CSV import to test with existing inventory
+3. **Start simple** - Create a basic 2-column menu first
 
-### Key Components
+### **Common Tasks**
+- **Adding strains**: Click the **+ Add Strain** button on any shelf
+- **Changing layout**: Use controls in the right panel (Preview section)
+- **Exporting menus**: Click the export buttons at the top toolbar
+- **Changing states**: Use dropdown in top header
 
-```
-src/
-├── App.tsx                 # Main application logic and state
-├── components/
-│   ├── Header.tsx          # App header with state selector
-│   ├── Toolbar.tsx         # Main toolbar with actions
-│   ├── FlowerShelvesPanel.tsx # Left panel for strain management
-│   ├── MenuPreviewPanel.tsx   # Right panel for menu preview
-│   ├── PreviewArtboard.tsx    # Exportable menu layout
-│   └── common/             # Reusable UI components
-├── types.ts               # TypeScript interfaces
-├── constants.ts           # App configuration and defaults
-└── utils/                 # Helper functions and utilities
-```
+### **Troubleshooting**
+- **App won't open**: Make sure you downloaded the right file for your Windows version
+- **Menu looks wrong**: Try "Fit to Window" (Ctrl+F) to reset the view
+- **Export issues**: Check that you have write permissions to your selected folder
 
-### State Management
-- **Shelves**: Array of pricing tiers containing strain data
-- **Preview Settings**: Layout, typography, and display options
-- **App State**: Current region, theme, and global sort criteria
-- **Export State**: Image generation and file operations
+### **Get Support**
+- **Bug reports**: Use the in-app feedback system (Help → Instructions → Leave Feedback)
+- **Direct contact**: Email [brad@mangocannabis.com](mailto:brad@mangocannabis.com)
+- **Technical issues**: Include your Windows version and what you were doing when the problem occurred
 
-## 📁 File Formats
+---
 
-### CSV Import/Export Structure
+## 📊 **CSV Import Format**
+
+If you want to bulk-import strain data from a spreadsheet, use this format:
+
 ```csv
 Category,Strain Name,Grower/Brand,THC %,Class,Last Jar
 "Top Shelf","Wedding Cake","Green House","24.5","Hybrid","No"
-"Mid Shelf","Blue Dream","Local Grower","18.2","Sativa-Hybrid","Yes"
+"Mid Shelf","Blue Dream","Local Grower","18.2","Sativa","Yes"
+"Bottom Shelf","Northern Lights","Indoor Co","16.8","Indica","No"
 ```
 
-### Supported Export Formats
-- **PNG**: High-resolution images (300 DPI equivalent)
-- **JPEG**: Compressed images for web use
-- **CSV**: Spreadsheet-compatible data export
-
-## ⌨️ Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|---------|
-| `Ctrl+F` | Fit menu to window |
-| `Ctrl+=` | Zoom in |
-| `Ctrl+-` | Zoom out |
-| `Ctrl+N` | New menu |
-| `Ctrl+O` | Open CSV file |
-| `Ctrl+Q` | Quit application |
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Guidelines
-- Follow TypeScript best practices
-- Maintain component modularity
-- Update tests for new features
-- Follow conventional commit messages
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🏢 About Mango Cannabis
-
-Mango Cannabis is committed to providing professional tools for cannabis businesses. This menu builder reflects our dedication to quality, compliance, and user experience in the cannabis industry.
-
-**Developer**: Brad Forsythe ([brad@mangocannabis.com](mailto:brad@mangocannabis.com))  
-**Company**: Mango Cannabis  
-**Copyright**: © 2024 Mango Cannabis
+**Tips:**
+- **Category**: Your shelf name (Top Shelf, Mid Shelf, etc.)
+- **THC %**: Just the number (like `24.5`) or with % sign (`24.5%`)
+- **Class**: Sativa, Indica, Hybrid, or Sativa-Hybrid, Indica-Hybrid
+- **Last Jar**: `Yes` or `No`
 
 ---
 
-## 🐛 Support
+## 🏢 **About This Software**
 
-Having issues? We're here to help:
+**Copyright**: © 2024 Mango Cannabis  
+**Developer**: TheBurd (Brad Forsythe) - [brad@mangocannabis.com](mailto:brad@mangocannabis.com)  
+**Version**: 1.0.0  
+**Built for**: Mango Cannabis Management Team
 
-- **Bug Reports**: [Open an issue](https://github.com/mangocannabis/menu-builder/issues)
-- **Feature Requests**: [Request a feature](https://github.com/mangocannabis/menu-builder/issues)
-- **Email Support**: [brad@mangocannabis.com](mailto:brad@mangocannabis.com)
+This tool was created specifically for Mango Cannabis to streamline menu creation and inventory management across all locations. The software is owned by Mango Cannabis and developed by Brad Forsythe.
 
 ---
 
-*Built with ❤️ for the cannabis community* 
+## 🔄 **Updates**
+
+The app will notify you when updates are available. New versions are released to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)** with changelog information.
+
+**Current Version**: v1.0.0 *(includes new feedback system)* 
