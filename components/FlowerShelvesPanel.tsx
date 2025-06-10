@@ -1,7 +1,7 @@
-
 import React from 'react';
-import { Shelf, Strain, SortCriteria } from '../types';
+import { Shelf, Strain, SortCriteria, Theme } from '../types';
 import { ShelfComponent } from './ShelfComponent';
+import { ShelfTabs } from './ShelfTabs';
 
 interface FlowerShelvesPanelProps {
   shelves: Shelf[]; // Will receive processed (sorted) shelves
@@ -13,9 +13,11 @@ interface FlowerShelvesPanelProps {
   newlyAddedStrainId: string | null;
   style?: React.CSSProperties;
   onUpdateShelfSortCriteria: (shelfId: string, key: SortCriteria['key']) => void;
+  onScrollToShelf: (shelfId: string) => void;
+  theme: Theme;
 }
 
-export const FlowerShelvesPanel: React.FC<FlowerShelvesPanelProps> = ({
+export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelvesPanelProps>(({
   shelves,
   onAddStrain,
   onUpdateStrain,
@@ -25,28 +27,40 @@ export const FlowerShelvesPanel: React.FC<FlowerShelvesPanelProps> = ({
   newlyAddedStrainId,
   style,
   onUpdateShelfSortCriteria,
-}) => {
+  onScrollToShelf,
+  theme,
+}, ref) => {
   return (
     <div 
+      ref={ref}
       id="flower-shelves-panel" // Added ID for aria-controls
-      className="no-print flex-shrink-0 bg-gray-800 p-1 rounded-lg shadow-lg overflow-y-auto"
+      className={`no-print flex-shrink-0 rounded-lg shadow-lg overflow-y-auto ${
+        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+      }`}
       style={style} // Apply dynamic width for resizable panel
     >
+      <ShelfTabs 
+        shelves={shelves}
+        onScrollToShelf={onScrollToShelf}
+        theme={theme}
+      />
       <div className="space-y-3 p-1"> {/* Added padding inside scrollable area */}
         {shelves.map(shelf => (
-          <ShelfComponent
-            key={shelf.id}
-            shelf={shelf} // shelf.strains is already sorted
-            onAddStrain={() => onAddStrain(shelf.id)}
-            onUpdateStrain={(strainId, updatedStrain) => onUpdateStrain(shelf.id, strainId, updatedStrain)}
-            onRemoveStrain={(strainId) => onRemoveStrain(shelf.id, strainId)} 
-            onCopyStrain={(strainId, direction) => onCopyStrain(shelf.id, strainId, direction)}
-            onClearStrains={() => onClearShelfStrains(shelf.id)}
-            newlyAddedStrainId={newlyAddedStrainId}
-            onUpdateShelfSortCriteria={(key) => onUpdateShelfSortCriteria(shelf.id, key)}
-          />
+          <div key={shelf.id} data-shelf-id={shelf.id}>
+            <ShelfComponent
+              shelf={shelf} // shelf.strains is already sorted
+              onAddStrain={() => onAddStrain(shelf.id)}
+              onUpdateStrain={(strainId, updatedStrain) => onUpdateStrain(shelf.id, strainId, updatedStrain)}
+              onRemoveStrain={(strainId) => onRemoveStrain(shelf.id, strainId)} 
+              onCopyStrain={(strainId, direction) => onCopyStrain(shelf.id, strainId, direction)}
+              onClearStrains={() => onClearShelfStrains(shelf.id)}
+              newlyAddedStrainId={newlyAddedStrainId}
+              onUpdateShelfSortCriteria={(key) => onUpdateShelfSortCriteria(shelf.id, key)}
+              theme={theme}
+            />
+          </div>
         ))}
       </div>
     </div>
   );
-};
+});

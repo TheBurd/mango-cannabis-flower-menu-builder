@@ -1,7 +1,9 @@
-import { Shelf, PriceTiers, ArtboardSize, ArtboardDimensions, PreviewSettings, SupportedStates, StrainType, HeaderImageSize } from './types';
+import { Shelf, ArtboardSize, ArtboardDimensions, PreviewSettings, SupportedStates, StrainType, HeaderImageSize } from './types';
+import { getImagePath } from './utils/assets';
+import { getIconPath } from './utils/assets';
 
 export const OKLAHOMA_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [
-  { name: "Superior Flower", pricing: { g: 15, eighth: 45, quarter: 85, half: 160, oz: 300 }, color: "bg-purple-600", textColor: "text-purple-50" },
+  { name: "Superior Flower", pricing: { g: 15, eighth: 45, quarter: 85, half: 160, oz: 300 }, color: "bg-mango-gradient", textColor: "text-white" },
   { name: "Legendary Flower", pricing: { g: 10, eighth: 30, quarter: 55, half: 105, oz: 200 }, color: "bg-amber-500", textColor: "text-amber-50" },
   { name: "Diamond Flower", pricing: { g: 9, eighth: 25, quarter: 47, half: 90, oz: 175 }, color: "bg-sky-500", textColor: "text-sky-50" },
   { name: "Platinum Flower", pricing: { g: 8, eighth: 22, quarter: 40, half: 75, oz: 140 }, color: "bg-slate-700", textColor: "text-slate-50" },
@@ -13,16 +15,53 @@ export const OKLAHOMA_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCri
   { name: "Exotic Shake", pricing: { g: 1, eighth: 2.50, quarter: 3.50, half: 4, oz: 5 }, color: "bg-teal-600", textColor: "text-teal-50" },
 ];
 
+export const MICHIGAN_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [
+  { name: "Exclusive Flower", pricing: { g: 15, eighth: 40, quarter: 75, half: 145, oz: 240 }, color: "bg-mango-gradient", textColor: "text-white" },
+  { name: "Legendary Flower", pricing: { g: 10, eighth: 30, quarter: 55, half: 105, oz: 200 }, color: "bg-amber-500", textColor: "text-amber-50" },
+  { name: "Diamond Flower", pricing: { g: 9, eighth: 25, quarter: 47, half: 90, oz: 175 }, color: "bg-sky-500", textColor: "text-sky-50" },
+  { name: "Platinum Flower", pricing: { g: 8, eighth: 22, quarter: 40, half: 75, oz: 140 }, color: "bg-slate-700", textColor: "text-slate-50" },
+  { name: "Exotic Flower", pricing: { g: 7, eighth: 18, quarter: 35, half: 65, oz: 125 }, color: "bg-rose-500", textColor: "text-rose-50" },
+  { name: "Superior Flower", pricing: { g: 6, eighth: 17, quarter: 30, half: 55, oz: 100 }, color: "bg-violet-500", textColor: "text-violet-50" },
+  { name: "Premium Flower", pricing: { g: 5, eighth: 15, quarter: 25, half: 45, oz: 80 }, color: "bg-emerald-500", textColor: "text-emerald-50" },
+  { name: "Deluxe Flower", pricing: { g: 4, eighth: 12, quarter: 20, half: 35, oz: 60 }, color: "bg-indigo-500", textColor: "text-indigo-50" },
+  { name: "Value Flower", pricing: { g: 3, eighth: 7, quarter: 13, half: 20, oz: 30 }, color: "bg-gray-500", textColor: "text-gray-50" },
+  { name: "Legendary Shake", pricing: { g: 2, eighth: 5, quarter: 8, half: 14, oz: 20 }, color: "bg-lime-600", textColor: "text-lime-50" },
+];
+
+export const NEW_MEXICO_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [
+  { name: "Exclusive Flower", pricing: { g: 20, eighth: 40, quarter: 75, half: 140, oz: 250 }, color: "bg-mango-gradient", textColor: "text-white" },
+  { name: "Legendary Flower", pricing: { g: 15, eighth: 35, quarter: 65, half: 110, oz: 200 }, color: "bg-amber-500", textColor: "text-amber-50" },
+  { name: "Diamond Flower", pricing: { g: 12, eighth: 30, quarter: 55, half: 100, oz: 170 }, color: "bg-sky-500", textColor: "text-sky-50" },
+  { name: "Platinum Flower", pricing: { g: 10, eighth: 25, quarter: 45, half: 85, oz: 140 }, color: "bg-slate-700", textColor: "text-slate-50" },
+  { name: "Exotic Flower", pricing: { g: 8, eighth: 20, quarter: 35, half: 60, oz: 100 }, color: "bg-rose-500", textColor: "text-rose-50" },
+  { name: "Premium Flower", pricing: { g: 6, eighth: 10, quarter: 20, half: 35, oz: 60 }, color: "bg-emerald-500", textColor: "text-emerald-50" },
+  { name: "Value Flower", pricing: { g: 5, eighth: 9, quarter: 18, half: 30, oz: 45 }, color: "bg-gray-500", textColor: "text-gray-50" },
+  { name: "Shake", pricing: { g: 3, eighth: 5, quarter: 10, half: 20, oz: 30 }, color: "bg-lime-600", textColor: "text-lime-50" },
+];
+
 export const getDefaultShelves = (state: SupportedStates): Shelf[] => {
-  if (state === SupportedStates.OKLAHOMA) {
-    return OKLAHOMA_PRICING_HIERARCHY.map(shelf => ({
-      ...shelf,
-      id: crypto.randomUUID(),
-      strains: [],
-      sortCriteria: null, // Initialize sortCriteria
-    }));
+  let hierarchy: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [];
+  
+  switch (state) {
+    case SupportedStates.OKLAHOMA:
+      hierarchy = OKLAHOMA_PRICING_HIERARCHY;
+      break;
+    case SupportedStates.MICHIGAN:
+      hierarchy = MICHIGAN_PRICING_HIERARCHY;
+      break;
+    case SupportedStates.NEW_MEXICO:
+      hierarchy = NEW_MEXICO_PRICING_HIERARCHY;
+      break;
+    default:
+      hierarchy = OKLAHOMA_PRICING_HIERARCHY;
   }
-  return [];
+
+  return hierarchy.map(shelf => ({
+    ...shelf,
+    id: crypto.randomUUID(),
+    strains: [],
+    sortCriteria: null, // Initialize sortCriteria
+  }));
 };
 
 export const ARTBOARD_DIMENSIONS_MAP: Record<ArtboardSize, ArtboardDimensions> = {
@@ -40,24 +79,25 @@ export const INITIAL_PREVIEW_SETTINGS: PreviewSettings = {
   forceShelfFit: false,
   headerImageSize: HeaderImageSize.NONE, // Default header image size
   linePaddingMultiplier: 0.3, // Default padding multiplier (corresponds to current tightened padding)
+  showThcIcon: true, // Default to showing THC icon
 };
 
 export const HEADER_IMAGE_CONFIGS: Record<ArtboardSize, Partial<Record<Exclude<HeaderImageSize, HeaderImageSize.NONE>, { src: string; naturalHeight: number; naturalWidth: number }>>> = {
   [ArtboardSize.LETTER_PORTRAIT]: {
-    [HeaderImageSize.LARGE]: { src: "/assets/images/Flower Menu Page Header - 2550x450.jpg", naturalHeight: 450, naturalWidth: 2550 },
-    [HeaderImageSize.SMALL]: { src: "/assets/images/Flower Menu Page Header - 2550x200.jpg", naturalHeight: 200, naturalWidth: 2550 },
+    [HeaderImageSize.LARGE]: { src: getImagePath("Flower Menu Page Header - 2550x450.jpg"), naturalHeight: 450, naturalWidth: 2550 },
+    [HeaderImageSize.SMALL]: { src: getImagePath("Flower Menu Page Header - 2550x200.jpg"), naturalHeight: 200, naturalWidth: 2550 },
   },
   [ArtboardSize.LETTER_LANDSCAPE]: {
-    [HeaderImageSize.LARGE]: { src: "/assets/images/Flower Menu Page Header - 3300x500.jpg", naturalHeight: 500, naturalWidth: 3300 },
-    [HeaderImageSize.SMALL]: { src: "/assets/images/Flower Menu Page Header - 3300x300.jpg", naturalHeight: 300, naturalWidth: 3300 },
+    [HeaderImageSize.LARGE]: { src: getImagePath("Flower Menu Page Header - 3300x500.jpg"), naturalHeight: 500, naturalWidth: 3300 },
+    [HeaderImageSize.SMALL]: { src: getImagePath("Flower Menu Page Header - 3300x300.jpg"), naturalHeight: 300, naturalWidth: 3300 },
   },
   [ArtboardSize.SCREEN_16_9_LANDSCAPE]: { // Corresponds to user's "widescreenLandscape"
-    [HeaderImageSize.LARGE]: { src: "/assets/images/Flower Menu Page Header - 3300x300.jpg", naturalHeight: 300, naturalWidth: 3300 },
-    [HeaderImageSize.SMALL]: { src: "/assets/images/Flower Menu Page Header - 3300x150.jpg", naturalHeight: 150, naturalWidth: 3300 },
+    [HeaderImageSize.LARGE]: { src: getImagePath("Flower Menu Page Header - 3300x300.jpg"), naturalHeight: 300, naturalWidth: 3300 },
+    [HeaderImageSize.SMALL]: { src: getImagePath("Flower Menu Page Header - 3300x150.jpg"), naturalHeight: 150, naturalWidth: 3300 },
   },
   [ArtboardSize.SCREEN_16_9_PORTRAIT]: { // Corresponds to user's "widescreenPortrait"
-    [HeaderImageSize.LARGE]: { src: "/assets/images/Flower Menu Page Header - 1872x600.jpg", naturalHeight: 600, naturalWidth: 1872 },
-    [HeaderImageSize.SMALL]: { src: "/assets/images/Flower Menu Page Header - 1872x300.jpg", naturalHeight: 300, naturalWidth: 1872 },
+    [HeaderImageSize.LARGE]: { src: getImagePath("Flower Menu Page Header - 1872x600.jpg"), naturalHeight: 600, naturalWidth: 1872 },
+    [HeaderImageSize.SMALL]: { src: getImagePath("Flower Menu Page Header - 1872x300.jpg"), naturalHeight: 300, naturalWidth: 1872 },
   },
 };
 
@@ -117,5 +157,49 @@ export const APP_STRAIN_TYPE_TO_CSV_SUFFIX: Record<StrainType, string> = {
   [StrainType.HYBRID]: 'H',
   [StrainType.INDICA_HYBRID]: 'H/I',
   [StrainType.INDICA]: 'I',
+};
+
+// THC Icons for each state
+export const STATE_THC_ICONS: Record<SupportedStates, string> = {
+  [SupportedStates.OKLAHOMA]: getIconPath('thcSymbol_OK.svg'),
+  [SupportedStates.MICHIGAN]: getIconPath('thcSymbol_MI.svg'),
+  [SupportedStates.NEW_MEXICO]: getIconPath('thcSymbol_NM.svg'),
+};
+
+// Helper function to detect cross-state shelf conflicts
+export const getCrossStateShelfConflicts = (fromState: SupportedStates, toState: SupportedStates): string[] => {
+  if (fromState === toState) return [];
+  
+  const fromShelves = getDefaultShelves(fromState);
+  const toShelves = getDefaultShelves(toState);
+  
+  const fromShelfNames = new Set(fromShelves.map(s => s.name.toLowerCase()));
+  const toShelfNames = new Set(toShelves.map(s => s.name.toLowerCase()));
+  
+  const conflicts: string[] = [];
+  
+  // Find shelf names that exist in both states
+  fromShelfNames.forEach(shelfName => {
+    if (toShelfNames.has(shelfName)) {
+      // Check if pricing is different
+      const fromShelf = fromShelves.find(s => s.name.toLowerCase() === shelfName);
+      const toShelf = toShelves.find(s => s.name.toLowerCase() === shelfName);
+      
+      if (fromShelf && toShelf) {
+        const pricingDifferent = 
+          fromShelf.pricing.g !== toShelf.pricing.g ||
+          fromShelf.pricing.eighth !== toShelf.pricing.eighth ||
+          fromShelf.pricing.quarter !== toShelf.pricing.quarter ||
+          fromShelf.pricing.half !== toShelf.pricing.half ||
+          fromShelf.pricing.oz !== toShelf.pricing.oz;
+          
+        if (pricingDifferent) {
+          conflicts.push(fromShelf.name);
+        }
+      }
+    }
+  });
+  
+  return conflicts;
 };
     

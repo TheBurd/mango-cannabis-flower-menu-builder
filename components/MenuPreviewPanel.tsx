@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import domtoimage from 'dom-to-image';
-import { Shelf, PreviewSettings } from '../types';
+import { Shelf, PreviewSettings, SupportedStates, Theme } from '../types';
 import { PreviewControls } from './PreviewControls';
 import { PreviewArtboard } from './PreviewArtboard';
 import { ARTBOARD_DIMENSIONS_MAP, INITIAL_PREVIEW_SETTINGS } from '../constants';
@@ -13,20 +13,20 @@ interface MenuPreviewPanelProps {
   shelves: Shelf[];
   settings: PreviewSettings;
   onSettingsChange: (newSettings: Partial<PreviewSettings>) => void;
-  needsRefreshSignal: boolean;
-  hasUnrefreshedChanges: boolean; 
   exportAction: ExportAction | null;
   onExportComplete: () => void;
+  currentState: SupportedStates;
+  theme: Theme;
 }
 
 export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   shelves,
   settings,
   onSettingsChange,
-  needsRefreshSignal,
-  hasUnrefreshedChanges, 
   exportAction,
   onExportComplete,
+  currentState,
+  theme,
 }) => {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const artboardContainerRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,14 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
 
   useEffect(() => {
     fitToWindow();
-  }, [fitToWindow, artboardNaturalDimensions]); 
+  }, [fitToWindow, artboardNaturalDimensions]);
+
+  // Listen for fit-to-window trigger from menu commands
+  useEffect(() => {
+    if (settings.fitToWindowTrigger) {
+      fitToWindow();
+    }
+  }, [settings.fitToWindowTrigger, fitToWindow]); 
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return; 
@@ -263,7 +270,7 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
           const images = Array.from(nodeToCapture.getElementsByTagName('img'));
           const imageLoadPromises = images.map(img => {
             if (img.complete && img.naturalHeight !== 0) return Promise.resolve(); // Already loaded and valid
-            return new Promise<void>((resolve, reject) => {
+            return new Promise<void>((resolve) => {
               img.onload = () => resolve();
               img.onerror = () => {
                 console.warn(`Failed to load image during export: ${img.src}`);
@@ -289,7 +296,6 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
           await new Promise(resolve => setTimeout(resolve, 100));
 
           // Use dom-to-image for export
-          const imageMimeType = exportType === 'png' ? 'image/png' : 'image/jpeg';
           const imageExtension = exportType === 'png' ? 'png' : 'jpg';
           
           let dataUrl: string;
@@ -375,7 +381,9 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   return (
     <div 
       id="menu-preview-panel" 
-      className="flex-1 flex flex-col bg-gray-800 p-1 rounded-lg shadow-lg relative min-h-0 min-w-0"
+      className={`flex-1 flex flex-col p-1 rounded-lg shadow-lg relative min-h-0 min-w-0 ${
+        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+      }`}
     >
       <PreviewControls
         settings={settings}
@@ -386,6 +394,8 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
         onResetZoom={resetZoomAndPan}
         currentZoom={settings.zoomLevel} 
         onDirectZoomChange={handleZoomChangeFromControls}
+        currentState={currentState}
+        theme={theme}
       />
       <div 
         ref={artboardContainerRef} 
@@ -415,7 +425,7 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
             ref={artboardRef} 
             shelves={shelves} 
             settings={settings}
-            needsRefreshSignal={needsRefreshSignal} 
+            currentState={currentState}
           />
         </div>
       </div>

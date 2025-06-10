@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shelf, Strain, SortCriteria } from '../types';
+import { Shelf, Strain, SortCriteria, Theme } from '../types';
 import { StrainInputRow } from './StrainInputRow';
 import { Button } from './common/Button';
-import { PlusIcon, TrashIcon, MinusCircleIcon, SortAscendingIcon, SortDescendingIcon } from './common/Icon';
+import { PlusIcon, TrashXmarkIcon, MinusCircleIcon, SortAscendingIcon, SortDescendingIcon } from './common/Icon';
 
 interface ShelfComponentProps {
   shelf: Shelf; // shelf.strains is pre-sorted
@@ -14,6 +14,7 @@ interface ShelfComponentProps {
   onClearStrains: () => void;
   newlyAddedStrainId: string | null;
   onUpdateShelfSortCriteria: (key: SortCriteria['key']) => void;
+  theme: Theme;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -56,6 +57,7 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   onClearStrains,
   newlyAddedStrainId,
   onUpdateShelfSortCriteria,
+  theme,
 }) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
   const [confirmClear, setConfirmClear] = useState(false);
@@ -93,7 +95,11 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   ];
 
   return (
-    <div className={`rounded-lg shadow-md overflow-hidden border border-gray-700 ${shelf.color}`}>
+    <div 
+      data-shelf-id={shelf.id}
+      className={`rounded-lg shadow-md overflow-hidden border ${
+        theme === 'dark' ? 'border-gray-700' : 'border-gray-300'
+      } ${shelf.color}`}>
       <div className={`p-3 ${shelf.textColor} flex flex-col`}>
         <div className="flex justify-between items-start mb-1.5">
             <div>
@@ -108,7 +114,7 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
                 size="sm" 
                 className={`bg-white/10 hover:bg-white/20 text-current !py-1 !px-2 flex items-center space-x-1 min-w-[80px] justify-center ${confirmClear ? 'bg-red-500/30 hover:bg-red-400/30' : ''}`}
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashXmarkIcon className="w-4 h-4" theme="dark" />
               <span className="text-xs">{confirmClear ? "Sure?" : "Clear"}</span>
             </Button>
         </div>
@@ -127,7 +133,9 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
             ))}
         </div>
       </div>
-      <div className="bg-gray-700 p-3 space-y-2">
+      <div className={`p-3 space-y-2 ${
+        theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+      }`}>
         {shelf.strains.map((strain, index) => (
             <StrainInputRow
               key={strain.id}
@@ -138,9 +146,14 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
               isFirst={index === 0 && shelf.strains.length === 1} 
               isLast={index === shelf.strains.length - 1 && shelf.strains.length === 1} 
               isNewlyAdded={newlyAddedStrainId === strain.id}
+              theme={theme}
             />
         ))}
-        <Button onClick={onAddStrain} variant="secondary" size="sm" className="w-full flex items-center justify-center space-x-2 mt-2 !bg-gray-600 hover:!bg-gray-500 text-gray-300 hover:text-white">
+        <Button onClick={onAddStrain} variant="secondary" size="sm" className={`w-full flex items-center justify-center space-x-2 mt-2 ${
+          theme === 'dark' 
+            ? '!bg-gray-600 hover:!bg-gray-500 text-gray-300 hover:text-white'
+            : '!bg-green-500/80 hover:!bg-green-400/80 text-green-50 hover:text-white'
+        }`}>
           <PlusIcon className="w-5 h-5" />
           <span>Add Strain to {shelf.name}</span>
         </Button>
@@ -149,7 +162,11 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
             onClick={handleDeleteLastStrain} 
             variant="danger" 
             size="sm" 
-            className="w-full flex items-center justify-center space-x-2 mt-1 !bg-red-700/80 hover:!bg-red-600/80 text-red-100 hover:text-white"
+            className={`w-full flex items-center justify-center space-x-2 mt-1 ${
+              theme === 'dark'
+                ? '!bg-red-700/80 hover:!bg-red-600/80 text-red-100 hover:text-white'
+                : '!bg-red-500/80 hover:!bg-red-400/80 text-red-50 hover:text-white'
+            }`}
           >
             <MinusCircleIcon className="w-5 h-5" />
             <span>Delete Last Strain</span>

@@ -26,6 +26,15 @@
         font-family: 'Inter', sans-serif; /* A clean, modern font */
         user-select: none; /* Prevent text selection during drag for divider */
       }
+      
+      /* Theme CSS Custom Properties */
+      :root {
+        --divider-color: #4a5568; /* gray-600 for dark theme */
+      }
+      
+      [data-theme="light"] {
+        --divider-color: #d1d5db; /* gray-300 for light theme */
+      }
       /* Basic styles for print preview if needed, though primary focus is screen */
       @media print {
         body {
@@ -68,9 +77,23 @@
         content: "";
         width: 2px;
         height: 100%;
-        background-color: #4a5568; /* gray-600 */
+        background-color: var(--divider-color);
         transition: background-color 0.15s ease-in-out;
         position: absolute;
+      }
+
+      /* Custom Mango gradient for premium shelves */
+      .bg-mango-gradient {
+        background: linear-gradient(135deg, #fe9426, #f9541a);
+      }
+
+      /* Hide scrollbar but keep functionality */
+      .scrollbar-hide {
+        -ms-overflow-style: none;  /* Internet Explorer 10+ */
+        scrollbar-width: none;  /* Firefox */
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;  /* Safari and Chrome */
       }
 
     </style>
@@ -81,9 +104,9 @@
   <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.1.0",
-    "react/": "https://esm.sh/react@^19.1.0/",
-    "react-dom/": "https://esm.sh/react-dom@^19.1.0/"
+    "react": "https://esm.sh/react@^18.2.0",
+    "react/": "https://esm.sh/react@^18.2.0/",
+    "react-dom/": "https://esm.sh/react-dom@^18.2.0/"
   }
 }
 </script>

@@ -1,10 +1,23 @@
-
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+
+// Type declaration for Electron API
+declare global {
+  interface Window {
+    electronAPI?: {
+      onMenuCommand: (callback: (event: any, data: { command: string; data?: any }) => void) => void;
+      removeAllListeners: () => void;
+      showConfirmDialog: (message: string, detail?: string) => Promise<boolean>;
+      updateMenuState: (updates: any) => void;
+      readFile: (filePath: string) => Promise<string>;
+      updateDynamicMenus: (menuData: { shelves: Array<{id: string, name: string}>, darkMode: boolean }) => Promise<void>;
+    };
+  }
+}
 import { Header } from './components/Header';
 import { Toolbar } from './components/Toolbar';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
-import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria } from './types';
+import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme } from './types';
 import { 
   INITIAL_PREVIEW_SETTINGS, 
   getDefaultShelves, 
@@ -79,11 +92,23 @@ const App: React.FC = () => {
   const [currentAppState, setCurrentAppState] = useState<SupportedStates>(SupportedStates.OKLAHOMA);
   const [shelves, setShelves] = useState<Shelf[]>(() => getDefaultShelves(currentAppState));
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(INITIAL_PREVIEW_SETTINGS);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = localStorage.getItem('mango-theme');
+    return savedTheme === 'light' ? 'light' : 'dark';
+  });
   
-  const [isPreviewRefreshPending, setIsPreviewRefreshPending] = useState<boolean>(false);
-  const [hasUnrefreshedChanges, setHasUnrefreshedChanges] = useState<boolean>(false);
-
   const [newlyAddedStrainId, setNewlyAddedStrainId] = useState<string | null>(null);
+
+  // Theme toggle handler
+  const handleThemeChange = useCallback((newTheme: Theme) => {
+    setTheme(newTheme);
+    localStorage.setItem('mango-theme', newTheme);
+  }, []);
+
+  // Update document theme attribute
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const [shelvesPanelWidth, setShelvesPanelWidth] = useState<number>(DEFAULT_SHELVES_PANEL_WIDTH);
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
@@ -96,31 +121,74 @@ const App: React.FC = () => {
   const [showExportOverlay, setShowExportOverlay] = useState<boolean>(false);
 
   const [globalSortCriteria, setGlobalSortCriteria] = useState<SortCriteria | null>(null);
+  const shelvesRef = useRef<HTMLDivElement | null>(null);
+  const [lastInteractedShelfId, setLastInteractedShelfId] = useState<string | null>(null);
 
+  // Helper function to check if the menu has any content
+  const hasMenuContent = useCallback((): boolean => {
+    return shelves.some(shelf => shelf.strains.length > 0);
+  }, [shelves]);
+
+  // Helper function to show Electron confirmation dialog
+  const showElectronConfirm = useCallback(async (message: string, detail: string = ''): Promise<boolean> => {
+    if (window.electronAPI) {
+      return await window.electronAPI.showConfirmDialog(message, detail);
+    } else {
+      return confirm(`${message}\n\n${detail}`);
+    }
+  }, []);
+
+  // Track last interacted shelf
+  const handleShelfInteraction = useCallback((shelfId: string) => {
+    setLastInteractedShelfId(shelfId);
+  }, []);
+
+
+
+  // Scroll to shelf handler for tabs
+  const handleScrollToShelf = useCallback((shelfId: string) => {
+    if (shelvesRef.current) {
+      const shelfElement = shelvesRef.current.querySelector(`[data-shelf-id="${shelfId}"]`);
+      if (shelfElement) {
+        shelfElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, []);
+
+  // State change handler with confirmation
+  const handleStateChange = useCallback((newState: SupportedStates) => {
+    if (newState === currentAppState) return; // No change needed
+    
+    if (hasMenuContent()) {
+      const confirmMessage = `You have strains in your current ${currentAppState} menu.\n\n` +
+        `Switching to ${newState} will clear your current progress.\n\n` +
+        `Are you sure you want to continue?`;
+      
+      if (!confirm(confirmMessage)) {
+        return; // User cancelled, don't change state
+      }
+    }
+    
+    setCurrentAppState(newState);
+  }, [currentAppState, hasMenuContent]);
 
   useEffect(() => {
     setShelves(getDefaultShelves(currentAppState));
     setGlobalSortCriteria(null); // Reset global sort on state change
-    setHasUnrefreshedChanges(true);
   }, [currentAppState]);
 
   const recordChange = (updater: () => void) => {
     updater();
-    setHasUnrefreshedChanges(true);
-    // Reset all sort criteria on any data change to ensure UI reflects fresh state
     setGlobalSortCriteria(null);
     setShelves(prevShelves => 
       prevShelves.map(shelf => ({ ...shelf, sortCriteria: null }))
     );
   };
   
-  useEffect(() => {
-    if (isPreviewRefreshPending) {
-      const timer = setTimeout(() => setIsPreviewRefreshPending(false), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isPreviewRefreshPending]);
-
   useEffect(() => {
     if (newlyAddedStrainId) {
       const timer = setTimeout(() => setNewlyAddedStrainId(null), 500);
@@ -131,6 +199,7 @@ const App: React.FC = () => {
 
   const handleAddStrain = useCallback((shelfId: string) => {
     const newStrainId = crypto.randomUUID();
+    handleShelfInteraction(shelfId); // Track interaction
     recordChange(() => {
       setShelves(prevShelves =>
         prevShelves.map(shelf =>
@@ -154,7 +223,7 @@ const App: React.FC = () => {
       );
     });
     setNewlyAddedStrainId(newStrainId);
-  }, []);
+  }, [handleShelfInteraction]);
 
   const handleUpdateStrain = useCallback((shelfId: string, strainId: string, updatedStrain: Partial<Strain>) => {
     recordChange(() => {
@@ -239,16 +308,10 @@ const App: React.FC = () => {
       );
     });
   }, []);
-
-  const handleRefreshPreview = useCallback(() => {
-    setIsPreviewRefreshPending(true);
-    setHasUnrefreshedChanges(false);
-  }, []);
   
   const handleUpdatePreviewSettings = useCallback((newSettings: Partial<PreviewSettings>) => {
      // For preview settings, we don't want to reset sorts, so don't use recordChange
      setPreviewSettings(prev => ({ ...prev, ...newSettings }));
-     setHasUnrefreshedChanges(true); // Still mark as needing refresh
   }, []);
 
   const handleUpdateGlobalSortCriteria = useCallback((key: SortCriteria['key']) => {
@@ -265,7 +328,6 @@ const App: React.FC = () => {
       return { key, direction: defaultDirection };
     });
     setShelves(prevShelves => prevShelves.map(s => ({ ...s, sortCriteria: null })));
-    setHasUnrefreshedChanges(true);
   }, []);
 
   const handleUpdateShelfSortCriteria = useCallback((shelfId: string, key: SortCriteria['key']) => {
@@ -274,23 +336,22 @@ const App: React.FC = () => {
     setShelves(prevShelves =>
       prevShelves.map(shelf => {
         if (shelf.id === shelfId) {
-          let newCriteria: SortCriteria;
           if (shelf.sortCriteria && shelf.sortCriteria.key === key) {
-            newCriteria = { ...shelf.sortCriteria, direction: shelf.sortCriteria.direction === 'asc' ? 'desc' : 'asc' };
-          } else {
-            let defaultDirection: 'asc' | 'desc' = 'asc';
-            if (key === 'thc' || key === 'isLastJar') {
-              defaultDirection = 'desc';
-            }
-            newCriteria = { key, direction: defaultDirection };
+            return {
+              ...shelf,
+              sortCriteria: { ...shelf.sortCriteria, direction: shelf.sortCriteria.direction === 'asc' ? 'desc' : 'asc' },
+            };
           }
-          return { ...shelf, sortCriteria: newCriteria };
+          let defaultDirection: 'asc' | 'desc' = 'asc';
+          if (key === 'thc' || key === 'isLastJar') {
+            defaultDirection = 'desc';
+          }
+          return { ...shelf, sortCriteria: { key, direction: defaultDirection } };
         }
         return shelf;
       })
     );
     setGlobalSortCriteria(null); // Clear global sort
-    setHasUnrefreshedChanges(true);
   }, []);
 
 
@@ -411,7 +472,6 @@ const App: React.FC = () => {
       // Create a temporary map for faster shelf lookup by name
       const shelfNameMap = new Map(shelves.map(s => [s.name.toLowerCase(), s.id]));
 
-
       for (let i = 1; i < lines.length; i++) {
         const rawLine = lines[i];
         const cells = rawLine.split(',').map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
@@ -431,7 +491,7 @@ const App: React.FC = () => {
         
         const targetShelfId = shelfNameMap.get(csvCategory);
         if (!targetShelfId) {
-          console.warn(`SKIPPING Row ${i + 1}: Strain "${csvStrainName}" for unknown category "${cells[0]}".`);
+          console.warn(`SKIPPING Row ${i + 1}: Strain "${csvStrainName}" for unknown category "${cells[0]}" in ${currentAppState}.`);
           skippedRowCount++;
           continue;
         }
@@ -483,7 +543,7 @@ const App: React.FC = () => {
         // globalSortCriteria will be reset by recordChange
       });
 
-      alert(`CSV Import Complete: ${importedCount} strains loaded. ${skippedRowCount > 0 ? `${skippedRowCount} rows skipped (see console for details).` : ''}`);
+      alert(`CSV Import Complete: ${importedCount} strains loaded.${skippedRowCount > 0 ? ` ${skippedRowCount} rows skipped (see console for details).` : ''}`);
       if (csvImportInputRef.current) {
         csvImportInputRef.current.value = "";
       }
@@ -495,7 +555,41 @@ const App: React.FC = () => {
       }
     };
     reader.readAsText(file);
-  }, [shelves, recordChange]); // Added recordChange to dependencies
+  }, [shelves, recordChange, currentAppState]);
+
+  // Function to load CSV from file path (for Electron native dialog)
+  const loadCSVFromFilePath = useCallback(async (filePath: string) => {
+          try {
+        if (window.electronAPI?.readFile) {
+          const csvData = await window.electronAPI.readFile(filePath);
+        
+        // Create a fake File object to reuse the existing processing logic
+        const fileName = filePath.split(/[\\/]/).pop() || 'imported.csv';
+        const file = new File([csvData], fileName, { type: 'text/csv' });
+        
+        // Process the file using the existing CSV processing logic
+        processImportedCSVFile(file);
+      } else {
+        throw new Error('Electron file reading API not available');
+      }
+    } catch (error) {
+      console.error('Error loading CSV from file path:', error);
+      alert('Error loading CSV file: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }, [processImportedCSVFile]);
+
+  // Function to update dynamic menu items
+  const updateDynamicMenus = useCallback(() => {
+    if (window.electronAPI?.updateDynamicMenus) {
+      const menuData = {
+        shelves: shelves.map(shelf => ({ id: shelf.id, name: shelf.name })),
+        darkMode: theme === 'dark'
+      };
+      window.electronAPI.updateDynamicMenus(menuData).catch(error => {
+        console.error('Error updating dynamic menus:', error);
+      });
+    }
+  }, [shelves, theme]);
 
   const processedShelves = useMemo(() => {
     return shelves.map(shelf => {
@@ -507,15 +601,266 @@ const App: React.FC = () => {
     });
   }, [shelves, globalSortCriteria]);
 
+  // Update dynamic menus when shelves or theme changes
+  useEffect(() => {
+    updateDynamicMenus();
+  }, [updateDynamicMenus]);
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-900 text-gray-50 font-sans antialiased">
-      <Header appName="Mango Menu Maestro" currentOklahomaState={currentAppState} onStateChange={setCurrentAppState} />
+  // Electron menu command handlers
+  useEffect(() => {
+    if (!window.electronAPI) {
+      return;
+    }
+
+    const handleMenuCommand = async (_event: any, { command, data }: { command: string; data?: any }) => {
+
+      switch (command) {
+        case 'new-menu':
+          if (hasMenuContent()) {
+            const confirmed = await showElectronConfirm(
+              'Clear current menu?',
+              'You have strains in your menu. Creating a new menu will clear all current progress.'
+            );
+            if (!confirmed) return;
+          }
+          recordChange(() => {
+            setShelves(getDefaultShelves(currentAppState));
+          });
+          break;
+
+        case 'open-menu':
+          handleImportCSVRequest();
+          break;
+
+        case 'open-menu-file':
+          if (data && typeof data === 'string') {
+            loadCSVFromFilePath(data);
+          }
+          break;
+
+        case 'switch-state':
+          const stateMap: Record<string, SupportedStates> = {
+            'oklahoma': SupportedStates.OKLAHOMA,
+            'michigan': SupportedStates.MICHIGAN,
+            'new_mexico': SupportedStates.NEW_MEXICO
+          };
+          const newState = stateMap[data];
+          if (newState) {
+            handleStateChange(newState);
+          }
+          break;
+
+        case 'export-csv':
+          handleExportCSV();
+          break;
+
+        case 'export-png':
+          triggerImageExport('png');
+          break;
+
+        case 'export-jpeg':
+          triggerImageExport('jpeg');
+          break;
+
+        case 'quit-app':
+          if (hasMenuContent()) {
+            const confirmed = await showElectronConfirm(
+              'Quit application?',
+              'You have unsaved changes. Are you sure you want to quit?'
+            );
+            if (!confirmed) return;
+          }
+          // Let Electron handle the actual quit
+          window.electronAPI?.updateMenuState({ shouldQuit: true });
+          break;
+
+        case 'add-strain-last':
+          if (lastInteractedShelfId && shelves.find(s => s.id === lastInteractedShelfId)) {
+            handleAddStrain(lastInteractedShelfId);
+            handleShelfInteraction(lastInteractedShelfId);
+          } else if (shelves.length > 0) {
+            handleAddStrain(shelves[0].id);
+            handleShelfInteraction(shelves[0].id);
+          }
+          break;
+
+        case 'add-strain-to-shelf':
+          if (data && shelves.find(s => s.id === data)) {
+            handleAddStrain(data);
+            handleShelfInteraction(data);
+          }
+          break;
+
+        case 'global-sort':
+          const sortMap: Record<string, SortCriteria['key']> = {
+            'name': 'name',
+            'grower': 'grower',
+            'class': 'type',
+            'thc': 'thc',
+            'lastjar': 'isLastJar'
+          };
+          const sortKey = sortMap[data];
+          if (sortKey) {
+            handleUpdateGlobalSortCriteria(sortKey);
+          }
+          break;
+
+        case 'clear-all-shelves':
+          const confirmed = await showElectronConfirm(
+            'Clear all shelves?',
+            'This will remove all strains from all shelves. This action cannot be undone.'
+          );
+          if (confirmed) {
+            handleClearAllShelves();
+          }
+          break;
+
+        case 'clear-all-last-jars':
+          handleClearAllLastJars();
+          break;
+
+        case 'toggle-dark-mode':
+          const newTheme = data ? 'dark' : 'light';
+          handleThemeChange(newTheme);
+          break;
+
+        case 'jump-to-shelf':
+          if (data && shelves.find(s => s.id === data)) {
+            // Scroll to the specific shelf
+            const shelfElement = document.querySelector(`[data-shelf-id="${data}"]`);
+            if (shelfElement) {
+              shelfElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+          break;
+
+        case 'zoom-in':
+          setPreviewSettings(prev => ({
+            ...prev,
+            zoomLevel: Math.min(prev.zoomLevel * 1.2, 3.0)
+          }));
+          break;
+
+        case 'zoom-out':
+          setPreviewSettings(prev => ({
+            ...prev,
+            zoomLevel: Math.max(prev.zoomLevel / 1.2, 0.1)
+          }));
+          break;
+
+        case 'set-zoom':
+          setPreviewSettings(prev => ({
+            ...prev,
+            zoomLevel: data
+          }));
+          break;
+
+        case 'fit-to-window':
+          // Trigger fit-to-window by setting a flag that MenuPreviewPanel can detect
+          setPreviewSettings(prev => ({
+            ...prev,
+            fitToWindowTrigger: prev.fitToWindowTrigger ? prev.fitToWindowTrigger + 1 : 1
+          }));
+          break;
+
+        case 'reset-zoom':
+          setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
+          break;
+
+        case 'set-page-size':
+          const sizeMap: Record<string, ArtboardSize> = {
+            'letter-portrait': ArtboardSize.LETTER_PORTRAIT,
+            'letter-landscape': ArtboardSize.LETTER_LANDSCAPE,
+            'screen-16-9-landscape': ArtboardSize.SCREEN_16_9_LANDSCAPE,
+            'screen-16-9-portrait': ArtboardSize.SCREEN_16_9_PORTRAIT
+          };
+          const artboardSize = sizeMap[data];
+          if (artboardSize) {
+            setPreviewSettings(prev => ({ ...prev, artboardSize }));
+          }
+          break;
+
+        case 'set-header-image':
+          const headerMap: Record<string, any> = {
+            'none': 'NONE',
+            'large': 'LARGE',
+            'small': 'SMALL'
+          };
+          const headerSize = headerMap[data];
+          if (headerSize) {
+            setPreviewSettings(prev => ({ ...prev, headerImageSize: headerSize }));
+          }
+          break;
+
+        case 'set-columns':
+          setPreviewSettings(prev => ({ ...prev, columns: data }));
+          break;
+
+        case 'toggle-shelf-splitting':
+          setPreviewSettings(prev => ({ ...prev, forceShelfFit: !data }));
+          break;
+
+        case 'toggle-thc-icon':
+          setPreviewSettings(prev => ({ ...prev, showThcIcon: data }));
+          break;
+
+        case 'reset-workspace':
+          setShelvesPanelWidth(DEFAULT_SHELVES_PANEL_WIDTH);
+          break;
+
+        case 'test-connection':
+          alert('Menu communication is working!');
+          break;
+
+        default:
+          // Unknown menu command - no action needed
+      }
+    };
+
+    window.electronAPI.onMenuCommand(handleMenuCommand);
+
+    // Update menu state when theme changes and signal ready
+    window.electronAPI.updateMenuState({ 
+      darkMode: theme === 'dark',
+      showThcIcon: previewSettings.showThcIcon,
+      allowShelfSplitting: !previewSettings.forceShelfFit,
+      ready: true // Signal that React app is ready for menu commands
+    });
+
+    return () => {
+      window.electronAPI?.removeAllListeners();
+    };
+  }, [
+    hasMenuContent, 
+    showElectronConfirm, 
+    handleImportCSVRequest, 
+    handleStateChange, 
+    handleExportCSV, 
+    triggerImageExport, 
+    lastInteractedShelfId, 
+    shelves, 
+    handleAddStrain, 
+    handleShelfInteraction,
+    handleUpdateGlobalSortCriteria, 
+    handleClearAllShelves, 
+    handleClearAllLastJars, 
+    handleThemeChange, 
+    theme, 
+    previewSettings, 
+    currentAppState, 
+    recordChange
+  ]);
+
+      return (
+      <div className={`flex flex-col h-screen font-sans antialiased ${
+        theme === 'dark' 
+          ? 'bg-gray-900 text-gray-50' 
+          : 'bg-gray-50 text-gray-900'
+      }`}>
+      <Header appName="Flower Menu Builder" currentState={currentAppState} onStateChange={handleStateChange} theme={theme} onThemeChange={handleThemeChange} />
       <Toolbar
-        onRefreshPreview={handleRefreshPreview}
         onClearAllShelves={handleClearAllShelves}
         onClearAllLastJars={handleClearAllLastJars}
-        hasUnrefreshedChanges={hasUnrefreshedChanges}
         exportFilename={exportFilename}
         onExportFilenameChange={setExportFilename}
         onExportPNG={() => triggerImageExport('png')}
@@ -525,9 +870,13 @@ const App: React.FC = () => {
         isExporting={isExporting}
         globalSortCriteria={globalSortCriteria}
         onUpdateGlobalSortCriteria={handleUpdateGlobalSortCriteria}
+        theme={theme}
       />
-      <main ref={mainContainerRef} className="flex flex-1 overflow-hidden pt-2 px-2 pb-2 bg-gray-800">
+      <main ref={mainContainerRef} className={`flex flex-1 overflow-hidden pt-2 px-2 pb-2 ${
+        theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
+      }`}>
         <FlowerShelvesPanel
+          ref={shelvesRef}
           style={{ width: `${shelvesPanelWidth}px`, flexShrink: 0 }}
           shelves={processedShelves} // Use processed (sorted) shelves
           onAddStrain={handleAddStrain}
@@ -537,6 +886,8 @@ const App: React.FC = () => {
           onClearShelfStrains={handleClearShelfStrains}
           newlyAddedStrainId={newlyAddedStrainId}
           onUpdateShelfSortCriteria={handleUpdateShelfSortCriteria}
+          onScrollToShelf={handleScrollToShelf}
+          theme={theme}
         />
         <div
           className={`panel-divider ${isResizing.current ? 'dragging' : ''}`}
@@ -554,14 +905,14 @@ const App: React.FC = () => {
           shelves={processedShelves} // Use processed (sorted) shelves
           settings={previewSettings}
           onSettingsChange={handleUpdatePreviewSettings}
-          needsRefreshSignal={isPreviewRefreshPending}
-          hasUnrefreshedChanges={hasUnrefreshedChanges}
           exportAction={exportAction}
           onExportComplete={() => {
             setExportAction(null);
             setIsExporting(false);
             setShowExportOverlay(false); // Hide overlay
           }}
+          currentState={currentAppState}
+          theme={theme}
         />
       </main>
       <input

@@ -1,17 +1,15 @@
 import React, { forwardRef, useMemo } from 'react';
-import { Shelf, PreviewSettings, ArtboardSize, HeaderImageSize } from '../types';
-import { ARTBOARD_DIMENSIONS_MAP, HEADER_IMAGE_CONFIGS } from '../constants';
+import { Shelf, PreviewSettings, ArtboardSize, HeaderImageSize, SupportedStates } from '../types';
+import { ARTBOARD_DIMENSIONS_MAP, HEADER_IMAGE_CONFIGS, STATE_THC_ICONS } from '../constants';
 import { MenuTable } from './MenuTable';
 
 interface PreviewArtboardProps {
   shelves: Shelf[];
   settings: PreviewSettings;
-  needsRefreshSignal: boolean; 
+  currentState: SupportedStates;
 }
 
-const getScaledValue = (base: number, multiplier: number, min: number = 0) => Math.max(min, base * multiplier);
-
-const MIN_STRAINS_TO_CONSIDER_SPLITTING = 7; 
+const getScaledValue = (base: number, multiplier: number, min: number = 0) => Math.max(min, base * multiplier); 
 
 const getHeaderImageDetails = (artboardSize: ArtboardSize, headerSize: HeaderImageSize): { src?: string; height: number; } => {
   if (headerSize === HeaderImageSize.NONE) {
@@ -29,9 +27,9 @@ const getHeaderImageDetails = (artboardSize: ArtboardSize, headerSize: HeaderIma
 
 
 export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>((
-  { shelves, settings }, ref
+  { shelves, settings, currentState }, ref
 ) => {
-  const { artboardSize, baseFontSizePx, columns, forceShelfFit, headerImageSize, linePaddingMultiplier } = settings;
+  const { artboardSize, baseFontSizePx, columns, forceShelfFit, headerImageSize, linePaddingMultiplier, showThcIcon } = settings;
   const artboardSpecs = ARTBOARD_DIMENSIONS_MAP[artboardSize];
 
   const headerImageDetails = useMemo(() => 
@@ -101,11 +99,14 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
         <img 
           src={headerImageDetails.src} 
           alt="Menu Header" 
+          draggable={false}
           style={{ 
             width: '100%', 
             height: `${headerImageDetails.height}px`, 
             objectFit: 'cover', // Ensures the image covers the area, might crop
             display: 'block', // Removes any extra space below the image
+            userSelect: 'none', // Prevents selection
+            pointerEvents: 'none', // Allows clicks to pass through to the artboard
           }} 
         />
       )}
@@ -124,6 +125,25 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
         }}>
           Add strains to shelves to see your menu.
         </div>
+      )}
+      
+      {showThcIcon && (
+        <img 
+          src={STATE_THC_ICONS[currentState]}
+          alt={`${currentState} THC Regulatory Icon`}
+          draggable={false}
+          style={{
+            position: 'absolute',
+            bottom: '15px',
+            right: '15px',
+            width: '80px',
+            height: 'auto',
+            opacity: 1,
+            zIndex: 10,
+            userSelect: 'none', // Prevents selection
+            pointerEvents: 'none', // Allows clicks to pass through to the artboard
+          }}
+        />
       )}
     </div>
   );

@@ -1,14 +1,11 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './common/Button';
-import { RefreshIcon, TrashIcon, SparklesIcon, DownloadIcon, UploadIcon, SortAscendingIcon, SortDescendingIcon } from './common/Icon'; 
-import { SortCriteria } from '../types';
+import { DownloadIcon, UploadIcon, SortAscendingIcon, SortDescendingIcon, FlowerJarIcon, TrashXmarkIcon } from './common/Icon';
+import { SortCriteria, Theme } from '../types';
 
 interface ToolbarProps {
-  onRefreshPreview: () => void;
   onClearAllShelves: () => void;
   onClearAllLastJars: () => void;
-  hasUnrefreshedChanges: boolean;
   exportFilename: string;
   onExportFilenameChange: (name: string) => void;
   onExportPNG: () => void;
@@ -18,6 +15,7 @@ interface ToolbarProps {
   isExporting: boolean;
   globalSortCriteria: SortCriteria | null;
   onUpdateGlobalSortCriteria: (key: SortCriteria['key']) => void;
+  theme: Theme;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -49,10 +47,8 @@ const SortButton: React.FC<{
 
 
 export const Toolbar: React.FC<ToolbarProps> = ({
-  onRefreshPreview,
   onClearAllShelves,
   onClearAllLastJars,
-  hasUnrefreshedChanges,
   exportFilename,
   onExportFilenameChange,
   onExportPNG,
@@ -62,6 +58,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isExporting,
   globalSortCriteria,
   onUpdateGlobalSortCriteria,
+  theme,
 }) => {
   const [confirmClearShelves, setConfirmClearShelves] = useState(false);
   const [confirmClearLastJars, setConfirmClearLastJars] = useState(false);
@@ -109,25 +106,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   ];
 
   return (
-    <div className="no-print sticky top-0 z-40 bg-gray-700 p-3 shadow-md flex flex-col gap-3 border-b border-gray-600">
+    <div className={`no-print sticky top-0 z-40 p-3 shadow-md flex flex-col gap-3 border-b ${
+      theme === 'dark'
+        ? 'bg-gray-700 border-gray-600'
+        : 'bg-white border-gray-300'
+    }`}>
       {/* Top row: Actions */}
       <div className="flex flex-wrap items-center gap-3">
-        <Button 
-          onClick={onRefreshPreview} 
-          variant="secondary" 
-          size="sm" 
-          className="flex items-center space-x-2"
-        >
-          <RefreshIcon className="w-5 h-5" />
-          <span>Refresh Preview</span>
-        </Button>
         <Button 
           onClick={handleClearShelvesClick} 
           variant="danger"
           size="sm" 
           className={`flex items-center space-x-2 min-w-[150px] justify-center ${confirmClearShelves ? 'bg-red-700 hover:bg-red-800' : 'bg-red-600 hover:bg-red-700'}`}
         >
-          <TrashIcon className="w-5 h-5" />
+          <TrashXmarkIcon className="w-5 h-5" />
           <span>{confirmClearShelves ? "Are you sure?" : "Clear All Shelves"}</span>
         </Button>
         <Button 
@@ -136,14 +128,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           size="sm" 
           className={`flex items-center space-x-2 min-w-[170px] justify-center ${confirmClearLastJars ? 'bg-yellow-600 hover:bg-yellow-700 text-gray-900' : 'bg-yellow-500 hover:bg-yellow-600 text-gray-800'}`}
         >
-          <SparklesIcon className="w-5 h-5" />
+          <FlowerJarIcon className="w-5 h-5" />
           <span>{confirmClearLastJars ? "Are you sure?" : "Clear All Last Jars"}</span>
         </Button>
 
         <div className="h-6 border-l border-gray-600 mx-1"></div> {/* Divider */}
         
         {/* File Operations Group */}
-        <div className="flex items-center space-x-2 p-2 border border-gray-600 rounded-md bg-gray-700/50">
+        <div className={`flex items-center space-x-2 p-2 border rounded-md ${
+          theme === 'dark'
+            ? 'border-gray-600 bg-gray-700/50'
+            : 'border-gray-300 bg-gray-100/50'
+        }`}>
           <Button
             onClick={onImportCSVRequest}
             variant="custom"
@@ -156,18 +152,24 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <span>Import CSV</span>
           </Button>
 
-          <div className="flex items-center space-x-2">
-            <label htmlFor="exportFilename" className="text-xs text-gray-300 font-medium whitespace-nowrap">Export As:</label>
-            <input
-              type="text"
-              id="exportFilename"
-              value={exportFilename}
-              onChange={(e) => onExportFilenameChange(e.target.value)}
-              placeholder="mango-menu"
-              className="bg-gray-600 text-gray-100 placeholder-gray-400 px-2 py-1 rounded-md text-xs border border-gray-500 focus:ring-orange-500 focus:border-orange-500 w-32"
-              disabled={isExporting}
-            />
-          </div>
+                      <div className="flex items-center space-x-2">
+              <label htmlFor="exportFilename" className={`text-xs font-medium whitespace-nowrap ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>Export As:</label>
+              <input
+                type="text"
+                id="exportFilename"
+                value={exportFilename}
+                onChange={(e) => onExportFilenameChange(e.target.value)}
+                placeholder="mango-menu"
+                className={`px-2 py-1 rounded-md text-xs border focus:ring-orange-500 focus:border-orange-500 w-32 ${
+                  theme === 'dark'
+                    ? 'bg-gray-600 text-gray-100 placeholder-gray-400 border-gray-500'
+                    : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'
+                }`}
+                disabled={isExporting}
+              />
+            </div>
           <Button
             onClick={onExportPNG}
             variant="custom"
@@ -204,8 +206,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </div>
       </div>
       {/* Bottom row: Global Sort Options */}
-      <div className="flex items-center space-x-2 p-2 border border-gray-600 rounded-md bg-gray-700/50 mt-1">
-        <span className="text-xs text-gray-300 font-medium mr-2">Global Sort:</span>
+      <div className={`flex items-center space-x-2 p-2 border rounded-md mt-1 ${
+        theme === 'dark'
+          ? 'border-gray-600 bg-gray-700/50'
+          : 'border-gray-300 bg-gray-100/50'
+      }`}>
+        <span className={`text-xs font-medium mr-2 ${
+          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+        }`}>Global Sort:</span>
         {sortOptions.map(opt => (
             <SortButton
               key={opt.key}

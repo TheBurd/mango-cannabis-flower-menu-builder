@@ -36,6 +36,8 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
       'bg-gray-500': '#6b7280',
       'bg-lime-600': '#65a30d',
       'bg-teal-600': '#0d9488',
+      'bg-violet-500': '#8b5cf6',
+      'bg-mango-gradient': '#fe9426', // Use the primary mango color for gradient borders
     };
     return colorMap[shelfColor] || '#6b7280'; // Default to gray if color not found
   };
@@ -328,12 +330,33 @@ export const MenuTable: React.FC<MenuTableProps> = ({
      lineHeight: '1.2',
   };
 
-  const borderColorClass = shelf.color.replace(/^bg-/, 'border-');
+  // Handle border color for gradient backgrounds
+  const getBorderColorClass = (shelfColor: string): string => {
+    if (shelfColor === 'bg-mango-gradient') {
+      return ''; // We'll handle this with inline styles
+    }
+    return shelfColor.replace(/^bg-/, 'border-');
+  };
+
+  const getBorderStyle = (shelfColor: string): React.CSSProperties => {
+    if (shelfColor === 'bg-mango-gradient') {
+      return {
+        borderColor: '#fe9426',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+      };
+    }
+    return {};
+  };
+
+  const borderColorClass = getBorderColorClass(shelf.color);
+  const borderStyle = getBorderStyle(shelf.color);
 
   const tableWrapperStyle: React.CSSProperties = {
      // Ensure overflow is not 'auto' or 'hidden' here if it was added previously,
      // as that would prevent internal table content from breaking with the parent column flow.
      // Default 'visible' is fine.
+     ...borderStyle, // Apply border styles for gradient backgrounds
   };
 
   const displayName = shelf.name; // No more headerText for "(cont.)"
@@ -370,7 +393,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
 
       {/* Table Container */}
       <div
-        className={`rounded-b-md border-l border-r border-b border-t-0 ${borderColorClass}`}
+        className={`rounded-b-md border-l border-r border-b border-t-0 ${borderColorClass}`.trim()}
         style={{
           ...tableWrapperStyle,
           backgroundColor: '#ffffff',

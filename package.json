@@ -1,24 +1,110 @@
 {
   "name": "mango-cannabis-flower-menu-builder",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Professional cannabis flower menu builder with dynamic pricing, state compliance, and beautiful export capabilities. Create stunning dispensary menus with real-time strain management, THC compliance indicators, and multi-format export options.",
+  "author": "Brad Forsythe <brad@mangocannabis.com>",
+  "company": "Mango Cannabis",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mangocannabis/menu-builder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mangocannabis/menu-builder/issues"
+  },
+  "keywords": [
+    "cannabis",
+    "dispensary",
+    "menu",
+    "builder",
+    "pos",
+    "compliance",
+    "thc",
+    "electron",
+    "react",
+    "typescript"
+  ],
   "type": "module",
+  "main": "electron.cjs",
+  "homepage": "./",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron": "electron .",
+    "electron-dev": "node start-electron-dev.cjs",
+    "electron-simple": "electron .",
+    "build-electron": "npm run build && electron-builder",
+    "dist": "npm run build && electron-builder --publish=never",
+    "test-app": "node test-app.js"
   },
   "dependencies": {
     "dom-to-image": "^2.6.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/dom-to-image": "^2.6.7",
-    "@types/node": "^22.14.0",
-    "@types/react": "^19.1.6",
-    "@types/react-dom": "^19.1.6",
-    "typescript": "~5.7.2",
-    "vite": "^6.2.0"
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1",
+    "typescript": "~5.3.3",
+    "vite": "^5.0.0",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.mangocannabis.menu-builder",
+    "productName": "Mango Cannabis Menu Builder",
+    "copyright": "Copyright © 2024 Mango Cannabis",
+    "directories": {
+      "output": "release-new"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "electron.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "icon": "assets/icons/appIcon.png",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "publisherName": "Mango Cannabis",
+      "verifyUpdateCodeSignature": false
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
   }
 }

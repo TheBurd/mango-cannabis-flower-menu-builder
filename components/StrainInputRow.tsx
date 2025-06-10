@@ -1,10 +1,10 @@
 
 import React, { useEffect, useRef } from 'react';
-import { Strain, StrainType } from '../types';
+import { Strain, StrainType, Theme } from '../types';
 import { STRAIN_TYPES_ORDERED, THC_DECIMAL_PLACES, MANGO_MAIN_ORANGE, STRAIN_TYPE_VISUALS } from '../constants';
 import { IconButton } from './common/IconButton';
 import { ToggleSwitch } from './common/ToggleSwitch';
-import { TrashIcon, ArrowUpIcon, ArrowDownIcon, CircleIcon } from './common/Icon';
+import { TrashXmarkIcon, ArrowUpIcon, ArrowDownIcon, CircleIcon } from './common/Icon';
 
 interface StrainInputRowProps {
   strain: Strain;
@@ -14,6 +14,7 @@ interface StrainInputRowProps {
   isFirst: boolean;
   isLast: boolean;
   isNewlyAdded?: boolean;
+  theme: Theme;
 }
 
 export const StrainInputRow: React.FC<StrainInputRowProps> = ({
@@ -24,6 +25,7 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
   isFirst,
   isLast,
   isNewlyAdded,
+  theme,
 }) => {
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,7 +54,11 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
   };
 
   return (
-    <div className={`p-3 bg-gray-600 rounded-md shadow grid grid-cols-12 gap-2 items-center text-gray-200 ${strain.isLastJar ? 'bg-opacity-80 border-l-2 border-orange-400' : ''}`}>
+    <div className={`p-3 rounded-md shadow grid grid-cols-12 gap-2 items-center ${
+      theme === 'dark' 
+        ? `bg-gray-600 text-gray-200 ${strain.isLastJar ? 'bg-opacity-80 border-l-2 border-orange-400' : ''}` 
+        : `bg-white text-gray-800 ${strain.isLastJar ? 'border-l-2 border-orange-400' : ''}`
+    }`}>
       {/* Inputs */}
       <input
         ref={nameInputRef}
@@ -61,7 +67,11 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
         value={strain.name}
         onChange={handleInputChange}
         placeholder="Strain Name"
-        className="col-span-4 bg-gray-500 placeholder-gray-400 text-gray-100 p-2 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
+        className={`col-span-4 p-2 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500 ${
+          theme === 'dark'
+            ? 'bg-gray-500 placeholder-gray-400 text-gray-100'
+            : 'bg-gray-50 placeholder-gray-500 text-gray-900 border border-gray-300'
+        }`}
         aria-label="Strain Name"
       />
       <input
@@ -70,7 +80,11 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
         value={strain.grower}
         onChange={handleInputChange}
         placeholder="Grower/Brand"
-        className="col-span-3 bg-gray-500 placeholder-gray-400 text-gray-100 p-2 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
+        className={`col-span-3 p-2 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500 ${
+          theme === 'dark'
+            ? 'bg-gray-500 placeholder-gray-400 text-gray-100'
+            : 'bg-gray-50 placeholder-gray-500 text-gray-900 border border-gray-300'
+        }`}
         aria-label="Grower or Brand"
       />
       <div className="col-span-2 relative">
@@ -82,10 +96,16 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
             onBlur={handleThcBlur}
             placeholder="THC"
             step="0.1"
-            className="w-full bg-gray-500 placeholder-gray-400 text-gray-100 p-2 rounded-md text-sm pr-6 focus:ring-orange-500 focus:border-orange-500 appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className={`w-full p-2 rounded-md text-sm pr-6 focus:ring-orange-500 focus:border-orange-500 appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+              theme === 'dark'
+                ? 'bg-gray-500 placeholder-gray-400 text-gray-100'
+                : 'bg-gray-50 placeholder-gray-500 text-gray-900 border border-gray-300'
+            }`}
             aria-label="THC Percentage"
         />
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+        <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-sm ${
+          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+        }`}>%</span>
       </div>
 
       {/* Strain Type Toggles */}
@@ -104,7 +124,9 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
             }
             buttonClasses += ` ${visual.textColorClass} font-semibold shadow-md`;
           } else {
-            buttonClasses += ' bg-gray-500 hover:bg-gray-400 text-gray-200';
+            buttonClasses += theme === 'dark' 
+              ? ' bg-gray-500 hover:bg-gray-400 text-gray-200'
+              : ' bg-gray-200 hover:bg-gray-300 text-gray-700';
           }
           
           return (
@@ -128,8 +150,11 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
           id={`lastJar-${strain.id}`}
           checked={strain.isLastJar}
           onChange={(checked) => onUpdate({ isLastJar: checked })}
+          theme={theme}
         />
-        <label htmlFor={`lastJar-${strain.id}`} className="text-sm text-gray-300 select-none flex items-center">
+        <label htmlFor={`lastJar-${strain.id}`} className={`text-sm select-none flex items-center ${
+          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+        }`}>
           {strain.isLastJar && <CircleIcon className="w-2.5 h-2.5 mr-1.5" style={{ color: MANGO_MAIN_ORANGE }} />}
           Last Jar?
         </label>
@@ -139,7 +164,7 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
       <div className="col-span-3 flex justify-end space-x-1 mt-1">
         <IconButton title="Copy Above" onClick={() => onCopy('above')} disabled={isFirst && isLast} className="hover:text-orange-400 disabled:text-gray-500"><ArrowUpIcon /></IconButton>
         <IconButton title="Copy Below" onClick={() => onCopy('below')} disabled={isFirst && isLast} className="hover:text-orange-400 disabled:text-gray-500"><ArrowDownIcon /></IconButton>
-        <IconButton title="Delete Strain" onClick={onRemove} className="text-red-400 hover:text-red-300"><TrashIcon /></IconButton>
+        <IconButton title="Delete Strain" onClick={onRemove} className="hover:opacity-80"><TrashXmarkIcon theme={theme} color="red" /></IconButton>
       </div>
     </div>
   );

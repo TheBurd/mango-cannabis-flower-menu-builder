@@ -66,11 +66,14 @@ export interface PreviewSettings {
   forceShelfFit: boolean; // New setting for allowing shelves to split across columns
   headerImageSize: HeaderImageSize; // Added for selectable header images
   linePaddingMultiplier: number; // Multiplier for line item top/bottom padding (e.g., 0.3 = smaller padding, 0.5 = larger padding)
+  showThcIcon: boolean; // Show THC regulatory icon on menu preview/export
+  fitToWindowTrigger?: number; // Timestamp trigger for fit-to-window action
 }
 
 export enum SupportedStates {
   OKLAHOMA = "Oklahoma",
-  // MICHIGAN = "Michigan", // Future
-  // NEW_MEXICO = "New Mexico", // Future
-  // NEW_YORK = "New York", // Future
+  MICHIGAN = "Michigan",
+  NEW_MEXICO = "New Mexico",
 }
+
+export type Theme = 'light' | 'dark';
