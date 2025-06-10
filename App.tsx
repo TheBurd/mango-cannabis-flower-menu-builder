@@ -142,6 +142,37 @@ const App: React.FC = () => {
     // Note: We don't save to localStorage so the notification will show again next app launch
   }, []);
 
+  // Update click handler (from header button)
+  const handleUpdateClick = useCallback(async () => {
+    if (!window.electronAPI) return;
+    
+    // Use functional state updates to avoid dependency issues
+    setIsDownloadingUpdate(currentDownloading => {
+      if (!currentDownloading) {
+        setIsUpdateDownloaded(currentDownloaded => {
+          if (!currentDownloaded) {
+            // Start download
+            window.electronAPI!.downloadUpdate().catch(error => {
+              console.error('Error downloading update:', error);
+              setIsDownloadingUpdate(false);
+            });
+            return false;
+          } else {
+            // Install update
+            window.electronAPI!.installUpdate().catch(error => {
+              console.error('Error installing update:', error);
+            });
+            return currentDownloaded;
+          }
+        });
+        return true;
+      }
+      return currentDownloading;
+    });
+  }, []);
+
+
+
   // Drag and drop handlers
   const handleDragStart = useCallback((strainId: string, shelfId: string, strainIndex: number) => {
     setDragState({ strainId, shelfId, strainIndex });
@@ -231,6 +262,11 @@ const App: React.FC = () => {
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
   const [dragState, setDragState] = useState<{ strainId: string; shelfId: string; strainIndex: number } | null>(null);
   const [updateDismissed, setUpdateDismissed] = useState<boolean>(false);
+  const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
+  const [updateVersion, setUpdateVersion] = useState<string>('');
+  const [isDownloadingUpdate, setIsDownloadingUpdate] = useState<boolean>(false);
+  const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number>(0);
+  const [isUpdateDownloaded, setIsUpdateDownloaded] = useState<boolean>(false);
 
   // Helper function to check if the menu has any content
   const hasMenuContent = useCallback((): boolean => {
@@ -318,6 +354,36 @@ const App: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [newlyAddedStrainId]);
+
+  // Set up update event listeners
+  useEffect(() => {
+    if (!window.electronAPI) return;
+
+    const handleUpdateAvailable = (_event: any, updateInfo: { version: string; releaseDate: string; releaseNotes: string }) => {
+      setUpdateAvailable(true);
+      setUpdateVersion(updateInfo.version);
+      setIsUpdateDownloaded(false);
+      setIsDownloadingUpdate(false);
+    };
+
+    const handleDownloadProgress = (_event: any, progress: { percent: number; transferred: number; total: number; bytesPerSecond: number }) => {
+      setUpdateDownloadProgress(progress.percent);
+    };
+
+    const handleUpdateDownloaded = (_event: any, info: { version: string }) => {
+      setIsDownloadingUpdate(false);
+      setIsUpdateDownloaded(true);
+      setUpdateDownloadProgress(100);
+    };
+
+    window.electronAPI.onUpdateAvailable(handleUpdateAvailable);
+    window.electronAPI.onDownloadProgress(handleDownloadProgress);
+    window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
+
+    return () => {
+      window.electronAPI?.removeUpdateListeners();
+    };
+  }, []);
 
 
   const handleAddStrain = useCallback((shelfId: string) => {
@@ -993,7 +1059,18 @@ const App: React.FC = () => {
           ? 'bg-gray-900 text-gray-50' 
           : 'bg-gray-50 text-gray-900'
       }`}>
-      <Header appName="Flower Menu Builder" currentState={currentAppState} onStateChange={handleStateChange} theme={theme} onThemeChange={handleThemeChange} onShowInstructions={handleShowInstructions} />
+      <Header 
+        appName="Flower Menu Builder" 
+        currentState={currentAppState} 
+        onStateChange={handleStateChange} 
+        theme={theme} 
+        onThemeChange={handleThemeChange} 
+        onShowInstructions={handleShowInstructions}
+        updateAvailable={updateAvailable && !updateDismissed}
+        onUpdateClick={handleUpdateClick}
+        updateDownloading={isDownloadingUpdate}
+        downloadProgress={updateDownloadProgress}
+      />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}
         onClearAllLastJars={handleClearAllLastJars}
@@ -1097,6 +1174,9 @@ const App: React.FC = () => {
         {!updateDismissed && (
           <UpdateNotification
             onUpdateDismissed={handleUpdateDismissed}
+            updateAvailable={updateAvailable}
+            updateDownloaded={isUpdateDownloaded}
+            updateVersion={updateVersion}
           />
         )}
       </div>

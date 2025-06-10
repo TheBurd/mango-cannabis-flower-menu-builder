@@ -15,9 +15,17 @@ interface DownloadProgress {
 
 interface UpdateNotificationProps {
   onUpdateDismissed: () => void;
+  updateAvailable: boolean;
+  updateDownloaded: boolean;
+  updateVersion: string;
 }
 
-export const UpdateNotification: React.FC<UpdateNotificationProps> = ({ onUpdateDismissed }) => {
+export const UpdateNotification: React.FC<UpdateNotificationProps> = ({ 
+  onUpdateDismissed,
+  updateAvailable,
+  updateDownloaded,
+  updateVersion
+}) => {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -96,7 +104,8 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({ onUpdate
     return formatBytes(bytesPerSecond) + '/s';
   };
 
-  if (!isVisible || !updateInfo) return null;
+  // Only show when update is downloaded and ready to install
+  if (!updateDownloaded) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-sm">
@@ -115,7 +124,7 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({ onUpdate
               New Update Available!
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Version {updateInfo.version} is ready to download.
+              Version {updateVersion} is ready to install.
             </div>
             
             {isDownloading && downloadProgress && (
