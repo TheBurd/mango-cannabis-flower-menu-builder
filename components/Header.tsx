@@ -2,7 +2,7 @@ import React from 'react';
 import { SupportedStates, Theme } from '../types';
 import { MANGO_MAIN_ORANGE, MANGO_SUPPORT_ORANGE, STATE_THC_ICONS } from '../constants';
 import { CustomDropdown } from './common/CustomDropdown';
-import { SunIcon, MoonIcon } from './common/Icon';
+import { SunIcon, MoonIcon, QuestionMarkCircleIcon } from './common/Icon';
 import { getLogoPath } from '../utils/assets';
 
 interface HeaderProps {
@@ -11,9 +11,10 @@ interface HeaderProps {
   onStateChange: (newState: SupportedStates) => void;
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
+  onShowInstructions: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ appName, currentState, onStateChange, theme, onThemeChange }) => {
+export const Header: React.FC<HeaderProps> = ({ appName, currentState, onStateChange, theme, onThemeChange, onShowInstructions }) => {
   const stateOptions = Object.values(SupportedStates).map(s => ({ value: s, label: s }));
 
   return (
@@ -48,6 +49,13 @@ export const Header: React.FC<HeaderProps> = ({ appName, currentState, onStateCh
             className="min-w-[120px]"
             variant="header"
          />
+        <button
+          onClick={onShowInstructions}
+          className="ml-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-200"
+          title="Show instructions and help"
+        >
+          <QuestionMarkCircleIcon className="w-5 h-5 text-white" />
+        </button>
         <button
           onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
           className="ml-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-200"

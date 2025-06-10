@@ -15,6 +15,10 @@ interface StrainInputRowProps {
   isLast: boolean;
   isNewlyAdded?: boolean;
   theme: Theme;
+  shelfId: string;
+  strainIndex: number;
+  onDragStart?: (strainId: string, shelfId: string, strainIndex: number) => void;
+  isDragging?: boolean;
 }
 
 export const StrainInputRow: React.FC<StrainInputRowProps> = ({
@@ -26,6 +30,10 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
   isLast,
   isNewlyAdded,
   theme,
+  shelfId,
+  strainIndex,
+  onDragStart,
+  isDragging = false,
 }) => {
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,12 +61,35 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
     onUpdate({ type });
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    if (onDragStart) {
+      onDragStart(strain.id, shelfId, strainIndex);
+    }
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      strainId: strain.id,
+      shelfId: shelfId,
+      strainIndex: strainIndex,
+      strain: strain
+    }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    // Reset any drag state if needed
+    e.dataTransfer.clearData();
+  };
+
   return (
-    <div className={`p-3 rounded-md shadow grid grid-cols-12 gap-2 items-center ${
-      theme === 'dark' 
-        ? `bg-gray-600 text-gray-200 ${strain.isLastJar ? 'bg-opacity-80 border-l-2 border-orange-400' : ''}` 
-        : `bg-white text-gray-800 ${strain.isLastJar ? 'border-l-2 border-orange-400' : ''}`
-    }`}>
+    <div 
+      className={`p-3 rounded-md shadow grid grid-cols-12 gap-2 items-center cursor-move transition-opacity ${
+        theme === 'dark' 
+          ? `bg-gray-600 text-gray-200 ${strain.isLastJar ? 'bg-opacity-80 border-l-2 border-orange-400' : ''}` 
+          : `bg-white text-gray-800 ${strain.isLastJar ? 'border-l-2 border-orange-400' : ''}`
+      } ${isDragging ? 'opacity-50' : 'hover:shadow-lg'}`}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       {/* Inputs */}
       <input
         ref={nameInputRef}

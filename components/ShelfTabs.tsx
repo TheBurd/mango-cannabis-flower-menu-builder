@@ -5,10 +5,12 @@ interface ShelfTabsProps {
   shelves: Shelf[];
   onScrollToShelf: (shelfId: string) => void;
   theme: Theme;
+  isDragging?: boolean;
 }
 
-export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, theme }) => {
+export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, theme, isDragging = false }) => {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const [dragHoverTimeout, setDragHoverTimeout] = useState<number | null>(null);
 
   if (shelves.length === 0) return null;
 
@@ -28,6 +30,38 @@ export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, 
 
   const containerBg = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
 
+  const handleDragHover = (shelfId: string) => {
+    if (!isDragging) return;
+    
+    // Clear any existing timeout
+    if (dragHoverTimeout) {
+      clearTimeout(dragHoverTimeout);
+    }
+    
+    // Set a new timeout to scroll after 800ms of hovering
+    const timeout = window.setTimeout(() => {
+      onScrollToShelf(shelfId);
+    }, 800);
+    
+    setDragHoverTimeout(timeout);
+  };
+
+  const handleDragLeave = () => {
+    if (dragHoverTimeout) {
+      clearTimeout(dragHoverTimeout);
+      setDragHoverTimeout(null);
+    }
+  };
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (dragHoverTimeout) {
+        clearTimeout(dragHoverTimeout);
+      }
+    };
+  }, [dragHoverTimeout]);
+
   return (
     <div className={`sticky top-0 z-30 ${containerBg} relative px-2 pb-2`}>
       <div className="flex items-end w-full">
@@ -41,8 +75,14 @@ export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, 
             <div
               key={shelf.id}
               onClick={() => onScrollToShelf(shelf.id)}
-              onMouseEnter={() => setHoveredTab(shelf.id)}
-              onMouseLeave={() => setHoveredTab(null)}
+              onMouseEnter={() => {
+                setHoveredTab(shelf.id);
+                handleDragHover(shelf.id);
+              }}
+              onMouseLeave={() => {
+                setHoveredTab(null);
+                handleDragLeave();
+              }}
               className={`
                 relative cursor-pointer px-1.5 pr-3 py-1 flex-1 h-7 rounded-b-md
                 ${shelf.color} ${shelf.textColor}

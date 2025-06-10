@@ -15,6 +15,8 @@ declare global {
 }
 import { Header } from './components/Header';
 import { Toolbar } from './components/Toolbar';
+import { InstructionsModal } from './components/InstructionsModal';
+import { WelcomeModal } from './components/WelcomeModal';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
 import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme } from './types';
@@ -89,12 +91,26 @@ const sortStrains = (strains: Strain[], criteria: SortCriteria | null): Strain[]
 
 
 const App: React.FC = () => {
-  const [currentAppState, setCurrentAppState] = useState<SupportedStates>(SupportedStates.OKLAHOMA);
+  // Initialize state from localStorage or default
+  const [currentAppState, setCurrentAppState] = useState<SupportedStates>(() => {
+    const savedState = localStorage.getItem('mango-selected-state');
+    if (savedState && Object.values(SupportedStates).includes(savedState as SupportedStates)) {
+      return savedState as SupportedStates;
+    }
+    return SupportedStates.OKLAHOMA; // Default fallback
+  });
+  
   const [shelves, setShelves] = useState<Shelf[]>(() => getDefaultShelves(currentAppState));
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(INITIAL_PREVIEW_SETTINGS);
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('mango-theme');
     return savedTheme === 'light' ? 'light' : 'dark';
+  });
+  
+  // Welcome modal state for first-time users
+  const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(() => {
+    const hasSeenWelcome = localStorage.getItem('mango-has-seen-welcome');
+    return !hasSeenWelcome; // Show if user hasn't seen it before
   });
   
   const [newlyAddedStrainId, setNewlyAddedStrainId] = useState<string | null>(null);
@@ -103,6 +119,79 @@ const App: React.FC = () => {
   const handleThemeChange = useCallback((newTheme: Theme) => {
     setTheme(newTheme);
     localStorage.setItem('mango-theme', newTheme);
+  }, []);
+
+  // Instructions modal handler
+  const handleShowInstructions = useCallback(() => {
+    setShowInstructions(true);
+  }, []);
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((strainId: string, shelfId: string, strainIndex: number) => {
+    setDragState({ strainId, shelfId, strainIndex });
+  }, []);
+
+
+
+  const handleMoveStrain = useCallback((fromShelfId: string, toShelfId: string, strainIndex: number, targetIndex?: number) => {
+    recordChange(() => {
+      setShelves(prevShelves => {
+        const newShelves = [...prevShelves];
+        const fromShelfIndex = newShelves.findIndex(s => s.id === fromShelfId);
+        const toShelfIndex = newShelves.findIndex(s => s.id === toShelfId);
+        
+        if (fromShelfIndex === -1 || toShelfIndex === -1) return prevShelves;
+        
+        const fromShelf = newShelves[fromShelfIndex];
+        const toShelf = newShelves[toShelfIndex];
+        
+        // Remove strain from source shelf
+        const strainToMove = fromShelf.strains[strainIndex];
+        if (!strainToMove) return prevShelves;
+        
+        const newFromStrains = [...fromShelf.strains];
+        newFromStrains.splice(strainIndex, 1);
+        
+        // Add strain to target shelf
+        const newToStrains = [...toShelf.strains];
+        const insertIndex = targetIndex !== undefined ? targetIndex : newToStrains.length;
+        newToStrains.splice(insertIndex, 0, strainToMove);
+        
+        // Update shelves
+        newShelves[fromShelfIndex] = { ...fromShelf, strains: newFromStrains };
+        newShelves[toShelfIndex] = { ...toShelf, strains: newToStrains };
+        
+        return newShelves;
+      });
+    });
+    setDragState(null);
+  }, []);
+
+  const handleReorderStrain = useCallback((shelfId: string, fromIndex: number, toIndex: number) => {
+    recordChange(() => {
+      setShelves(prevShelves => {
+        const newShelves = [...prevShelves];
+        const shelfIndex = newShelves.findIndex(s => s.id === shelfId);
+        
+        if (shelfIndex === -1) return prevShelves;
+        
+        const shelf = newShelves[shelfIndex];
+        const newStrains = [...shelf.strains];
+        
+        // Adjust toIndex if moving within the same array
+        const adjustedToIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+        
+        // Remove strain from original position
+        const [strainToMove] = newStrains.splice(fromIndex, 1);
+        
+        // Insert strain at new position
+        newStrains.splice(adjustedToIndex, 0, strainToMove);
+        
+        newShelves[shelfIndex] = { ...shelf, strains: newStrains };
+        return newShelves;
+      });
+    });
+    setDragState(null);
   }, []);
 
   // Update document theme attribute
@@ -123,6 +212,8 @@ const App: React.FC = () => {
   const [globalSortCriteria, setGlobalSortCriteria] = useState<SortCriteria | null>(null);
   const shelvesRef = useRef<HTMLDivElement | null>(null);
   const [lastInteractedShelfId, setLastInteractedShelfId] = useState<string | null>(null);
+  const [showInstructions, setShowInstructions] = useState<boolean>(false);
+  const [dragState, setDragState] = useState<{ strainId: string; shelfId: string; strainIndex: number } | null>(null);
 
   // Helper function to check if the menu has any content
   const hasMenuContent = useCallback((): boolean => {
@@ -174,7 +265,22 @@ const App: React.FC = () => {
     }
     
     setCurrentAppState(newState);
+    // Save the selected state to localStorage
+    localStorage.setItem('mango-selected-state', newState);
   }, [currentAppState, hasMenuContent]);
+
+  // Welcome modal handlers
+  const handleWelcomeStateSelect = useCallback((selectedState: SupportedStates) => {
+    setCurrentAppState(selectedState);
+    localStorage.setItem('mango-selected-state', selectedState);
+    localStorage.setItem('mango-has-seen-welcome', 'true');
+    setShowWelcomeModal(false);
+  }, []);
+
+  const handleWelcomeModalClose = useCallback(() => {
+    localStorage.setItem('mango-has-seen-welcome', 'true');
+    setShowWelcomeModal(false);
+  }, []);
 
   useEffect(() => {
     setShelves(getDefaultShelves(currentAppState));
@@ -808,6 +914,19 @@ const App: React.FC = () => {
           setShelvesPanelWidth(DEFAULT_SHELVES_PANEL_WIDTH);
           break;
 
+        case 'show-instructions':
+          setShowInstructions(true);
+          break;
+
+        case 'show-about':
+          alert('🥭 Mango Cannabis Flower Menu Builder v1.0.0\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
+          break;
+
+        case 'reset-welcome':
+          localStorage.removeItem('mango-has-seen-welcome');
+          setShowWelcomeModal(true);
+          break;
+
         case 'test-connection':
           alert('Menu communication is working!');
           break;
@@ -857,7 +976,7 @@ const App: React.FC = () => {
           ? 'bg-gray-900 text-gray-50' 
           : 'bg-gray-50 text-gray-900'
       }`}>
-      <Header appName="Flower Menu Builder" currentState={currentAppState} onStateChange={handleStateChange} theme={theme} onThemeChange={handleThemeChange} />
+      <Header appName="Flower Menu Builder" currentState={currentAppState} onStateChange={handleStateChange} theme={theme} onThemeChange={handleThemeChange} onShowInstructions={handleShowInstructions} />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}
         onClearAllLastJars={handleClearAllLastJars}
@@ -888,6 +1007,10 @@ const App: React.FC = () => {
           onUpdateShelfSortCriteria={handleUpdateShelfSortCriteria}
           onScrollToShelf={handleScrollToShelf}
           theme={theme}
+          onMoveStrain={handleMoveStrain}
+          onReorderStrain={handleReorderStrain}
+          dragState={dragState}
+          onDragStart={handleDragStart}
         />
         <div
           className={`panel-divider ${isResizing.current ? 'dragging' : ''}`}
@@ -942,9 +1065,20 @@ const App: React.FC = () => {
             <span className="text-xl font-semibold">Exporting your masterpiece...</span>
           </div>
         </div>
-      )}
-    </div>
-  );
-};
+              )}
+        <InstructionsModal
+          isOpen={showInstructions}
+          onClose={() => setShowInstructions(false)}
+          theme={theme}
+        />
+        <WelcomeModal
+          isOpen={showWelcomeModal}
+          onStateSelect={handleWelcomeStateSelect}
+          onClose={handleWelcomeModalClose}
+          theme={theme}
+        />
+      </div>
+    );
+  };
 
 export default App;

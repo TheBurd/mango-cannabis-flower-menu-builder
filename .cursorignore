@@ -1,0 +1,104 @@
+# Dependencies and build outputs
+node_modules/
+dist/
+dist-ssr/
+release/
+release-new/
+app/
+out/
+build/
+
+# Logs and debug files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime and temporary files
+*.local
+*.pid
+*.seed
+*.pid.lock
+.cache/
+.temp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editor specific files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment and config files
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+
+# Testing and coverage
+coverage/
+.nyc_output/
+.jest/
+
+# Binary and media files (that don't need indexing)
+*.exe
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.msi
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Large image files (keep small icons for reference)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.ico
+*.svg
+
+# Documentation that's auto-generated
+CHANGELOG.md
+docs/api/
+docs/build/
+
+# Git directory
+.git/
+.gitattributes
+.github/
+
+# Ignore this file itself
+.cursorignore 

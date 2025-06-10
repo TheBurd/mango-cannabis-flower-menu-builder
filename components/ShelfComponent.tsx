@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Shelf, Strain, SortCriteria, Theme } from '../types';
 import { StrainInputRow } from './StrainInputRow';
+import { DropZone } from './common/DropZone';
 import { Button } from './common/Button';
 import { PlusIcon, TrashXmarkIcon, MinusCircleIcon, SortAscendingIcon, SortDescendingIcon } from './common/Icon';
 
@@ -15,6 +16,10 @@ interface ShelfComponentProps {
   newlyAddedStrainId: string | null;
   onUpdateShelfSortCriteria: (key: SortCriteria['key']) => void;
   theme: Theme;
+  onMoveStrain?: (fromShelfId: string, toShelfId: string, strainIndex: number, targetIndex?: number) => void;
+  onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
+  dragState?: { strainId: string; shelfId: string; strainIndex: number } | null;
+  onDragStart?: (strainId: string, shelfId: string, strainIndex: number) => void;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -58,6 +63,10 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   newlyAddedStrainId,
   onUpdateShelfSortCriteria,
   theme,
+  onMoveStrain,
+  onReorderStrain,
+  dragState,
+  onDragStart,
 }) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
   const [confirmClear, setConfirmClear] = useState(false);
@@ -93,6 +102,34 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
     { label: "THC%", key: "thc" },
     { label: "Last Jar", key: "isLastJar" },
   ];
+
+  const handleDropBetweenStrains = (dragData: any, targetIndex: number) => {
+    if (dragData.shelfId === shelf.id) {
+      // Reordering within same shelf
+      if (onReorderStrain) {
+        onReorderStrain(shelf.id, dragData.strainIndex, targetIndex);
+      }
+    } else {
+      // Moving between shelves
+      if (onMoveStrain) {
+        onMoveStrain(dragData.shelfId, shelf.id, dragData.strainIndex, targetIndex);
+      }
+    }
+  };
+
+  const handleDropAtEnd = (dragData: any) => {
+    if (dragData.shelfId === shelf.id) {
+      // Reordering within same shelf to end
+      if (onReorderStrain) {
+        onReorderStrain(shelf.id, dragData.strainIndex, shelf.strains.length);
+      }
+    } else {
+      // Moving between shelves to end
+      if (onMoveStrain) {
+        onMoveStrain(dragData.shelfId, shelf.id, dragData.strainIndex);
+      }
+    }
+  };
 
   return (
     <div 
@@ -136,19 +173,57 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
       <div className={`p-3 space-y-2 ${
         theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
       }`}>
-        {shelf.strains.map((strain, index) => (
-            <StrainInputRow
-              key={strain.id}
-              strain={strain}
-              onUpdate={(updatedStrain) => onUpdateStrain(strain.id, updatedStrain)}
-              onRemove={() => onRemoveStrain(strain.id)} 
-              onCopy={(direction) => onCopyStrain(strain.id, direction)}
-              isFirst={index === 0 && shelf.strains.length === 1} 
-              isLast={index === shelf.strains.length - 1 && shelf.strains.length === 1} 
-              isNewlyAdded={newlyAddedStrainId === strain.id}
+        {shelf.strains.length === 0 ? (
+          <DropZone
+            onDrop={(dragData) => handleDropAtEnd(dragData)}
+            theme={theme}
+            className="py-8 rounded-md"
+            isVisible={!!dragState}
+          >
+            <div className={`text-center text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              {dragState ? 'Drop strain here' : 'No strains on this shelf yet'}
+            </div>
+          </DropZone>
+        ) : (
+          <>
+            {/* Drop zone at the beginning */}
+            <DropZone
+              onDrop={(dragData) => handleDropBetweenStrains(dragData, 0)}
               theme={theme}
+              className="h-2 rounded"
+              isVisible={!!dragState}
             />
-        ))}
+            
+            {shelf.strains.map((strain, index) => (
+              <div key={strain.id}>
+                <StrainInputRow
+                  strain={strain}
+                  onUpdate={(updatedStrain) => onUpdateStrain(strain.id, updatedStrain)}
+                  onRemove={() => onRemoveStrain(strain.id)} 
+                  onCopy={(direction) => onCopyStrain(strain.id, direction)}
+                  isFirst={index === 0 && shelf.strains.length === 1} 
+                  isLast={index === shelf.strains.length - 1 && shelf.strains.length === 1} 
+                  isNewlyAdded={newlyAddedStrainId === strain.id}
+                  theme={theme}
+                  shelfId={shelf.id}
+                  strainIndex={index}
+                  isDragging={dragState?.strainId === strain.id}
+                  onDragStart={onDragStart}
+                />
+                
+                {/* Drop zone between strains */}
+                <DropZone
+                  onDrop={(dragData) => handleDropBetweenStrains(dragData, index + 1)}
+                  theme={theme}
+                  className="h-2 rounded"
+                  isVisible={!!dragState}
+                                 />
+               </div>
+            ))}
+          </>
+        )}
         <Button onClick={onAddStrain} variant="secondary" size="sm" className={`w-full flex items-center justify-center space-x-2 mt-2 ${
           theme === 'dark' 
             ? '!bg-gray-600 hover:!bg-gray-500 text-gray-300 hover:text-white'

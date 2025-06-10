@@ -8,10 +8,10 @@ let mainWindow;
 function createWindow() {
   // Create the browser window
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 800,
-    minHeight: 600,
+    width: 1400,
+    height: 900,
+    minWidth: 1000,
+    minHeight: 700,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -20,10 +20,27 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs')
     },
     icon: isDev 
-      ? path.join(__dirname, 'assets/icons/flower-jar.svg')
-      : path.join(__dirname, 'icons/flower-jar.svg'),
+      ? path.join(__dirname, 'assets/icons/appIcon.png')
+      : path.join(__dirname, 'assets/icons/appIcon.png'),
+    title: 'Mango Cannabis Flower Menu Builder',
     titleBarStyle: 'default',
-    show: false // Don't show until ready
+    backgroundColor: '#1f2937', // Dark gray background while loading
+    show: false, // Don't show until ready
+    center: true, // Center the window on screen
+    resizable: true,
+    maximizable: true,
+    minimizable: true,
+    fullscreenable: true,
+    // Better window frame on Windows
+    ...(process.platform === 'win32' && {
+      titleBarStyle: 'default',
+      frame: true
+    }),
+    // macOS specific improvements
+    ...(process.platform === 'darwin' && {
+      titleBarStyle: 'hiddenInset',
+      trafficLightPosition: { x: 20, y: 20 }
+    })
   });
 
   // Load the app
@@ -36,15 +53,34 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
   }
 
-  // Show window when ready
+  // Show window when ready with a nice fade-in effect
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    
+    // Optional: Flash the window to draw attention (Windows only)
+    if (process.platform === 'win32') {
+      mainWindow.flashFrame(false);
+    }
+    
+    // Focus the window
+    mainWindow.focus();
   });
 
   // Handle window closed
   mainWindow.on('closed', () => {
     mainWindow = null;
     app.quit();
+  });
+
+  // Prevent external links from opening in the app
+  mainWindow.webContents.setWindowOpenHandler(() => {
+    return { action: 'deny' };
+  });
+
+  // Handle external links by opening them in the default browser
+  mainWindow.webContents.on('new-window', (event, navigationUrl) => {
+    event.preventDefault();
+    require('electron').shell.openExternal(navigationUrl);
   });
 
   return mainWindow;
@@ -283,6 +319,21 @@ function createMenu(dynamicData = { shelves: [], darkMode: false }) {
           label: 'Fit to Window',
           accelerator: 'CmdOrCtrl+F',
           click: () => sendToRenderer('fit-to-window')
+        }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Instructions',
+          accelerator: 'F1',
+          click: () => sendToRenderer('show-instructions')
+        },
+        { type: 'separator' },
+        {
+          label: 'About Mango Menu Builder',
+          click: () => sendToRenderer('show-about')
         }
       ]
     }

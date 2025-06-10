@@ -15,6 +15,10 @@ interface FlowerShelvesPanelProps {
   onUpdateShelfSortCriteria: (shelfId: string, key: SortCriteria['key']) => void;
   onScrollToShelf: (shelfId: string) => void;
   theme: Theme;
+  onMoveStrain?: (fromShelfId: string, toShelfId: string, strainIndex: number, targetIndex?: number) => void;
+  onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
+  dragState?: { strainId: string; shelfId: string; strainIndex: number } | null;
+  onDragStart?: (strainId: string, shelfId: string, strainIndex: number) => void;
 }
 
 export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelvesPanelProps>(({
@@ -29,6 +33,10 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
   onUpdateShelfSortCriteria,
   onScrollToShelf,
   theme,
+  onMoveStrain,
+  onReorderStrain,
+  dragState,
+  onDragStart,
 }, ref) => {
   return (
     <div 
@@ -43,6 +51,7 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
         shelves={shelves}
         onScrollToShelf={onScrollToShelf}
         theme={theme}
+        isDragging={!!dragState}
       />
       <div className="space-y-3 p-1"> {/* Added padding inside scrollable area */}
         {shelves.map(shelf => (
@@ -57,6 +66,10 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
               newlyAddedStrainId={newlyAddedStrainId}
               onUpdateShelfSortCriteria={(key) => onUpdateShelfSortCriteria(shelf.id, key)}
               theme={theme}
+              onMoveStrain={onMoveStrain}
+              onReorderStrain={onReorderStrain}
+              dragState={dragState}
+              onDragStart={onDragStart}
             />
           </div>
         ))}

@@ -8,19 +8,23 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mangocannabis/menu-builder.git"
+    "url": "https://github.com/TheBurd/mango-cannabis-flower-menu-builder.git"
   },
   "bugs": {
-    "url": "https://github.com/mangocannabis/menu-builder/issues"
+    "url": "https://github.com/TheBurd/mango-cannabis-flower-menu-builder/issues"
   },
   "keywords": [
     "cannabis",
     "dispensary",
-    "menu",
-    "builder",
-    "pos",
-    "compliance",
-    "thc",
+    "menu-builder",
+    "pos-system",
+    "thc-compliance",
+    "oklahoma-cannabis",
+    "michigan-cannabis", 
+    "new-mexico-cannabis",
+    "strain-management",
+    "menu-export",
+    "desktop-app",
     "electron",
     "react",
     "typescript"
@@ -29,15 +33,21 @@
   "main": "electron.cjs",
   "homepage": "./",
   "scripts": {
-    "dev": "vite",
+    "start": "npm run dev",
+    "dev": "vite --host localhost",
     "build": "vite build",
     "preview": "vite preview",
     "electron": "electron .",
     "electron-dev": "node start-electron-dev.cjs",
-    "electron-simple": "electron .",
     "build-electron": "npm run build && electron-builder",
     "dist": "npm run build && electron-builder --publish=never",
-    "test-app": "node test-app.js"
+    "pack": "npm run build && electron-builder --dir",
+    "release": "npm run build && electron-builder --publish=always",
+    "release-draft": "npm run build && electron-builder --publish=always --draft",
+    "build-release": "powershell -ExecutionPolicy Bypass -File build-release.ps1",
+    "clean": "rimraf dist release release-new",
+    "clean-all": "rimraf dist release release-new node_modules",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "dom-to-image": "^2.6.0",
@@ -53,30 +63,56 @@
     "cross-env": "^7.0.3",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
+    "rimraf": "^6.0.1",
     "typescript": "~5.3.3",
     "vite": "^5.0.0",
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.mangocannabis.menu-builder",
-    "productName": "Mango Cannabis Menu Builder",
+    "appId": "com.mangocannabis.flowerMenuBuilder",
+    "productName": "Mango Cannabis Flower Menu Builder",
     "copyright": "Copyright © 2024 Mango Cannabis",
     "directories": {
-      "output": "release-new"
+      "output": "release"
     },
     "files": [
       "dist/**/*",
-      "assets/**/*",
+      "assets/icons/**/*",
+      "assets/images/**/*",
+      "assets/logos/**/*",
       "electron.cjs",
       "preload.cjs",
-      "package.json"
+      "package.json",
+      "LICENSE"
+    ],
+    "extraFiles": [
+      {
+        "from": "assets/installer.nsh",
+        "to": "assets/installer.nsh"
+      }
     ],
     "icon": "assets/icons/appIcon.png",
+    "publish": {
+      "provider": "github",
+      "owner": "TheBurd",
+      "repo": "mango-cannabis-flower-menu-builder"
+    },
     "mac": {
-      "category": "public.app-category.productivity",
+      "category": "public.app-category.business",
+      "hardenedRuntime": true,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "icon": "assets/icons/appIcon.icns",
       "target": [
         {
           "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
           "arch": [
             "x64",
             "arm64"
@@ -85,26 +121,68 @@
       ]
     },
     "win": {
+      "icon": "assets/icons/appIcon.ico",
       "target": [
         {
           "target": "nsis",
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "publisherName": "Mango Cannabis",
-      "verifyUpdateCodeSignature": false
+      "verifyUpdateCodeSignature": false,
+      "requestedExecutionLevel": "asInvoker"
     },
     "linux": {
+      "category": "Office",
       "target": [
         {
           "target": "AppImage",
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
         }
       ]
+    },
+    "nsis": {
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Mango Cannabis Flower Menu Builder",
+      "displayLanguageSelector": false,
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "perMachine": false,
+      "artifactName": "${productName} Setup ${version}.${ext}",
+      "license": "LICENSE",
+      "installerIcon": "assets/icons/appIcon.ico",
+      "uninstallerIcon": "assets/icons/appIcon.ico",
+      "installerHeaderIcon": "assets/icons/appIcon.ico",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "menuCategory": "Mango Cannabis",
+      "warningsAsErrors": false,
+      "include": "assets/installer.nsh",
+      "installerSidebar": "assets/images/MUI_FINISHPAGE_BITMAP.bmp"
     }
   }
 }
