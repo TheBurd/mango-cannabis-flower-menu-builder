@@ -27,7 +27,7 @@ lerna-debug.log*
 temp/
 
 # OS generated files
-.DS_Store
+**/.DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
@@ -35,6 +35,7 @@ temp/
 ehthumbs.db
 Thumbs.db
 desktop.ini
+Icon?
 
 # Editor specific files
 .vscode/*
@@ -79,16 +80,24 @@ coverage/
 *.rar
 *.7z
 
-# Large image files (keep small icons for reference)
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.bmp
-*.tiff
-*.webp
-*.ico
-*.svg
+# Large image files (but keep assets/icons and assets/images for reference)
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.bmp
+# *.tiff
+# *.webp
+# Keep .ico and .svg files visible
+
+# Electron builder temp directories
+mac/
+mac-arm64/
+win-unpacked/
+win-ia32-unpacked/
+linux-unpacked/
+builder-debug.yml
+builder-effective-config.yaml
 
 # Documentation that's auto-generated
 CHANGELOG.md

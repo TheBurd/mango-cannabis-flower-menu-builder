@@ -104,7 +104,7 @@ jspm_packages/
 .vscode-test
 
 # OS generated files
-.DS_Store
+**/.DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
@@ -112,6 +112,7 @@ jspm_packages/
 ehthumbs.db
 Thumbs.db
 Desktop.ini
+Icon?
 
 # Windows specific
 $RECYCLE.BIN/
@@ -143,15 +144,24 @@ $RECYCLE.BIN/
 # config/local.json
 # secrets/
 
-# Build artifacts
-*.exe
-*.dmg
-*.pkg
-*.deb
-*.rpm
-*.zip
-*.tar.gz
-*.AppImage
+# Build artifacts (but keep in release/ for distribution)
+# *.exe
+# *.dmg  
+# *.pkg
+# *.deb
+# *.rpm
+# *.zip
+# *.tar.gz
+# *.AppImage
+
+# Electron builder temp files
+mac/
+mac-arm64/
+win-unpacked/
+win-ia32-unpacked/
+linux-unpacked/
+builder-debug.yml
+builder-effective-config.yaml
 
 # Code signing certificates (keep these secure!)
 *.p12

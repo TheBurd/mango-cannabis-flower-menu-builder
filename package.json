@@ -104,6 +104,7 @@
       "entitlements": "assets/entitlements.mac.plist",
       "entitlementsInherit": "assets/entitlements.mac.plist",
       "icon": "assets/icons/appIcon.icns",
+      "artifactName": "Mango-Cannabis-Flower-Menu-Builder-MAC-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "dmg",

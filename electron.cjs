@@ -39,7 +39,8 @@ function createWindow() {
     }),
     // macOS specific improvements
     ...(process.platform === 'darwin' && {
-      titleBarStyle: 'hiddenInset',
+      titleBarStyle: 'default',
+      frame: true,
       trafficLightPosition: { x: 20, y: 20 }
     })
   });
