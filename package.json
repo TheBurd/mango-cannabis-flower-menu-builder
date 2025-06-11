@@ -124,7 +124,7 @@
     },
     "win": {
       "icon": "assets/icons/appIcon.ico",
-      "artifactName": "Mango-Cannabis-Flower-Menu-Builder-${version}.${ext}",
+      "artifactName": "Mango-Cannabis-Flower-Menu-Builder-WIN-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "nsis",
@@ -175,7 +175,7 @@
       "allowToChangeInstallationDirectory": true,
       "allowElevation": true,
       "perMachine": false,
-      "artifactName": "Mango-Cannabis-Flower-Menu-Builder-Setup-${version}.${ext}",
+      "artifactName": "Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-${version}-${arch}.${ext}",
       "license": "LICENSE",
       "installerIcon": "assets/icons/appIcon.ico",
       "uninstallerIcon": "assets/icons/appIcon.ico",

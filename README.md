@@ -18,18 +18,29 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 ## 🪟 **Windows Installation**
 
 #### **🎯 Recommended: Full Installer**
-- **`Mango-Cannabis-Flower-Menu-Builder-Setup-1.0.0.exe`** *(~81 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.0-x64.exe`** *(~81 MB)*
 - **Best choice for most users** - Creates Start menu shortcuts, handles updates automatically
 - Just double-click to install, then launch from Start menu
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.0-x64.exe)
 
 #### **⚡ Alternative: Portable App**
-- **`Mango-Cannabis-Flower-Menu-Builder-1.0.0.exe`** *(~81 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.0-x64.exe`** *(~81 MB)*
 - **No installation required** - Just download and run directly
 - Good for testing or if you can't install software on your computer
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.0-x64.exe)
+
+#### **📦 ZIP Archive**
+- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.0-x64.zip`** *(~110 MB)*
+- Contains the portable app in a compressed archive
+- Extract and run the `.exe` file inside
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.0-x64.zip)
 
 **Installation Steps:**
 - **Installer**: Double-click the Setup file → Follow prompts → Launch from Start menu
 - **Portable**: Double-click the `.exe` file → App opens immediately
+- **ZIP**: Extract the archive → Double-click the `.exe` file inside
+
+**⚠️ Windows Security Note:** On first launch, Windows Defender SmartScreen may show a security warning. Click **"More info"** then **"Run anyway"** to launch the app. This warning appears because the app is not yet code-signed with a Microsoft certificate.
 
 ---
 
@@ -39,17 +50,21 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 **For Intel Macs (2020 and earlier):**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-x64.dmg`** *(~105 MB)*
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-x64.dmg)
 
 **For Apple Silicon Macs (M1/M2/M3):**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-arm64.dmg`** *(~100 MB)*
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-arm64.dmg)
 
 #### **⚡ Alternative: ZIP Archive**
 
 **For Intel Macs:**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-x64.zip`** *(~101 MB)*
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-x64.zip)
 
 **For Apple Silicon Macs:**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-arm64.zip`** *(~96 MB)*
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-arm64.zip)
 
 **Installation Steps:**
 1. **DMG**: Double-click the `.dmg` file → Drag app to Applications folder → Launch from Applications
@@ -58,8 +73,9 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 **⚠️ macOS Security Note:** On first launch, you may see a security warning. Go to **System Preferences → Security & Privacy → General** and click **"Open Anyway"** to run the app.
 
 #### **❌ Files You DON'T Need**
-- `*.blockmap` - Technical file, ignore this
-- `latest.yml` - Update configuration, ignore this
+- `*.blockmap` - Technical file for auto-updates, ignore this
+- `latest.yml` - Windows update configuration, ignore this
+- `latest-mac.yml` - macOS update configuration, ignore this
 
 ---
 
