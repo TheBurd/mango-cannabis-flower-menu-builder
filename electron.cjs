@@ -346,6 +346,34 @@ function createMenu(dynamicData = { shelves: [], darkMode: false }) {
     }
   ];
 
+  // Add development menu only in development mode
+  if (isDev) {
+    template.push({
+      label: 'Development',
+      submenu: [
+        {
+          label: 'Clear localStorage',
+          accelerator: 'CmdOrCtrl+Shift+Delete',
+          click: () => sendToRenderer('clear-localstorage')
+        },
+        {
+          label: 'Reset to Welcome State',
+          click: () => sendToRenderer('reset-welcome-state')
+        },
+        { type: 'separator' },
+        {
+          label: 'Open DevTools',
+          accelerator: 'F12',
+          click: () => {
+            if (mainWindow && mainWindow.webContents) {
+              mainWindow.webContents.openDevTools();
+            }
+          }
+        }
+             ]
+     });
+   }
+
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
   

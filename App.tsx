@@ -1090,6 +1090,25 @@ const App: React.FC = () => {
           handleManualCheckForUpdates();
           break;
 
+        case 'clear-localstorage':
+          // Clear all app-specific localStorage data for clean release builds
+          const confirmClear = await showElectronConfirm(
+            'Clear localStorage data?',
+            'This will remove all saved settings including theme, state, and welcome status. The app will reset to default state.'
+          );
+          if (confirmClear) {
+            const keysToRemove = ['mango-selected-state', 'mango-theme', 'mango-has-seen-welcome'];
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            alert('✅ localStorage cleared! The app will reload with default settings.');
+            window.location.reload();
+          }
+          break;
+
+        case 'reset-welcome-state':
+          localStorage.removeItem('mango-has-seen-welcome');
+          setShowWelcomeModal(true);
+          break;
+
         case 'test-connection':
           alert('Menu communication is working!');
           break;

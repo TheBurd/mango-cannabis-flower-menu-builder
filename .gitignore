@@ -162,6 +162,7 @@ win-ia32-unpacked/
 linux-unpacked/
 builder-debug.yml
 builder-effective-config.yaml
+__uninstaller-nsis-*.exe
 
 # Code signing certificates (keep these secure!)
 *.p12
@@ -178,3 +179,23 @@ builder-effective-config.yaml
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+
+# Development guides and documentation
+CLEAN_RELEASE_GUIDE.md
+BUILD_NOTES.md
+DEVELOPMENT_NOTES.md
+
+# Auto-updater files  
+latest.yml
+latest-mac.yml
+latest-linux.yml
+
+# Electron builder additional temp files
+*.blockmap
+*.nupkg
+*.delta
+
+# Cache and temporary build files
+.cache/
+.temp/
+temp/
