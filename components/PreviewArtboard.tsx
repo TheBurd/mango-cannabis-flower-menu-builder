@@ -1,4 +1,4 @@
-import React, { forwardRef, useMemo } from 'react';
+import React, { forwardRef, useMemo, useEffect, useRef } from 'react';
 import { Shelf, PreviewSettings, ArtboardSize, HeaderImageSize, SupportedStates } from '../types';
 import { ARTBOARD_DIMENSIONS_MAP, HEADER_IMAGE_CONFIGS, STATE_THC_ICONS } from '../constants';
 import { MenuTable } from './MenuTable';
@@ -7,6 +7,7 @@ interface PreviewArtboardProps {
   shelves: Shelf[];
   settings: PreviewSettings;
   currentState: SupportedStates;
+  onOverflowDetected?: (hasOverflow: boolean) => void;
 }
 
 const getScaledValue = (base: number, multiplier: number, min: number = 0) => Math.max(min, base * multiplier); 
@@ -27,7 +28,7 @@ const getHeaderImageDetails = (artboardSize: ArtboardSize, headerSize: HeaderIma
 
 
 export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>((
-  { shelves, settings, currentState }, ref
+  { shelves, settings, currentState, onOverflowDetected }, ref
 ) => {
   const { artboardSize, baseFontSizePx, columns, forceShelfFit, headerImageSize, linePaddingMultiplier, showThcIcon } = settings;
   const artboardSpecs = ARTBOARD_DIMENSIONS_MAP[artboardSize];
@@ -38,11 +39,9 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
   );
 
   const artboardStyle: React.CSSProperties = {
-    position: 'absolute',
+    position: 'relative',
     width: `${artboardSpecs.naturalWidth}px`,
     height: `${artboardSpecs.naturalHeight}px`,
-    left: `-${artboardSpecs.naturalWidth / 2}px`,
-    top: `-${artboardSpecs.naturalHeight / 2}px`,
     backgroundColor: 'white',
     boxShadow: '0 0 15px rgba(0,0,0,0.3)',
     overflow: 'hidden',
@@ -62,6 +61,7 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
     boxSizing: 'border-box',
     columnCount: columns,
     columnGap: `${columnGap}px`,
+    columnFill: 'auto', // Fill columns sequentially instead of balancing heights
     overflow: 'hidden', // Prevent content from overflowing its designated area
   };
 
@@ -69,9 +69,31 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
 
   const renderableShelves = useMemo(() => {
     return shelvesWithStrains.map(shelf => {
-      // When forceShelfFit is true (tighten shelves ON), allow table rows to flow across columns
-      // When forceShelfFit is false (tighten shelves OFF), prevent tables from breaking across columns  
-      const applyAvoidBreak = !forceShelfFit;
+      // When forceShelfFit is true, prevent tables from breaking across columns (keep shelves together)
+      // When forceShelfFit is false, allow shelves to split across columns (shelf splitting enabled)
+      const applyAvoidBreak = forceShelfFit;
+      
+      // Calculate if shelf might overflow for subtle warning overlay
+      let showOverflowWarning = false;
+      if (applyAvoidBreak && shelf.strains.length > 0) {
+        // Only show warning when shelf splitting is disabled AND shelf is genuinely too long
+        // More accurate calculation of shelf height
+        const estimatedRowHeight = baseFontSizePx * 1.8 * (1 + linePaddingMultiplier * 0.8);
+        const estimatedHeaderHeight = baseFontSizePx * 2.5; // Shelf name + pricing
+        const estimatedTableHeaderHeight = baseFontSizePx * 1.6; // Column headers
+        const estimatedShelfHeight = estimatedHeaderHeight + estimatedTableHeaderHeight + (shelf.strains.length * estimatedRowHeight);
+        
+        // More accurate calculation of available column height
+        const totalContentHeight = artboardSpecs.naturalHeight - headerImageDetails.height - (contentPadding * 2);
+        const availableColumnHeight = totalContentHeight;
+        
+        // Only show warning if shelf is significantly too tall for a single column
+        // Use a higher threshold (90%) and require a minimum number of strains to avoid false positives
+        const isSignificantlyTooTall = estimatedShelfHeight > availableColumnHeight * 0.9;
+        const hasEnoughStrains = shelf.strains.length >= 8; // Only warn for shelves with many strains
+        
+        showOverflowWarning = isSignificantlyTooTall && hasEnoughStrains;
+      }
       
       return (
         <MenuTable
@@ -82,11 +104,44 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
           linePaddingMultiplier={linePaddingMultiplier}
           marginBottomStyle={rowGapPx}
           applyAvoidBreakStyle={applyAvoidBreak}
+          showOverflowWarning={showOverflowWarning}
         />
       );
     });
-  }, [shelvesWithStrains, forceShelfFit, baseFontSizePx, linePaddingMultiplier, rowGapPx]);
+  }, [shelvesWithStrains, forceShelfFit, baseFontSizePx, linePaddingMultiplier, rowGapPx, artboardSpecs.naturalHeight, headerImageDetails.height, contentPadding, columns]);
 
+  const overflowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      const overflowElement = overflowRef.current;
+      if (overflowElement && onOverflowDetected) {
+        // Check if content is overflowing the container
+        const hasVerticalOverflow = overflowElement.scrollHeight > overflowElement.clientHeight;
+        const hasHorizontalOverflow = overflowElement.scrollWidth > overflowElement.clientWidth;
+        const hasOverflow = hasVerticalOverflow || hasHorizontalOverflow;
+        
+        onOverflowDetected(hasOverflow);
+      }
+    };
+
+    // Check overflow immediately
+    checkOverflow();
+
+    // Set up a ResizeObserver to detect content changes
+    const overflowElement = overflowRef.current;
+    if (overflowElement) {
+      const resizeObserver = new ResizeObserver(() => {
+        checkOverflow();
+      });
+      
+      resizeObserver.observe(overflowElement);
+      
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, [onOverflowDetected, renderableShelves, settings]);
 
   return (
     <div
@@ -111,7 +166,7 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
         />
       )}
       {renderableShelves.length > 0 ? (
-        <div style={contentAreaStyle} className="menu-content-area">
+        <div style={contentAreaStyle} className="menu-content-area" ref={overflowRef}>
           {renderableShelves}
         </div>
       ) : (

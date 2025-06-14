@@ -30,6 +30,7 @@ import { Header } from './components/Header';
 import { Toolbar } from './components/Toolbar';
 import { InstructionsModal } from './components/InstructionsModal';
 import { WelcomeModal } from './components/WelcomeModal';
+import { WhatsNewModal } from './components/WhatsNewModal';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
 import { UpdateNotification } from './components/UpdateNotification';
@@ -129,6 +130,14 @@ const App: React.FC = () => {
   });
   
   const [newlyAddedStrainId, setNewlyAddedStrainId] = useState<string | null>(null);
+  
+  // Modal states
+  const [showInstructions, setShowInstructions] = useState<boolean>(false);
+  const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
+  const [hasViewedWhatsNew, setHasViewedWhatsNew] = useState<boolean>(() => {
+    const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
+    return viewedVersion === '1.0.1'; // Check if current version has been viewed
+  });
 
   // Theme toggle handler
   const handleThemeChange = useCallback((newTheme: Theme) => {
@@ -140,6 +149,16 @@ const App: React.FC = () => {
   const handleShowInstructions = useCallback(() => {
     setShowInstructions(true);
   }, []);
+
+  // What's New modal handler
+  const handleShowWhatsNew = useCallback(() => {
+    setShowWhatsNew(true);
+    // Mark this version as viewed
+    if (!hasViewedWhatsNew) {
+      setHasViewedWhatsNew(true);
+      localStorage.setItem('mango-whats-new-viewed-version', '1.0.1');
+    }
+  }, [hasViewedWhatsNew]);
 
   // Update notification handler
   const handleUpdateDismissed = useCallback(() => {
@@ -283,7 +302,6 @@ const App: React.FC = () => {
   const [globalSortCriteria, setGlobalSortCriteria] = useState<SortCriteria | null>(null);
   const shelvesRef = useRef<HTMLDivElement | null>(null);
   const [lastInteractedShelfId, setLastInteractedShelfId] = useState<string | null>(null);
-  const [showInstructions, setShowInstructions] = useState<boolean>(false);
   const [dragState, setDragState] = useState<{ strainId: string; shelfId: string; strainIndex: number } | null>(null);
   const [updateDismissed, setUpdateDismissed] = useState<boolean>(false);
   const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
@@ -1078,7 +1096,7 @@ const App: React.FC = () => {
           break;
 
         case 'show-about':
-          alert('🥭 Mango Cannabis Flower Menu Builder v1.0.0\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
+          alert('🥭 Mango Cannabis Flower Menu Builder v1.0.1\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
           break;
 
         case 'reset-welcome':
@@ -1166,6 +1184,8 @@ const App: React.FC = () => {
         theme={theme} 
         onThemeChange={handleThemeChange} 
         onShowInstructions={handleShowInstructions}
+        onShowWhatsNew={handleShowWhatsNew}
+        hasViewedWhatsNew={hasViewedWhatsNew}
       />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}
@@ -1214,19 +1234,21 @@ const App: React.FC = () => {
           aria-valuemax={mainContainerRef.current ? mainContainerRef.current.offsetWidth - MIN_PREVIEW_PANEL_WIDTH - DIVIDER_WIDTH : undefined}
         >
         </div>
-        <MenuPreviewPanel
-          shelves={processedShelves} // Use processed (sorted) shelves
-          settings={previewSettings}
-          onSettingsChange={handleUpdatePreviewSettings}
-          exportAction={exportAction}
-          onExportComplete={() => {
-            setExportAction(null);
-            setIsExporting(false);
-            setShowExportOverlay(false); // Hide overlay
-          }}
-          currentState={currentAppState}
-          theme={theme}
-        />
+        <div className="flex-1 min-w-0">
+          <MenuPreviewPanel
+            shelves={processedShelves} // Use processed (sorted) shelves
+            settings={previewSettings}
+            onSettingsChange={handleUpdatePreviewSettings}
+            exportAction={exportAction}
+            onExportComplete={() => {
+              setExportAction(null);
+              setIsExporting(false);
+              setShowExportOverlay(false); // Hide overlay
+            }}
+            currentState={currentAppState}
+            theme={theme}
+          />
+        </div>
       </main>
       <input
         type="file"
@@ -1259,6 +1281,11 @@ const App: React.FC = () => {
         <InstructionsModal
           isOpen={showInstructions}
           onClose={() => setShowInstructions(false)}
+          theme={theme}
+        />
+        <WhatsNewModal
+          isOpen={showWhatsNew}
+          onClose={() => setShowWhatsNew(false)}
           theme={theme}
         />
         <WelcomeModal

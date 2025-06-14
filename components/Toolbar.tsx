@@ -106,12 +106,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   ];
 
   return (
-    <div className={`no-print sticky top-0 z-40 p-3 shadow-md flex flex-col gap-3 border-b ${
+    <div className={`no-print sticky top-0 z-40 p-3 shadow-md border-b ${
       theme === 'dark'
         ? 'bg-gray-700 border-gray-600'
         : 'bg-white border-gray-300'
     }`}>
-      {/* Top row: Actions */}
+      {/* Single row: All controls */}
       <div className="flex flex-wrap items-center gap-3">
         <Button 
           onClick={handleClearShelvesClick} 
@@ -133,9 +133,31 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </Button>
 
         <div className="h-6 border-l border-gray-600 mx-1"></div> {/* Divider */}
+
+        {/* Global Sort Options - moved inline */}
+        <div className={`flex items-center space-x-2 px-3 py-2 border rounded-md h-[36px] ${
+          theme === 'dark'
+            ? 'border-gray-600 bg-gray-700/50'
+            : 'border-gray-300 bg-gray-100/50'
+        }`}>
+          <span className={`text-xs font-medium ${
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          }`}>Global Sort:</span>
+          {sortOptions.map(opt => (
+              <SortButton
+                key={opt.key}
+                label={opt.label}
+                sortKey={opt.key}
+                currentSortCriteria={globalSortCriteria}
+                onClick={() => onUpdateGlobalSortCriteria(opt.key)}
+              />
+          ))}
+        </div>
+
+        <div className="h-6 border-l border-gray-600 mx-1"></div> {/* Divider */}
         
         {/* File Operations Group */}
-        <div className={`flex items-center space-x-2 p-2 border rounded-md ${
+        <div className={`flex items-center space-x-2 px-3 py-2 border rounded-md h-[36px] ${
           theme === 'dark'
             ? 'border-gray-600 bg-gray-700/50'
             : 'border-gray-300 bg-gray-100/50'
@@ -204,26 +226,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <span>{isExporting ? '...' : 'CSV'}</span>
           </Button>
         </div>
-      </div>
-      {/* Bottom row: Global Sort Options */}
-      <div className={`flex items-center space-x-2 p-2 border rounded-md mt-1 ${
-        theme === 'dark'
-          ? 'border-gray-600 bg-gray-700/50'
-          : 'border-gray-300 bg-gray-100/50'
-      }`}>
-        <span className={`text-xs font-medium mr-2 ${
-          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-        }`}>Global Sort:</span>
-        {sortOptions.map(opt => (
-            <SortButton
-              key={opt.key}
-              label={opt.label}
-              sortKey={opt.key}
-              currentSortCriteria={globalSortCriteria}
-              onClick={() => onUpdateGlobalSortCriteria(opt.key)}
-            />
-        ))}
-        {/* Removed the "Clear Global (apply shelf sort)" button */}
       </div>
     </div>
   );

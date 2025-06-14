@@ -10,7 +10,8 @@ interface MenuTableProps {
   linePaddingMultiplier: number; // Controls the top/bottom padding of line items
   marginBottomStyle?: string;
   // headerText?: string; // Removed: No longer passing "(cont.)" text
-  applyAvoidBreakStyle?: boolean; 
+  applyAvoidBreakStyle?: boolean;
+  showOverflowWarning?: boolean; // Show subtle overlay warning for shelves that might overflow
 }
 
 const getScaledFontSize = (base: number, multiplier: number, min: number = 7): string =>
@@ -20,7 +21,7 @@ const getScaledValue = (base: number, multiplier: number, min: number = 0): numb
     Math.max(min, base * multiplier);
 
 // Function to render shelves as flowing rows when tighten shelves is enabled
-const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSizePx: number, linePaddingMultiplier: number, marginBottomStyle?: string) => {
+const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSizePx: number, linePaddingMultiplier: number, marginBottomStyle?: string, applyAvoidBreakStyle?: boolean, showOverflowWarning?: boolean) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
   
   // Map shelf colors to actual hex values for borders
@@ -44,23 +45,23 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
   
   const shelfBorderColor = getShelfBorderColor(shelf.color);
   
-  // Header styles
-  const headerPaddingVertical = getScaledValue(baseFontSizePx, 0.4, 4);
-  const titleFontSize = Math.max(12, baseFontSizePx * 1.4);
-  const pricingFontSize = Math.max(8, baseFontSizePx * 0.75);
-  const titleLineHeight = 1.1;
-  const pricingLineHeight = 1.1;
-  const spaceBetween = getScaledValue(baseFontSizePx, 0.05, 1);
+  // IMPROVED: More compact header styles
+  const headerPaddingVertical = getScaledValue(baseFontSizePx, 0.35, 3); // Reduced from 0.4
+  const titleFontSize = Math.max(11, baseFontSizePx * 1.3); // Reduced from 1.4
+  const pricingFontSize = Math.max(7, baseFontSizePx * 0.7); // Reduced from 0.75
+  const titleLineHeight = 1.0; // Reduced from 1.1
+  const pricingLineHeight = 1.0; // Reduced from 1.1
+  const spaceBetween = getScaledValue(baseFontSizePx, 0.03, 1); // Reduced spacing
   
   const calculatedHeaderHeight = 
     (headerPaddingVertical * 2) + 
     (titleFontSize * titleLineHeight) + 
     spaceBetween + 
     (pricingFontSize * pricingLineHeight) + 
-    getScaledValue(baseFontSizePx, 0.15, 2);
+    getScaledValue(baseFontSizePx, 0.1, 1); // Reduced extra space
 
-  // Row styles for flowing layout
-  const rowHeight = getScaledValue(baseFontSizePx, 2.2, 22);
+  // IMPROVED: More compact row styles for flowing layout
+  const rowHeight = getScaledValue(baseFontSizePx, 1.8, 18); // Reduced from 2.2
   
   const elements: React.ReactElement[] = [];
   
@@ -70,15 +71,16 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
       key={`${shelf.id}-header`}
       className={`${shelf.color} ${shelf.textColor} shadow-md`}
       style={{
-        marginBottom: '0', // Remove gap to connect with column headers
-        padding: `${headerPaddingVertical}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`,
-        breakInside: 'avoid-column',
+        marginBottom: '0',
+        padding: `${headerPaddingVertical}px ${getScaledValue(baseFontSizePx, 0.5, 5)}px`, // Reduced padding
+        breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
+        breakAfter: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
         position: 'relative',
         height: `${calculatedHeaderHeight}px`,
         minHeight: `${calculatedHeaderHeight}px`,
         border: `2px solid ${shelfBorderColor}`,
-        borderRadius: '6px 6px 0 0', // Remove bottom corners to connect with table
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        borderRadius: '4px 4px 0 0', // Standard radius
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)', // Reduced shadow
       }}
     >
       <div style={{
@@ -87,17 +89,17 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
         left: '0',
         right: '0',
         transform: 'translateY(-50%)',
-        paddingLeft: getScaledValue(baseFontSizePx, 0.6, 6),
-        paddingRight: getScaledValue(baseFontSizePx, 0.6, 6)
+        paddingLeft: getScaledValue(baseFontSizePx, 0.5, 5),
+        paddingRight: getScaledValue(baseFontSizePx, 0.5, 5)
       }}>
         <h3 style={{
-          fontSize: getScaledFontSize(baseFontSizePx, 1.4, 12),
+          fontSize: getScaledFontSize(baseFontSizePx, 1.3, 11), // Reduced font size
           fontWeight: 700,
           marginBottom: `${spaceBetween}px`,
           lineHeight: titleLineHeight,
         }}>{shelf.name}</h3>
         <p style={{
-          fontSize: getScaledFontSize(baseFontSizePx, 0.75, 8),
+          fontSize: getScaledFontSize(baseFontSizePx, 0.7, 7), // Reduced font size
           opacity: 0.9,
           lineHeight: pricingLineHeight,
         }}>
@@ -107,7 +109,7 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
     </div>
   );
 
-  // Add column headers
+  // IMPROVED: More compact column headers
   elements.push(
     <div
       key={`${shelf.id}-column-headers`}
@@ -116,16 +118,16 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
         display: 'grid',
         gridTemplateColumns: '35% 30% 15% 20%',
         alignItems: 'center',
-        minHeight: `${getScaledValue(baseFontSizePx, 2.0, 20)}px`,
-        padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier, 3)}px ${getScaledValue(baseFontSizePx, 0.8, 8)}px`,
+        minHeight: `${getScaledValue(baseFontSizePx, 1.6, 16)}px`, // Reduced from 2.0
+        padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`, // Reduced padding
         borderLeft: `2px solid ${shelfBorderColor}`,
         borderRight: `2px solid ${shelfBorderColor}`,
         borderBottom: `1px solid rgba(255,255,255,0.15)`,
         marginBottom: '0',
-        fontSize: getScaledFontSize(baseFontSizePx, 0.8, 9),
+        fontSize: getScaledFontSize(baseFontSizePx, 0.75, 8), // Reduced from 0.8
         fontWeight: 600,
-        breakInside: 'avoid-column',
-        breakAfter: 'avoid-column',
+        breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
+        breakAfter: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
         boxSizing: 'border-box',
         fontFamily: "'Inter', sans-serif",
       }}
@@ -137,7 +139,7 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
     </div>
   );
   
-  // Add individual strain rows as flowing divs
+  // IMPROVED: More compact individual strain rows
   strainsToRender.forEach((strain, index) => {
     const isLastRow = index === strainsToRender.length - 1;
     
@@ -150,24 +152,24 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
           gridTemplateColumns: '35% 30% 15% 20%',
           alignItems: 'center',
           minHeight: `${rowHeight}px`,
-          padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier, 3)}px ${getScaledValue(baseFontSizePx, 0.8, 8)}px`, // Match table padding
+          padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`, // Reduced padding
           borderLeft: strain.isLastJar ? `4px solid ${MANGO_MAIN_ORANGE}` : `2px solid ${shelfBorderColor}`,
           borderRight: `2px solid ${shelfBorderColor}`,
-          borderBottom: isLastRow ? `2px solid ${shelfBorderColor}` : '1px solid #e5e7eb', // Shelf border on last row, grey divider otherwise
+          borderBottom: isLastRow ? `2px solid ${shelfBorderColor}` : '1px solid #e5e7eb',
           backgroundColor: strain.isLastJar ? '#fff7ed' : '#ffffff',
           marginBottom: '0',
-          fontSize: getScaledFontSize(baseFontSizePx, 0.9, 10),
-          breakInside: 'avoid-column',
+          fontSize: getScaledFontSize(baseFontSizePx, 0.85, 9), // Reduced from 0.9
+          breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
           boxSizing: 'border-box',
           color: '#374151',
           fontFamily: "'Inter', sans-serif",
-          borderRadius: isLastRow ? '0 0 6px 6px' : '0', // Only round bottom corners on last row
-          lineHeight: '1.5', // Match table line height
+          borderRadius: isLastRow ? '0 0 4px 4px' : '0', // Smaller border radius
+          lineHeight: '1.3', // Reduced from 1.5
         }}
       >
         {/* Strain Name */}
         <div style={{
-          lineHeight: '1.4',
+          lineHeight: '1.3', // Reduced line height
           display: 'flex',
           alignItems: 'center',
           color: '#374151',
@@ -177,7 +179,7 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
         
         {/* Grower */}
         <div style={{
-          lineHeight: '1.4',
+          lineHeight: '1.3', // Reduced line height
           display: 'flex',
           alignItems: 'center',
           fontStyle: 'italic',
@@ -198,11 +200,12 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
         
         {/* THC */}
         <div style={{
-          lineHeight: '1.4',
+          lineHeight: '1.3', // Reduced line height
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
           whiteSpace: 'nowrap',
+          fontWeight: 500, // Slightly bolder for better readability
           color: '#374151',
         }}>
           {strain.thc !== null ? `${strain.thc.toFixed(THC_DECIMAL_PLACES)}%` : '-'}
@@ -210,11 +213,67 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
       </div>
     );
   });
-  
-  // Wrap in container with bottom margin
+
+  if (strainsToRender.length === 0) {
+    elements.push(
+      <div
+        key={`${shelf.id}-empty`}
+        className="bg-white"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr',
+          alignItems: 'center',
+          minHeight: `${rowHeight * 1.5}px`,
+          padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier, 3)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`,
+          borderLeft: `2px solid ${shelfBorderColor}`,
+          borderRight: `2px solid ${shelfBorderColor}`,
+          borderBottom: `2px solid ${shelfBorderColor}`,
+          backgroundColor: '#ffffff',
+          marginBottom: '0',
+          fontSize: getScaledFontSize(baseFontSizePx, 0.85, 9),
+          breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
+          boxSizing: 'border-box',
+          color: '#9ca3af',
+          fontFamily: "'Inter', sans-serif",
+          borderRadius: '0 0 4px 4px',
+          textAlign: 'center',
+          fontStyle: 'italic',
+        }}
+      >
+        No strains on this shelf yet.
+      </div>
+    );
+  }
+
   return (
-    <div style={{ marginBottom: marginBottomStyle || 0 }}>
+    <div
+      className="MenuTable-flowing"
+      style={{
+        marginBottom: marginBottomStyle || '16px',
+        breakInside: (applyAvoidBreakStyle ? 'avoid-column' : 'auto') as any,
+        position: 'relative',
+      }}
+    >
       {elements}
+      {/* Subtle overflow warning overlay - hidden during export */}
+      {showOverflowWarning && (
+        <div 
+          className="shelf-overflow-warning absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(45deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%)',
+            border: '2px dashed rgba(251, 191, 36, 0.3)',
+            borderRadius: '4px',
+            zIndex: 1,
+          }}
+        >
+          <div 
+            className="absolute top-2 right-2 bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-medium shadow-sm"
+            style={{ fontSize: '10px' }}
+          >
+            ⚠️ Long shelf - consider enabling "Allow Shelf Splitting"
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -226,114 +285,116 @@ export const MenuTable: React.FC<MenuTableProps> = ({
   linePaddingMultiplier,
   marginBottomStyle,
   applyAvoidBreakStyle,
+  showOverflowWarning = false,
 }) => {
+
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
 
   // When tighten shelves is ON (applyAvoidBreakStyle = false), render as flowing divs
   // When tighten shelves is OFF (applyAvoidBreakStyle = true), render as table
   if (!applyAvoidBreakStyle) {
-    return renderAsFlowingRows(shelf, strainsToRender, baseFontSizePx, linePaddingMultiplier, marginBottomStyle);
+    return renderAsFlowingRows(shelf, strainsToRender, baseFontSizePx, linePaddingMultiplier, marginBottomStyle, applyAvoidBreakStyle, showOverflowWarning);
   }
 
-  // Original table rendering for when tighten shelves is OFF
+  // IMPROVED: More compact table styles
   const outerDivStyle: React.CSSProperties = {
-    marginBottom: marginBottomStyle || 0,
-    display: 'block', 
-    width: '100%',
-    breakInside: 'avoid-column',
+    marginBottom: marginBottomStyle || '16px',
+    // When shelf splitting is disabled, ensure the entire shelf stays together
+    breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
+    // Force break before shelf if needed to keep it together
+    ...(applyAvoidBreakStyle && { breakBefore: 'auto' as any }),
+    position: 'relative',
   };
 
-  // Calculate tighter header height for more vertical space
-  const headerPaddingVertical = getScaledValue(baseFontSizePx, 0.4, 4); // Reduced padding
-  const titleFontSize = Math.max(12, baseFontSizePx * 1.4);
-  const pricingFontSize = Math.max(8, baseFontSizePx * 0.75);
-  const titleLineHeight = 1.1; // Tighter line height
-  const pricingLineHeight = 1.1; // Tighter line height
-  const spaceBetween = getScaledValue(baseFontSizePx, 0.05, 1); // Minimal spacing
-  
+  const tableStylesBase: React.CSSProperties = {
+    width: '100%',
+    borderSpacing: '0',
+    borderCollapse: 'collapse' as const,
+    fontFamily: "'Inter', sans-serif",
+    tableLayout: 'fixed' as const,
+    // Control table breaking based on shelf splitting setting
+    breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
+  };
+
+  // IMPROVED: More compact header calculations
+  const headerPaddingVertical = getScaledValue(baseFontSizePx, 0.35, 3); // Reduced from 0.4
+  const titleFontSize = Math.max(11, baseFontSizePx * 1.3); // Reduced from 1.4
+  const pricingFontSize = Math.max(7, baseFontSizePx * 0.7); // Reduced from 0.75
+  const titleLineHeight = 1.0; // Reduced from 1.1
+  const pricingLineHeight = 1.0; // Reduced from 1.1
+  const spaceBetween = getScaledValue(baseFontSizePx, 0.03, 1); // Reduced spacing
+
   const calculatedHeaderHeight = 
     (headerPaddingVertical * 2) + 
     (titleFontSize * titleLineHeight) + 
     spaceBetween + 
     (pricingFontSize * pricingLineHeight) + 
-    getScaledValue(baseFontSizePx, 0.15, 2); // Reduced extra space
+    getScaledValue(baseFontSizePx, 0.1, 1); // Reduced extra space
 
   const shelfActualHeaderStyle: React.CSSProperties = {
-    padding: `${headerPaddingVertical}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`, // Consistent padding
-    breakInside: 'avoid-column', // Keep shelf name and pricing block together
-    breakAfter: 'avoid-column',  // Try to avoid a column break immediately after this header
-    position: 'relative', // For positioning content
-    height: `${calculatedHeaderHeight}px`, // Set calculated height
-    minHeight: `${calculatedHeaderHeight}px`, // Ensure minimum height
+    position: 'relative',
+    height: `${calculatedHeaderHeight}px`,
+    minHeight: `${calculatedHeaderHeight}px`,
+    marginBottom: '0',
+    // When shelf splitting is disabled, keep header with its table
+    breakInside: 'avoid-column',
+    breakAfter: 'avoid-column',
   };
 
   const shelfNameStyle: React.CSSProperties = {
-    fontSize: getScaledFontSize(baseFontSizePx, 1.4, 12),
+    fontSize: getScaledFontSize(baseFontSizePx, 1.3, 11), // Reduced font size
     fontWeight: 700,
-    marginBottom: `${spaceBetween}px`, // Use calculated spacing
-    lineHeight: titleLineHeight, // Use calculated line height
+    marginBottom: `${spaceBetween}px`,
+    lineHeight: titleLineHeight,
   };
 
   const pricingStyle: React.CSSProperties = {
-    fontSize: getScaledFontSize(baseFontSizePx, 0.75, 8),
+    fontSize: getScaledFontSize(baseFontSizePx, 0.7, 7), // Reduced font size
     opacity: 0.9,
-    lineHeight: pricingLineHeight, // Use calculated line height
+    lineHeight: pricingLineHeight,
   };
 
-  const tableStylesBase: React.CSSProperties = {
-    fontFamily: "'Inter', sans-serif",
-    width: '100%',
-    borderCollapse: 'collapse', // Standard table border collapse
-    fontSize: getScaledFontSize(baseFontSizePx, 0.9, 10),
-    lineHeight: '1.2',
-    backgroundColor: '#ffffff', // Use hex instead of 'white !important'
-    background: '#ffffff', // Also set background property
-    tableLayout: 'fixed', // Fixed table layout for more predictable rendering
-    borderRadius: '0 0 6px 6px', // Match the container's bottom border radius
-    overflow: 'hidden', // Ensure content respects border radius
-    // Allow table to break when tighten shelves is enabled
-    ...(applyAvoidBreakStyle ? {} : { breakInside: 'auto' })
-  };
-  
   const tableHeaderStyles: React.CSSProperties = {
-    breakInside: 'avoid-column', // Try to keep the table header from splitting
-    // `display: table-header-group;` is standard for thead and can influence print/paged media repetition
+    display: 'table-header-group',
+    // Always keep table headers together with their content
+    breakInside: 'avoid-column',
+    breakAfter: 'avoid-column',
   };
-
 
   const thStyles: React.CSSProperties = {
     textAlign: 'left',
     borderBottom: `1px solid rgba(255,255,255,0.15)`,
-    fontSize: getScaledFontSize(baseFontSizePx, 0.8, 9),
+    fontSize: getScaledFontSize(baseFontSizePx, 0.75, 8), // Reduced from 0.8
     fontWeight: 600,
     whiteSpace: 'nowrap',
-    verticalAlign: 'top', // Changed to top for flexbox alignment
-    minHeight: `${getScaledValue(baseFontSizePx, 2.0, 20)}px`, // Use minHeight for consistency
-    position: 'relative', // For positioning context
+    verticalAlign: 'top',
+    minHeight: `${getScaledValue(baseFontSizePx, 1.6, 16)}px`, // Reduced from 2.0
+    position: 'relative',
   };
 
+  // IMPROVED: More compact cell styles
   const getTdStyles = (isLastJar: boolean): React.CSSProperties => ({
-    padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier, 3)}px ${getScaledValue(baseFontSizePx, 0.8, 8)}px`, // Add vertical padding back for wrapping
+    padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`, // Reduced padding
     borderBottom: `1px solid #e5e7eb`,
     verticalAlign: 'top',
     color: '#374151',
-    fontSize: getScaledFontSize(baseFontSizePx, 0.9, 10),
-    lineHeight: '1.5',
-    backgroundColor: isLastJar ? '#fff7ed' : '#ffffff', // Conditional background
-    background: isLastJar ? '#fff7ed' : '#ffffff', // Conditional background
-    minHeight: `${getScaledValue(baseFontSizePx, 2.2, 22)}px`, // Use minHeight instead of fixed height
-    position: 'relative', // Provide positioning context for absolute children
+    fontSize: getScaledFontSize(baseFontSizePx, 0.85, 9), // Reduced from 0.9
+    lineHeight: '1.3', // Reduced from 1.5
+    backgroundColor: isLastJar ? '#fff7ed' : '#ffffff',
+    background: isLastJar ? '#fff7ed' : '#ffffff',
+    minHeight: `${getScaledValue(baseFontSizePx, 1.8, 18)}px`, // Reduced from 2.2
+    position: 'relative',
     boxSizing: 'border-box',
   });
 
   const strainNameTextStyles: React.CSSProperties = {
-     lineHeight: '1.2',
+     lineHeight: '1.2', // Slightly tighter
   };
 
   // Handle border color for gradient backgrounds
   const getBorderColorClass = (shelfColor: string): string => {
     if (shelfColor === 'bg-mango-gradient') {
-      return ''; // We'll handle this with inline styles
+      return '';
     }
     return shelfColor.replace(/^bg-/, 'border-');
   };
@@ -353,24 +414,17 @@ export const MenuTable: React.FC<MenuTableProps> = ({
   const borderStyle = getBorderStyle(shelf.color);
 
   const tableWrapperStyle: React.CSSProperties = {
-     // Ensure overflow is not 'auto' or 'hidden' here if it was added previously,
-     // as that would prevent internal table content from breaking with the parent column flow.
-     // Default 'visible' is fine.
-     ...borderStyle, // Apply border styles for gradient backgrounds
+     ...borderStyle,
   };
 
-  const displayName = shelf.name; // No more headerText for "(cont.)"
+  const displayName = shelf.name;
 
   return (
     <div
       className="MenuTable-root rounded-md shadow-md bg-white"
       style={outerDivStyle}
     >
-      <style>{`
-        /* CSS-based styling for Last Jar strains */
-        /* Font weight handled via inline styles for better control */
-      `}</style>
-      {/* Shelf Actual Header (name, pricing) */}
+      {/* IMPROVED: More compact shelf header */}
       <div
         className={`${shelf.color} ${shelf.textColor} rounded-t-md`}
         style={shelfActualHeaderStyle} 
@@ -381,8 +435,8 @@ export const MenuTable: React.FC<MenuTableProps> = ({
           left: '0',
           right: '0',
           transform: 'translateY(-50%)',
-          paddingLeft: getScaledValue(baseFontSizePx, 0.6, 6),
-          paddingRight: getScaledValue(baseFontSizePx, 0.6, 6)
+          paddingLeft: getScaledValue(baseFontSizePx, 0.5, 5), // Reduced padding
+          paddingRight: getScaledValue(baseFontSizePx, 0.5, 5)
         }}>
           <h3 style={shelfNameStyle}>{displayName}</h3>
           <p style={pricingStyle}>
@@ -391,7 +445,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
         </div>
       </div>
 
-      {/* Table Container */}
+      {/* IMPROVED: More compact table container */}
       <div
         className={`rounded-b-md border-l border-r border-b border-t-0 ${borderColorClass}`.trim()}
         style={{
@@ -399,8 +453,8 @@ export const MenuTable: React.FC<MenuTableProps> = ({
           backgroundColor: '#ffffff',
           background: '#ffffff',
           position: 'relative',
-          overflow: 'hidden', // Ensure rounded corners are respected
-          borderRadius: '0 0 6px 6px' // Explicit border radius to match table
+          overflow: 'hidden',
+          borderRadius: '0 0 4px 4px' // Smaller border radius
         }}
       >
         <table style={tableStylesBase}>
@@ -412,7 +466,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
           </colgroup>
           <thead className={`${shelf.color} ${shelf.textColor}`} style={tableHeaderStyles}>
             <tr>
-              <th style={{...thStyles, padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier, 3)}px ${getScaledValue(baseFontSizePx, 0.8, 8)}px`}}>
+              <th style={{...thStyles, padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`}}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -421,7 +475,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                   Strain
                 </div>
               </th>
-              <th style={{...thStyles, padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier, 3)}px ${getScaledValue(baseFontSizePx, 0.8, 8)}px`}}>
+              <th style={{...thStyles, padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`}}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -430,7 +484,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                   Grower/Brand
                 </div>
               </th>
-              <th style={{ ...thStyles, textAlign: 'center', padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier, 3)}px ${getScaledValue(baseFontSizePx, 0.8, 8)}px` }}>
+              <th style={{ ...thStyles, textAlign: 'center', padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px` }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -440,7 +494,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                   Type
                 </div>
               </th>
-              <th style={{ ...thStyles, textAlign: 'right', padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier, 3)}px ${getScaledValue(baseFontSizePx, 0.8, 8)}px` }}>
+              <th style={{ ...thStyles, textAlign: 'right', padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px` }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -457,26 +511,28 @@ export const MenuTable: React.FC<MenuTableProps> = ({
               <tr key={strain.id} 
                   className={strain.isLastJar ? 'last-jar-row' : ''}
                   style={{ 
-                    backgroundColor: strain.isLastJar ? '#fff7ed' : '#ffffff', // Light orange background for last jar
+                    backgroundColor: strain.isLastJar ? '#fff7ed' : '#ffffff',
                     background: strain.isLastJar ? '#fff7ed' : '#ffffff',
+                    // Allow individual strain rows to break across columns when shelf splitting is enabled
+                    breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
                   }}
               >
                 <td style={{
                   ...getTdStyles(strain.isLastJar), 
                   ...(index === strainsToRender.length - 1 && { 
                     borderBottom: 'none',
-                    borderBottomLeftRadius: '6px' // Round bottom-left corner for first cell in last row
+                    borderBottomLeftRadius: '4px' // Smaller border radius
                   })
                 }}>
                   <div style={{
-                    lineHeight: '1.5',
+                    lineHeight: '1.3', // Reduced line height
                     display: 'flex',
                     alignItems: 'center',
-                    minHeight: 'inherit' // Match the cell's minimum height
+                    minHeight: 'inherit'
                   }}>
                     <span style={{
                       ...strainNameTextStyles, 
-                      lineHeight: '1.4' // Slightly tighter for better wrapping
+                      lineHeight: '1.2'
                     }}>{strain.name || "Unnamed Strain"}</span>
                   </div>
                 </td>
@@ -487,10 +543,10 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                   ...(index === strainsToRender.length - 1 && { borderBottom: 'none' }) 
                 }}>
                   <div style={{
-                    lineHeight: '1.4',
+                    lineHeight: '1.2', // Reduced line height
                     display: 'flex',
                     alignItems: 'center',
-                    minHeight: 'inherit' // Match the cell's minimum height
+                    minHeight: 'inherit'
                   }}>
                     {strain.grower || '-'}
                   </div>
@@ -499,8 +555,8 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                   style={{ 
                     ...getTdStyles(strain.isLastJar), 
                     textAlign: 'center',
-                    display: 'table-cell', // Ensure table cell display 
-                    verticalAlign: 'middle', // Center vertically in table cell
+                    display: 'table-cell',
+                    verticalAlign: 'middle',
                     ...(index === strainsToRender.length - 1 && { borderBottom: 'none' }) 
                   }}
                 >
@@ -518,17 +574,18 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                   ...getTdStyles(strain.isLastJar), 
                   textAlign: 'right', 
                   whiteSpace: 'nowrap', 
+                  fontWeight: 500, // Slightly bolder for better readability
                   ...(index === strainsToRender.length - 1 && { 
                     borderBottom: 'none',
-                    borderBottomRightRadius: '6px' // Round bottom-right corner for last cell in last row
+                    borderBottomRightRadius: '4px' // Smaller border radius
                   }) 
                 }}>
                   <div style={{
-                    lineHeight: '1.4',
+                    lineHeight: '1.2', // Reduced line height
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'flex-end',
-                    minHeight: 'inherit' // Match the cell's minimum height
+                    minHeight: 'inherit'
                   }}>
                     {strain.thc !== null ? `${strain.thc.toFixed(THC_DECIMAL_PLACES)}%` : '-'}
                   </div>
@@ -550,7 +607,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                     justifyContent: 'center',
                     minHeight: 'inherit'
                   }}>
-                    No strains on this shelf.
+                    No strains on this shelf yet.
                   </div>
                 </td>
               </tr>
@@ -558,6 +615,29 @@ export const MenuTable: React.FC<MenuTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Subtle overflow warning overlay - hidden during export */}
+      {showOverflowWarning && (
+        <div 
+          className="shelf-overflow-warning absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(45deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%)',
+            border: '2px dashed rgba(251, 191, 36, 0.3)',
+            borderRadius: '4px',
+            zIndex: 1,
+          }}
+        >
+          <div 
+            className="absolute top-2 right-2 bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-medium shadow-sm"
+            style={{ fontSize: '10px' }}
+          >
+            ⚠️ Long shelf - consider enabling "Allow Shelf Splitting"
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+// Export the renderAsFlowingRows function for backwards compatibility
+export { renderAsFlowingRows };

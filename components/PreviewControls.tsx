@@ -41,6 +41,8 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
     { value: 2, label: '2 Cols' },
     { value: 3, label: '3 Cols' },
     { value: 4, label: '4 Cols' },
+    { value: 5, label: '5 Cols' },
+    { value: 6, label: '6 Cols' },
   ];
 
   const headerImageSizeOptions = Object.values(HeaderImageSize).map(size => ({
@@ -177,7 +179,7 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
     }`}>
       <div className="flex items-center flex-wrap gap-x-6 gap-y-2">
         {/* Layout Settings Group */}
-        <div className={`flex items-center space-x-4 px-3 py-1 rounded-md border ${
+        <div className={`flex items-center space-x-4 px-3 py-2 rounded-md border h-[36px] ${
           theme === 'dark'
             ? 'bg-gray-600/30 border-gray-600/50'
             : 'bg-gray-100/50 border-gray-300/50'
@@ -187,7 +189,8 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
               value={settings.artboardSize}
               onChange={(value) => onSettingsChange({ artboardSize: value as ArtboardSize })}
               className="min-w-[180px]"
-              icon={<DocumentTextIcon className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
+              icon={<DocumentTextIcon className={`w-3 h-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
+              variant="compact"
               theme={theme}
           />
 
@@ -196,7 +199,8 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
               value={settings.headerImageSize}
               onChange={(value) => onSettingsChange({ headerImageSize: value as HeaderImageSize })}
               className="min-w-[90px]"
-              icon={<PhotoIcon className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
+              icon={<PhotoIcon className={`w-3 h-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
+              variant="compact"
               theme={theme}
           />
           
@@ -205,13 +209,14 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
               value={settings.columns}
               onChange={(value) => onSettingsChange({ columns: parseInt(value.toString(), 10) as PreviewSettings['columns'] })}
               className="min-w-[80px]"
-              icon={<ColumnAddIcon className="w-4 h-4" theme={theme} />}
+              icon={<ColumnAddIcon className="w-3 h-3" theme={theme} />}
+              variant="compact"
               theme={theme}
           />
         </div>
 
         {/* Typography Settings Group */}
-        <div className={`flex items-center space-x-3 px-3 py-1 rounded-md border ${
+        <div className={`flex items-center space-x-3 px-3 py-2 rounded-md border h-[36px] ${
           theme === 'dark'
             ? 'bg-gray-600/30 border-gray-600/50'
             : 'bg-gray-100/50 border-gray-300/50'
@@ -336,7 +341,7 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
         </div>
 
         {/* Display Options Group */}
-        <div className={`flex items-center space-x-4 px-3 py-1 rounded-md border ${
+        <div className={`flex items-center space-x-4 px-3 py-2 rounded-md border h-[36px] ${
           theme === 'dark'
             ? 'bg-gray-600/30 border-gray-600/50'
             : 'bg-gray-100/50 border-gray-300/50'
@@ -345,8 +350,8 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
               <SplitScreenIcon className="w-4 h-4" theme={theme} />
               <ToggleSwitch
                 id="forceShelfFitToggle"
-                checked={settings.forceShelfFit}
-                onChange={(checked) => onSettingsChange({ forceShelfFit: checked })}
+                checked={!settings.forceShelfFit}
+                onChange={(checked) => onSettingsChange({ forceShelfFit: !checked })}
                 label="Allow Shelf Splitting"
                 theme={theme}
               />
@@ -371,7 +376,7 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
       </div>
       
       {/* Zoom Controls Group */}
-              <div className={`flex items-center space-x-2 px-3 py-1 rounded-md border ${
+              <div className={`flex items-center space-x-2 px-3 py-2 rounded-md border h-[36px] ${
           theme === 'dark'
             ? 'bg-gray-600/30 border-gray-600/50'
             : 'bg-gray-100/50 border-gray-300/50'

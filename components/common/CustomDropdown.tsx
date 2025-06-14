@@ -17,7 +17,7 @@ interface CustomDropdownProps {
   className?: string;
   label?: string;
   icon?: React.ReactNode;
-  variant?: 'default' | 'header';
+  variant?: 'default' | 'header' | 'compact';
   theme?: Theme;
 }
 
@@ -134,16 +134,23 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         disabled={disabled}
         className={`
           relative w-full rounded-md shadow-sm 
-          pl-3 pr-8 py-2 text-left cursor-pointer text-sm
+          text-left cursor-pointer
           focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
           transition-colors duration-150
           ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
           ${isOpen ? 'ring-2 ring-orange-500 border-orange-500' : ''}
+          ${variant === 'compact' 
+            ? 'pl-2 pr-2 py-1 text-xs h-[28px] min-h-[28px]' 
+            : 'pl-3 pr-8 py-2 text-sm'}
           ${variant === 'header' 
             ? 'bg-white/20 text-white border-white/30 hover:bg-white/30' 
-            : theme === 'dark'
-              ? 'bg-gray-600 border border-gray-500 text-gray-100 hover:bg-gray-550'
-              : 'bg-white border border-gray-300 text-gray-900 hover:bg-gray-50'}
+            : variant === 'compact'
+              ? theme === 'dark'
+                ? 'bg-gray-600/80 border border-gray-500/80 text-gray-100 hover:bg-gray-500/80'
+                : 'bg-white/80 border border-gray-300/80 text-gray-900 hover:bg-gray-50/80'
+              : theme === 'dark'
+                ? 'bg-gray-600 border border-gray-500 text-gray-100 hover:bg-gray-550'
+                : 'bg-white border border-gray-300 text-gray-900 hover:bg-gray-50'}
         `}
         style={isOpen ? { borderColor: MANGO_MAIN_ORANGE, boxShadow: `0 0 0 2px ${MANGO_MAIN_ORANGE}20` } : undefined}
       >
@@ -153,17 +160,19 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </span>
-        <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          <ChevronDownIcon 
-            className={`w-4 h-4 transition-transform duration-150 ${
-              variant === 'header' 
-                ? 'text-white' 
-                : theme === 'dark' 
-                  ? 'text-gray-400' 
-                  : 'text-gray-500'
-            } ${isOpen ? 'transform rotate-180' : ''}`}
-          />
-        </span>
+        {variant !== 'compact' && (
+          <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+            <ChevronDownIcon 
+              className={`w-4 h-4 transition-transform duration-150 ${
+                variant === 'header' 
+                  ? 'text-white' 
+                  : theme === 'dark' 
+                    ? 'text-gray-400' 
+                    : 'text-gray-500'
+              } ${isOpen ? 'transform rotate-180' : ''}`}
+            />
+          </span>
+        )}
       </button>
 
       {isOpen && (

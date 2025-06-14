@@ -157,7 +157,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onStateSelec
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
           <div className="text-sm text-gray-500">
-            🥭 Mango Cannabis Flower Menu Builder v1.0.0
+            🥭 Mango Cannabis Flower Menu Builder v1.0.1
           </div>
           <button
             onClick={onClose}

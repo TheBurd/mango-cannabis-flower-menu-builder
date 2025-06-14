@@ -10,7 +10,7 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 ### **Step 1: Choose Your Platform**
 1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
-2. Find the latest version (v1.0.0)
+2. Find the latest version (v1.0.1)
 3. Choose your operating system below:
 
 ---
@@ -18,22 +18,22 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 ## 🪟 **Windows Installation**
 
 #### **🎯 Recommended: Full Installer**
-- **`Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.0-x64.exe`** *(~81 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.1-x64.exe`** *(~81 MB)*
 - **Best choice for most users** - Creates Start menu shortcuts, handles updates automatically
 - Just double-click to install, then launch from Start menu
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.0-x64.exe)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.1/Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.1-x64.exe)
 
 #### **⚡ Alternative: Portable App**
-- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.0-x64.exe`** *(~81 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.1-x64.exe`** *(~81 MB)*
 - **No installation required** - Just download and run directly
 - Good for testing or if you can't install software on your computer
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.0-x64.exe)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.1/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.1-x64.exe)
 
 #### **📦 ZIP Archive**
-- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.0-x64.zip`** *(~110 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.1-x64.zip`** *(~110 MB)*
 - Contains the portable app in a compressed archive
 - Extract and run the `.exe` file inside
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.0-x64.zip)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.1/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.1-x64.zip)
 
 **Installation Steps:**
 - **Installer**: Double-click the Setup file → Follow prompts → Launch from Start menu
@@ -49,22 +49,22 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 #### **🎯 Recommended: DMG Installer**
 
 **For Intel Macs (2020 and earlier):**
-- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-x64.dmg`** *(~105 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-x64.dmg)
+- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.1-x64.dmg`** *(~105 MB)*
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.1/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.1-x64.dmg)
 
 **For Apple Silicon Macs (M1/M2/M3):**
-- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-arm64.dmg`** *(~100 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-arm64.dmg)
+- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.1-arm64.dmg`** *(~100 MB)*
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.1/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.1-arm64.dmg)
 
 #### **⚡ Alternative: ZIP Archive**
 
 **For Intel Macs:**
-- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-x64.zip`** *(~101 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-x64.zip)
+- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.1-x64.zip`** *(~101 MB)*
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.1/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.1-x64.zip)
 
 **For Apple Silicon Macs:**
-- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-arm64.zip`** *(~96 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.0-arm64.zip)
+- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.1-arm64.zip`** *(~96 MB)*
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.1/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.1-arm64.zip)
 
 **Installation Steps:**
 1. **DMG**: Double-click the `.dmg` file → Drag app to Applications folder → Launch from Applications
@@ -105,28 +105,58 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 - **Sort & organize** - By name, grower, THC%, type, or last jar status
 
 #### **🎨 Professional Menu Design**
-- **Multiple layouts** - 1-4 columns, portrait/landscape
+- **Multiple layouts** - 1-6 columns, portrait/landscape, 16:9 screen formats
 - **Mango branding** - Beautiful headers with logo
 - **State compliance** - Automatic THC icons per state regulations
 - **Custom typography** - Adjustable fonts and spacing
 - **Dark/light themes** - Matches your preference
+- **Sequential shelf filling** - Columns fill left-to-right for better organization
 
 #### **📤 Export Options**
 - **PNG images** - High-quality for printing (recommended)
 - **JPEG images** - Smaller files for digital displays
 - **CSV data** - Export strain data back to spreadsheets
 
-#### **🚀 New in v1.0.0: Feedback System**
-- **Report bugs** directly from the app
+#### **🚀 Enhanced Feedback System (v1.0.1)**
+- **Report bugs** with image attachments
 - **Request features** for future updates
-- **Send feedback** to development team
+- **Upload screenshots** of issues (up to 3 images, 5MB each)
+- **Drag & drop image support** for easy bug reporting
 - Access via **Help → Instructions → Leave Feedback**
 
 #### **⚡ Advanced Features**
 - **Live preview** - See your menu as you build it
-- **Pan & zoom** - Navigate large menus easily
+- **Mouse-position zoom** - Scroll wheel zooms around cursor position
+- **Enhanced pan & zoom** - Navigate large menus with precision
+- **Overflow detection** - Warnings when content extends beyond artboard
 - **Keyboard shortcuts** - `Ctrl+F` (fit to window), `Ctrl +/-` (zoom)
 - **Auto-save** - Your work is preserved between sessions
+- **Smart notifications** - "What's New" alerts for version updates
+
+---
+
+## 🆕 **What's New in v1.0.1**
+
+### **🎨 Layout Enhancements**
+- **6-column support** - Create ultra-wide menus for large displays
+- **Sequential shelf splitting** - Shelves fill columns left-to-right instead of balancing heights
+- **Optimized 16:9 dimensions** - Perfect for digital screens (3300x1856px landscape, 1872x3328px portrait)
+
+### **🖥️ Artboard & Display**
+- **Smart overflow detection** - Visual warnings when content extends beyond boundaries
+- **Enhanced zoom controls** - Mouse-position-based scroll zooming for precision navigation
+- **Improved artboard positioning** - True center alignment with better visual feedback
+
+### **👤 User Experience**
+- **"What's New" modal** - Comprehensive changelog and feature announcements
+- **Smart notification system** - Tracks viewed versions, glows for new updates
+- **Enhanced feedback system** - Image upload support for better bug reporting
+- **Modal blur effects** - Beautiful depth-of-field backgrounds for focused interactions
+
+### **🔧 Technical Improvements**
+- **Performance optimizations** - Faster rendering and smoother interactions
+- **Bug fixes** - Resolved zoom scaling issues and overflow detection accuracy
+- **UI polish** - Consistent styling and improved visual hierarchy
 
 ---
 
@@ -161,6 +191,7 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 - **Changing layout**: Use controls in the right panel (Preview section)
 - **Exporting menus**: Click the export buttons at the top toolbar
 - **Changing states**: Use dropdown in top header
+- **Reporting issues**: Use "Leave Feedback" with image attachments for visual bugs
 
 ### **Troubleshooting**
 
@@ -168,17 +199,19 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 - **App won't open**: Make sure you downloaded the right file for your Windows version
 - **Menu looks wrong**: Try "Fit to Window" (Ctrl+F) to reset the view
 - **Export issues**: Check that you have write permissions to your selected folder
+- **Zoom problems**: Use mouse wheel over preview area for position-based zooming
 
 #### **macOS Issues**
 - **"App can't be opened"**: Go to System Preferences → Security & Privacy → Click "Open Anyway"
 - **App won't launch**: Make sure you downloaded the right version (Intel vs Apple Silicon)
 - **Menu looks wrong**: Try "Fit to Window" (Cmd+F) to reset the view
 - **Export issues**: Check that you have write permissions to your selected folder
+- **Zoom problems**: Use mouse wheel over preview area for position-based zooming
 
 ### **Get Support**
-- **Bug reports**: Use the in-app feedback system (Help → Instructions → Leave Feedback)
+- **Bug reports**: Use the in-app feedback system with image attachments (Help → Instructions → Leave Feedback)
 - **Direct contact**: Email [brad@mangocannabis.com](mailto:brad@mangocannabis.com)
-- **Technical issues**: Include your operating system version (Windows 10/11 or macOS version) and what you were doing when the problem occurred
+- **Technical issues**: Include your operating system version (Windows 10/11 or macOS version) and screenshots of the problem
 
 ---
 
@@ -205,7 +238,7 @@ Category,Strain Name,Grower/Brand,THC %,Class,Last Jar
 
 **Copyright**: © 2024 Mango Cannabis  
 **Developer**: TheBurd (Brad Forsythe) - [brad@mangocannabis.com](mailto:brad@mangocannabis.com)  
-**Version**: 1.0.0  
+**Version**: 1.0.1  
 **Built for**: Mango Cannabis Management Team
 
 This tool was created specifically for Mango Cannabis to streamline menu creation and inventory management across all locations. The software is owned by Mango Cannabis and developed by Brad Forsythe.
@@ -216,4 +249,8 @@ This tool was created specifically for Mango Cannabis to streamline menu creatio
 
 The app will notify you when updates are available. New versions are released to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)** with changelog information.
 
-**Current Version**: v1.0.0 *(Cross-platform: Windows & macOS support with feedback system)* 
+**Current Version**: v1.0.1 *(Enhanced UX: 6-column support, image feedback, smart notifications, overflow detection)*
+
+### **Version History**
+- **v1.0.1** - Enhanced user experience with 6-column support, image feedback system, smart notifications, and improved zoom controls
+- **v1.0.0** - Initial release with cross-platform support and feedback system 

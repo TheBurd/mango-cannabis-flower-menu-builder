@@ -5,6 +5,7 @@ import { PreviewControls } from './PreviewControls';
 import { PreviewArtboard } from './PreviewArtboard';
 import { ARTBOARD_DIMENSIONS_MAP, INITIAL_PREVIEW_SETTINGS } from '../constants';
 import { ExportAction } from '../App';
+// import html2canvas from 'html2canvas'; // Removed - not needed for this implementation
 
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 10; 
@@ -28,33 +29,33 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   currentState,
   theme,
 }) => {
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const artboardContainerRef = useRef<HTMLDivElement>(null);
-  const artboardRef = useRef<HTMLDivElement>(null); 
-  const isPanning = useRef(false);
-  const lastMousePosition = useRef({ x: 0, y: 0 });
+  const [hasContentOverflow, setHasContentOverflow] = useState(false);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const artboardRef = useRef<HTMLDivElement>(null);
 
   const artboardNaturalDimensions = useMemo(() => {
     return ARTBOARD_DIMENSIONS_MAP[settings.artboardSize];
   }, [settings.artboardSize]);
 
   const centerView = useCallback((targetZoom: number) => {
-    if (artboardContainerRef.current) {
-      const containerWidth = artboardContainerRef.current.offsetWidth;
-      const containerHeight = artboardContainerRef.current.offsetHeight;
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      const containerHeight = containerRef.current.offsetHeight;
       
-      const newPanX = containerWidth / 2;
-      const newPanY = containerHeight / 2;
-      
-      setPanOffset({ x: newPanX, y: newPanY });
+      // Center the artboard in the container
+      setPanOffset({ x: 0, y: 0 });
       onSettingsChange({ zoomLevel: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom)) });
     }
   }, [onSettingsChange]);
 
   const fitToWindow = useCallback(() => {
-    if (artboardContainerRef.current && artboardNaturalDimensions) {
-      const containerWidth = artboardContainerRef.current.offsetWidth - 32; 
-      const containerHeight = artboardContainerRef.current.offsetHeight - 32;
+    if (containerRef.current && artboardNaturalDimensions) {
+      const containerWidth = containerRef.current.offsetWidth - 32; 
+      const containerHeight = containerRef.current.offsetHeight - 32;
 
       const scaleX = containerWidth / artboardNaturalDimensions.naturalWidth;
       const scaleY = containerHeight / artboardNaturalDimensions.naturalHeight;
@@ -72,77 +73,97 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
     if (settings.fitToWindowTrigger) {
       fitToWindow();
     }
-  }, [settings.fitToWindowTrigger, fitToWindow]); 
+  }, [settings.fitToWindowTrigger, fitToWindow]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return; 
-    if ((e.target as HTMLElement).closest('button, input, select, textarea')) {
-        return;
+    if (e.button === 0) { // Left mouse button
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+      e.preventDefault();
     }
-    isPanning.current = true;
-    lastMousePosition.current = { x: e.clientX, y: e.clientY };
-    artboardContainerRef.current?.style.setProperty('cursor', 'grabbing');
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isPanning.current) return;
-    const dx = e.clientX - lastMousePosition.current.x;
-    const dy = e.clientY - lastMousePosition.current.y;
-    setPanOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-    lastMousePosition.current = { x: e.clientX, y: e.clientY };
+    if (isPanning) {
+      setPanOffset({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y,
+      });
+    }
   };
 
   const handleMouseUpOrLeave = () => {
-    isPanning.current = false;
-    artboardContainerRef.current?.style.setProperty('cursor', 'grab');
+    setIsPanning(false);
   };
   
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (!artboardContainerRef.current) return;
+  // Use useEffect to add wheel event listener with passive: false
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-    const zoomFactor = 1.1;
-    const newZoom = e.deltaY < 0 ? settings.zoomLevel * zoomFactor : settings.zoomLevel / zoomFactor;
-    const clampedNewZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      
+      const zoomFactor = 0.1;
+      const delta = e.deltaY > 0 ? -zoomFactor : zoomFactor;
+      const newZoom = Math.max(0.1, Math.min(3.0, settings.zoomLevel + delta));
+      
+      // Get mouse position relative to container
+      const containerRect = container.getBoundingClientRect();
+      const mouseX = e.clientX - containerRect.left;
+      const mouseY = e.clientY - containerRect.top;
+      
+      // Get container center
+      const containerCenterX = containerRect.width / 2;
+      const containerCenterY = containerRect.height / 2;
+      
+      // Calculate offset from center to mouse
+      const offsetX = mouseX - containerCenterX;
+      const offsetY = mouseY - containerCenterY;
+      
+      // Calculate zoom change
+      const zoomChange = newZoom / settings.zoomLevel;
+      
+      // Adjust pan offset to zoom around mouse position
+      const newPanX = panOffset.x - (offsetX * (zoomChange - 1));
+      const newPanY = panOffset.y - (offsetY * (zoomChange - 1));
+      
+      setPanOffset({ x: newPanX, y: newPanY });
+      onSettingsChange({ zoomLevel: newZoom });
+    };
 
-    const rect = artboardContainerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left; 
-    const mouseY = e.clientY - rect.top;
+    // Add event listener with passive: false to allow preventDefault
+    container.addEventListener('wheel', handleWheel, { passive: false });
 
-    const canvasPointX = (mouseX - panOffset.x) / settings.zoomLevel;
-    const canvasPointY = (mouseY - panOffset.y) / settings.zoomLevel;
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [settings.zoomLevel, panOffset.x, panOffset.y, onSettingsChange]);
 
-    const newPanX = mouseX - (canvasPointX * clampedNewZoom);
-    const newPanY = mouseY - (canvasPointY * clampedNewZoom);
-    
-    setPanOffset({ x: newPanX, y: newPanY });
-    onSettingsChange({ zoomLevel: clampedNewZoom });
-  };
+  const handleZoomIn = useCallback(() => {
+    const newZoom = Math.min(settings.zoomLevel * 1.2, 3.0);
+    onSettingsChange({ zoomLevel: newZoom });
+  }, [settings.zoomLevel, onSettingsChange]);
+
+  const handleZoomOut = useCallback(() => {
+    const newZoom = Math.max(settings.zoomLevel / 1.2, 0.1);
+    onSettingsChange({ zoomLevel: newZoom });
+  }, [settings.zoomLevel, onSettingsChange]);
 
   const handleZoomChangeFromControls = (newZoom: number) => {
-     if (!artboardContainerRef.current) return;
-    const clampedNewZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
-    
-    const containerWidth = artboardContainerRef.current.offsetWidth;
-    const containerHeight = artboardContainerRef.current.offsetHeight;
-    
-    const centerX = containerWidth / 2;
-    const centerY = containerHeight / 2;
-
-    const canvasPointX = (centerX - panOffset.x) / settings.zoomLevel;
-    const canvasPointY = (centerY - panOffset.y) / settings.zoomLevel;
-
-    const newPanX = centerX - (canvasPointX * clampedNewZoom);
-    const newPanY = centerY - (canvasPointY * clampedNewZoom);
-
-    setPanOffset({ x: newPanX, y: newPanY });
-    onSettingsChange({ zoomLevel: clampedNewZoom });
+    const clampedZoom = Math.max(0.1, Math.min(3.0, newZoom));
+    onSettingsChange({ zoomLevel: clampedZoom });
   };
   
   const resetZoomAndPan = () => {
-    const initialZoomForCurrentArtboard = INITIAL_PREVIEW_SETTINGS.zoomLevel || 0.25;
-    centerView(initialZoomForCurrentArtboard); 
-  }
+    // Only reset zoom and pan, not all preview settings
+    onSettingsChange({ zoomLevel: INITIAL_PREVIEW_SETTINGS.zoomLevel });
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  const handleOverflowDetected = useCallback((hasOverflow: boolean) => {
+    setHasContentOverflow(hasOverflow);
+  }, []);
 
   useEffect(() => {
     if (exportAction && artboardRef.current) {
@@ -257,6 +278,10 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
         }
         colgroup col:nth-child(4) {
           width: 20% !important;
+        }
+        /* Hide overflow warnings during export */
+        .shelf-overflow-warning {
+          display: none !important;
         }
       `;
       document.head.appendChild(styleElement);
@@ -377,56 +402,83 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exportAction, onExportComplete]); // Dependencies include exportAction and onExportComplete
 
-
   return (
-    <div 
-      id="menu-preview-panel" 
-      className={`flex-1 flex flex-col p-1 rounded-lg shadow-lg relative min-h-0 min-w-0 ${
-        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-      }`}
-    >
+    <div className={`flex flex-col h-full ${
+      theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
+    }`}>
       <PreviewControls
         settings={settings}
-        onSettingsChange={onSettingsChange} 
-        onZoomIn={() => handleZoomChangeFromControls(settings.zoomLevel * 1.2)}
-        onZoomOut={() => handleZoomChangeFromControls(settings.zoomLevel / 1.2)}
-        onFitToWindow={fitToWindow}
+        onSettingsChange={onSettingsChange}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onFitToWindow={() => onSettingsChange({ fitToWindowTrigger: Date.now() })}
         onResetZoom={resetZoomAndPan}
-        currentZoom={settings.zoomLevel} 
+        currentZoom={settings.zoomLevel}
         onDirectZoomChange={handleZoomChangeFromControls}
         currentState={currentState}
         theme={theme}
       />
-      <div 
-        ref={artboardContainerRef} 
-        className="flex-1 bg-gray-900/50 overflow-hidden flex justify-center items-center rounded-b-md min-h-0 min-w-0 relative"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUpOrLeave}
-        onMouseLeave={handleMouseUpOrLeave} 
-        onWheel={handleWheel}
-        style={{ cursor: 'grab' }}
-        role="application"
-        aria-label="Menu Preview Artboard - Click and drag to pan, scroll to zoom"
-      >
-        <div 
+      
+      <div className="flex-1 relative overflow-hidden">
+        {/* Content Overflow Warning */}
+        {hasContentOverflow && (
+          <div className="absolute top-4 right-4 z-50">
+            <div className={`bg-red-100 border-l-4 border-red-500 p-3 rounded-r-md shadow-lg max-w-sm ${
+              theme === 'dark' ? 'bg-red-900/80 text-red-200' : 'bg-red-100 text-red-800'
+            }`}>
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">
+                    Content Overflow Detected
+                  </p>
+                  <p className="text-xs mt-1">
+                    Some content is extending beyond the artboard boundaries. Consider reducing font size, increasing columns, or enabling shelf splitting.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div
+          ref={containerRef}
+          className={`w-full h-full relative overflow-hidden cursor-${isPanning ? 'grabbing' : 'grab'} ${
+            theme === 'dark' ? 'bg-gray-900' : 'bg-gray-200'
+          }`}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUpOrLeave}
+          onMouseLeave={handleMouseUpOrLeave}
           style={{
-            position: 'absolute',
-            left: 0, 
-            top: 0,
-            width: '1px', 
-            height: '1px',
-            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${settings.zoomLevel})`,
-            transformOrigin: '0 0', 
-            willChange: 'transform', 
+            backgroundImage: `radial-gradient(circle, ${
+              theme === 'dark' ? '#374151' : '#d1d5db'
+            } 1px, transparent 1px)`,
+            backgroundSize: '20px 20px',
+            backgroundPosition: `${panOffset.x % 20}px ${panOffset.y % 20}px`,
           }}
         >
-          <PreviewArtboard 
-            ref={artboardRef} 
-            shelves={shelves} 
-            settings={settings}
-            currentState={currentState}
-          />
+          <div
+            className="absolute"
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: `translate(-50%, -50%) translate(${panOffset.x}px, ${panOffset.y}px) scale(${settings.zoomLevel})`,
+              transformOrigin: 'center center',
+            }}
+          >
+            <PreviewArtboard
+              ref={artboardRef}
+              shelves={shelves}
+              settings={settings}
+              currentState={currentState}
+              onOverflowDetected={handleOverflowDetected}
+            />
+          </div>
         </div>
       </div>
     </div>

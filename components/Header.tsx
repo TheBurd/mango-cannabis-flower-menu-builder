@@ -12,6 +12,8 @@ interface HeaderProps {
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
   onShowInstructions: () => void;
+  onShowWhatsNew: () => void;
+  hasViewedWhatsNew: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -20,27 +22,57 @@ export const Header: React.FC<HeaderProps> = ({
   onStateChange, 
   theme, 
   onThemeChange, 
-  onShowInstructions
+  onShowInstructions,
+  onShowWhatsNew,
+  hasViewedWhatsNew
 }) => {
   const stateOptions = Object.values(SupportedStates).map(s => ({ value: s, label: s }));
 
   return (
-    <header 
-        className="no-print p-4 flex justify-between items-center text-white shadow-lg"
-        style={{ background: `linear-gradient(90deg, ${MANGO_MAIN_ORANGE}, ${MANGO_SUPPORT_ORANGE})`}}
-    >
-      <div className="flex items-center space-x-3">
+    <>
+      {/* CSS Animation for subtle glow */}
+      <style>{`
+        @keyframes subtle-glow {
+          0% {
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.1);
+          }
+          100% {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.15);
+          }
+        }
+      `}</style>
+      
+      <header 
+          className="no-print p-4 flex justify-between items-center text-white shadow-lg"
+          style={{ background: `linear-gradient(90deg, ${MANGO_MAIN_ORANGE}, ${MANGO_SUPPORT_ORANGE})`}}
+      >
+      <div className="flex items-center space-x-4">
         <img 
           src={getLogoPath()} 
           alt="Logo"
           className="h-12 w-auto"
           style={{ 
-            filter: 'brightness(0) invert(1)', // Make the logo white
-            height: '2.5rem', // Match the text height (text-3xl ≈ 3rem)
-            marginBottom: '0.5rem' // Add bottom margin to account for visual weight at bottom
+            filter: 'brightness(0) invert(1)',
+            height: '2.5rem',
+            marginBottom: '0.5rem'
           }}
         />
-        <h1 className="text-3xl font-bold tracking-tight" style={{fontFamily: "'Poppins', sans-serif"}}>{appName} v1.0.0</h1>
+        <h1 className="text-3xl font-bold tracking-tight" style={{fontFamily: "'Poppins', sans-serif"}}>
+          {appName} v1.0.1
+        </h1>
+        <button
+          onClick={onShowWhatsNew}
+          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 text-white/80 hover:text-white ${
+            !hasViewedWhatsNew ? 'animate-pulse shadow-lg shadow-white/20' : ''
+          }`}
+          style={!hasViewedWhatsNew ? {
+            boxShadow: '0 0 15px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.1)',
+            animation: 'subtle-glow 2s ease-in-out infinite alternate'
+          } : undefined}
+          title="See what's new in v1.0.1"
+        >
+          What's New
+        </button>
       </div>
       <div className="flex items-center space-x-2">
         <img 
@@ -76,5 +108,6 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
     </header>
+    </>
   );
 };

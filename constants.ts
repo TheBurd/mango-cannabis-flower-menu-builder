@@ -67,8 +67,8 @@ export const getDefaultShelves = (state: SupportedStates): Shelf[] => {
 export const ARTBOARD_DIMENSIONS_MAP: Record<ArtboardSize, ArtboardDimensions> = {
   [ArtboardSize.LETTER_PORTRAIT]: { aspectRatio: 'aspect-[8.5/11]', naturalWidth: 2550, naturalHeight: 3300, maxWidthClass: 'max-w-[2550px]' },
   [ArtboardSize.LETTER_LANDSCAPE]: { aspectRatio: 'aspect-[11/8.5]', naturalWidth: 3300, naturalHeight: 2550, maxWidthClass: 'max-w-[3300px]' },
-  [ArtboardSize.SCREEN_16_9_LANDSCAPE]: { aspectRatio: 'aspect-[16/9]', naturalWidth: 1920, naturalHeight: 1080, maxWidthClass: 'max-w-[1920px]' },
-  [ArtboardSize.SCREEN_16_9_PORTRAIT]: { aspectRatio: 'aspect-[9/16]', naturalWidth: 1080, naturalHeight: 1920, maxWidthClass: 'max-w-[1080px]' },
+  [ArtboardSize.SCREEN_16_9_LANDSCAPE]: { aspectRatio: 'aspect-[16/9]', naturalWidth: 3300, naturalHeight: 1856, maxWidthClass: 'max-w-[3300px]' }, // Updated to match header image width
+  [ArtboardSize.SCREEN_16_9_PORTRAIT]: { aspectRatio: 'aspect-[9/16]', naturalWidth: 1872, naturalHeight: 3328, maxWidthClass: 'max-w-[1872px]' }, // Updated to match header image width
 };
 
 export const INITIAL_PREVIEW_SETTINGS: PreviewSettings = {
@@ -76,7 +76,7 @@ export const INITIAL_PREVIEW_SETTINGS: PreviewSettings = {
   baseFontSizePx: 10,
   columns: 1,
   zoomLevel: 0.25, 
-  forceShelfFit: false,
+  forceShelfFit: false, // Allow Shelf Splitting is ON by default (false = splitting allowed)
   headerImageSize: HeaderImageSize.NONE, // Default header image size
   linePaddingMultiplier: 0.3, // Default padding multiplier (corresponds to current tightened padding)
   showThcIcon: true, // Default to showing THC icon

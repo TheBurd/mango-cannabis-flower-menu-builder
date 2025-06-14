@@ -61,7 +61,7 @@ export interface ArtboardDimensions {
 export interface PreviewSettings {
   artboardSize: ArtboardSize;
   baseFontSizePx: number; // Base font size in pixels
-  columns: 1 | 2 | 3 | 4;
+  columns: 1 | 2 | 3 | 4 | 5 | 6;
   zoomLevel: number; // e.g., 1 = 100%
   forceShelfFit: boolean; // New setting for allowing shelves to split across columns
   headerImageSize: HeaderImageSize; // Added for selectable header images

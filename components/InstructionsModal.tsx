@@ -36,7 +36,7 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -48,7 +48,7 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
         <div className={`px-6 py-4 border-b flex items-center justify-between ${
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
-          <h2 className="text-2xl font-bold text-orange-500">🥭 How to Use Mango Menu Builder</h2>
+          <h2 className="text-2xl font-bold text-orange-500">🥭 How to Use Flower Menu Builder</h2>
           <button
             onClick={onClose}
             className={`p-2 rounded-lg hover:bg-opacity-80 transition-colors ${
@@ -122,7 +122,7 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
                   <h4 className="font-semibold mb-2">Page Layout</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
                     <li><strong>Page Size:</strong> Letter Portrait/Landscape, 16:9 Screen</li>
-                    <li><strong>Columns:</strong> 1-4 columns (auto-adjusts to content)</li>
+                    <li><strong>Columns:</strong> 1-6 columns (auto-adjusts to content)</li>
                     <li><strong>Headers:</strong> Large, Small, or None</li>
                     <li><strong>THC Icons:</strong> State-specific compliance symbols</li>
                   </ul>
@@ -147,9 +147,10 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
                   <h4 className="font-semibold mb-2">Navigation</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
                     <li><strong>Pan:</strong> Click and drag to move around</li>
-                    <li><strong>Zoom:</strong> Mouse wheel or +/- buttons</li>
+                    <li><strong>Zoom:</strong> Mouse wheel (around cursor) or +/- buttons</li>
                     <li><strong>Fit to Window:</strong> Auto-size to screen</li>
                     <li><strong>Reset:</strong> Return to default view</li>
+                    <li><strong>Overflow Detection:</strong> Warnings when content extends beyond artboard</li>
                   </ul>
                 </div>
                 <div>
@@ -250,7 +251,7 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
         }`}>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
-              🥭 Mango Cannabis Flower Menu Builder v1.0.0
+              🥭 Mango Cannabis Flower Menu Builder v1.0.1
             </div>
             <button
               ref={feedbackButtonRef}
