@@ -224,22 +224,36 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
             {/* GitHub release link for available updates AND downloaded updates */}
             {(updateAvailable || isDownloaded) && !isDownloading && !isCheckingForUpdates && (
               <div className="mt-2">
-                <button
-                  onClick={() => {
-                    const url = `https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/tag/v${updateVersion}`;
-                    if (window.electronAPI?.openExternal) {
-                      window.electronAPI.openExternal(url).catch(console.error);
-                    } else {
-                      window.open(url, '_blank');
-                    }
-                  }}
-                  className={`text-xs ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} underline transition-colors flex items-center space-x-1`}
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  <span>View release notes & changes</span>
-                </button>
+                {updateVersion && updateVersion.trim() !== '' ? (
+                  <button
+                    onClick={() => {
+                      const url = `https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/tag/v${updateVersion}`;
+                      console.log('🔗 Opening GitHub release URL:', url);
+                      console.log('📋 Update version:', updateVersion);
+                      console.log('🌐 Using electronAPI:', !!window.electronAPI?.openExternal);
+                      
+                      if (window.electronAPI?.openExternal) {
+                        window.electronAPI.openExternal(url).catch((error) => {
+                          console.error('❌ Failed to open external URL:', error);
+                          // Fallback to window.open if electronAPI fails
+                          window.open(url, '_blank');
+                        });
+                      } else {
+                        window.open(url, '_blank');
+                      }
+                    }}
+                    className={`text-xs ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} underline transition-colors flex items-center space-x-1`}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    <span>View release notes & changes</span>
+                  </button>
+                ) : (
+                  <div className={`text-xs ${subtextClasses} italic`}>
+                    Release notes link unavailable (version info missing)
+                  </div>
+                )}
               </div>
             )}
             

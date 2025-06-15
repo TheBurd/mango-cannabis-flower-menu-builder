@@ -1,9 +1,10 @@
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Strain, StrainType, Theme } from '../types';
 import { STRAIN_TYPES_ORDERED, THC_DECIMAL_PLACES, MANGO_MAIN_ORANGE, STRAIN_TYPE_VISUALS } from '../constants';
 import { IconButton } from './common/IconButton';
 import { ToggleSwitch } from './common/ToggleSwitch';
+import { DebouncedInput } from './common/DebouncedInput';
 import { TrashXmarkIcon, ArrowUpIcon, ArrowDownIcon, CircleIcon } from './common/Icon';
 
 interface StrainInputRowProps {
@@ -35,25 +36,26 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
   onDragStart,
   isDragging = false,
 }) => {
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  // Auto-focus is now handled by the DebouncedInput component
 
-  useEffect(() => {
-    if (isNewlyAdded && nameInputRef.current) {
-      nameInputRef.current.focus();
-    }
-  }, [isNewlyAdded]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    onUpdate({ [name]: type === 'checkbox' ? checked : (name === 'thc' ? (value === '' ? null : parseFloat(value)) : value) });
+  const handleNameChange = (value: string | number | null) => {
+    onUpdate({ name: value as string });
   };
 
-  const handleThcBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value !== '' && strain.thc !== null) {
-        onUpdate({ thc: parseFloat(parseFloat(value).toFixed(THC_DECIMAL_PLACES)) });
-    } else if (value === '') {
-        onUpdate({ thc: null });
+  const handleGrowerChange = (value: string | number | null) => {
+    onUpdate({ grower: value as string });
+  };
+
+  const handleThcChange = (value: string | number | null) => {
+    onUpdate({ thc: value as number | null });
+  };
+
+  const handleThcBlur = (value: string | number | null) => {
+    if (value !== null && value !== '') {
+      const numValue = typeof value === 'string' ? parseFloat(value) : value;
+      if (!isNaN(numValue)) {
+        onUpdate({ thc: parseFloat(numValue.toFixed(THC_DECIMAL_PLACES)) });
+      }
     }
   };
 
@@ -91,48 +93,51 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
       onDragEnd={handleDragEnd}
     >
       {/* Inputs */}
-      <input
-        ref={nameInputRef}
-        type="text"
-        name="name"
+      <DebouncedInput
         value={strain.name}
-        onChange={handleInputChange}
+        onChange={handleNameChange}
+        type="text"
         placeholder="Strain Name"
         className={`col-span-4 p-2 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500 ${
           theme === 'dark'
             ? 'bg-gray-500 placeholder-gray-400 text-gray-100'
             : 'bg-gray-50 placeholder-gray-500 text-gray-900 border border-gray-300'
         }`}
+        theme={theme}
+        autoFocus={isNewlyAdded}
         aria-label="Strain Name"
+        debounceMs={150}
       />
-      <input
-        type="text"
-        name="grower"
+      <DebouncedInput
         value={strain.grower}
-        onChange={handleInputChange}
+        onChange={handleGrowerChange}
+        type="text"
         placeholder="Grower/Brand"
         className={`col-span-3 p-2 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500 ${
           theme === 'dark'
             ? 'bg-gray-500 placeholder-gray-400 text-gray-100'
             : 'bg-gray-50 placeholder-gray-500 text-gray-900 border border-gray-300'
         }`}
+        theme={theme}
         aria-label="Grower or Brand"
+        debounceMs={150}
       />
       <div className="col-span-2 relative">
-        <input
-            type="number"
-            name="thc"
-            value={strain.thc === null ? '' : strain.thc}
-            onChange={handleInputChange}
-            onBlur={handleThcBlur}
-            placeholder="THC"
-            step="0.1"
-            className={`w-full p-2 rounded-md text-sm pr-6 focus:ring-orange-500 focus:border-orange-500 appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-              theme === 'dark'
-                ? 'bg-gray-500 placeholder-gray-400 text-gray-100'
-                : 'bg-gray-50 placeholder-gray-500 text-gray-900 border border-gray-300'
-            }`}
-            aria-label="THC Percentage"
+        <DebouncedInput
+          value={strain.thc}
+          onChange={handleThcChange}
+          onBlur={handleThcBlur}
+          type="number"
+          placeholder="THC"
+          step="0.1"
+          className={`w-full p-2 rounded-md text-sm pr-6 focus:ring-orange-500 focus:border-orange-500 appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+            theme === 'dark'
+              ? 'bg-gray-500 placeholder-gray-400 text-gray-100'
+              : 'bg-gray-50 placeholder-gray-500 text-gray-900 border border-gray-300'
+          }`}
+          theme={theme}
+          aria-label="THC Percentage"
+          debounceMs={150}
         />
         <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-sm ${
           theme === 'dark' ? 'text-gray-400' : 'text-gray-500'

@@ -1,16 +1,17 @@
 # 🥭 Mango Cannabis Flower Menu Builder v1.0.2
 
-**Critical Bug Fix Release!** 🐛 **CSV Import Functionality Restored**
+**Critical Bug Fix Release!** 🐛 **CSV Import Functionality Completely Restored**
 
 ## 🆕 What's New in v1.0.2
 
-### 🐛 **Critical Bug Fix**
-- **CSV Import Restored** - Fixed issue where users couldn't modify strains or shelves after importing CSV data
-- **Strain Management** - Add/edit/delete strains now works properly after CSV import
-- **Shelf Operations** - All shelf management features restored post-import
-- **Data Integrity** - CSV import no longer breaks the app's interactive functionality
+### 🐛 **Critical Bug Fix - Input Fields Restored**
+- **Input Fields Fixed** - All text inputs now work properly after CSV import (strain names, grower, THC, filename, etc.)
+- **Improved UX** - Added smooth loading overlay and success notifications instead of popup alerts
+- **Better Performance** - Eliminated page reloads for faster, more reliable CSV import process
+- **Data Integrity** - CSV import now preserves all data without clearing or corruption
+- **Enhanced Stability** - Resolved Electron-specific state management issues for production builds
 
-This fix resolves a race condition in the state management system that was preventing proper UI updates after CSV data import.
+**Technical Details**: Fixed React state synchronization conflicts in Electron production builds that broke input focus and typing functionality. The issue was caused by `flushSync` and page reload mechanisms that disrupted React's event handling in the Electron environment. The new implementation uses direct state updates with loading overlays for a smoother, more reliable experience.
 
 ---
 
@@ -133,10 +134,16 @@ The following files support the auto-update system and are required for the app 
 
 ### v1.0.2 - Critical Bug Fix
 #### Fixed
-- **CSV Import Race Condition** - Resolved state management issue preventing strain/shelf modifications after CSV import
-- **Strain Management** - Add, edit, delete operations now work properly after CSV import
-- **Shelf Operations** - All shelf management features function correctly post-import
-- **Data Integrity** - CSV import process no longer interferes with interactive functionality
+- **Input Field Responsiveness** - All text inputs now work properly after CSV import (strain names, grower, THC, filename, etc.)
+- **React State Synchronization** - Resolved conflicts in Electron production builds that broke input focus and typing
+- **CSV Import Process** - Eliminated page reloads and `flushSync` issues that disrupted React event handling
+- **Data Persistence** - CSV import now preserves all data without clearing or corruption
+
+#### Improved
+- **Loading UX** - Added smooth loading overlay during CSV import process
+- **Success Notifications** - Replaced popup alerts with elegant toast notifications
+- **Performance** - Faster CSV import without page reload delays
+- **Stability** - Enhanced reliability in Electron production environment
 
 ### v1.0.1 - Enhanced User Experience Release
 #### Added

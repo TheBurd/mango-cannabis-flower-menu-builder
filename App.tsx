@@ -116,7 +116,24 @@ const App: React.FC = () => {
     return SupportedStates.OKLAHOMA; // Default fallback
   });
   
-  const [shelves, setShelves] = useState<Shelf[]>(() => getDefaultShelves(currentAppState));
+  const [shelves, setShelves] = useState<Shelf[]>(() => {
+    // Check if we have imported data from CSV import
+    const importedData = localStorage.getItem('mango-imported-shelves');
+    console.log('Checking for imported data:', importedData ? 'Found' : 'Not found');
+    if (importedData) {
+      try {
+        const parsedShelves = JSON.parse(importedData);
+        console.log('Successfully parsed imported shelves:', parsedShelves.length, 'shelves');
+        localStorage.removeItem('mango-imported-shelves'); // Clean up
+        return parsedShelves;
+      } catch (error) {
+        console.error('Error loading imported shelves:', error);
+      }
+    }
+    const defaultShelves = getDefaultShelves(currentAppState);
+    console.log('Using default shelves:', defaultShelves.length, 'shelves');
+    return defaultShelves;
+  });
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(INITIAL_PREVIEW_SETTINGS);
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('mango-theme');
@@ -130,6 +147,8 @@ const App: React.FC = () => {
   });
   
   const [newlyAddedStrainId, setNewlyAddedStrainId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState<boolean>(false);
+  const [initMessage, setInitMessage] = useState<string>('');
   
   // Modal states
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
@@ -519,21 +538,20 @@ const App: React.FC = () => {
   }, [handleShelfInteraction]);
 
   const handleUpdateStrain = useCallback((shelfId: string, strainId: string, updatedStrain: Partial<Strain>) => {
-    recordChange(() => {
-      setShelves(prevShelves =>
-        prevShelves.map(shelf =>
-          shelf.id === shelfId
-            ? {
-                ...shelf,
-                strains: shelf.strains.map(strain =>
-                  strain.id === strainId ? { ...strain, ...updatedStrain } : strain
-                ),
-                sortCriteria: null // Reset sort criteria when updating strain
-              }
-            : shelf
-        )
-      );
-    });
+    // Input changes should be immediate and not use recordChange to avoid disrupting input flow
+    setShelves(prevShelves =>
+      prevShelves.map(shelf =>
+        shelf.id === shelfId
+          ? {
+              ...shelf,
+              strains: shelf.strains.map(strain =>
+                strain.id === strainId ? { ...strain, ...updatedStrain } : strain
+              ),
+              sortCriteria: null // Reset sort criteria when updating strain
+            }
+          : shelf
+      )
+    );
   }, []);
 
   const handleRemoveStrain = useCallback((shelfId: string, strainId: string) => {
@@ -844,21 +862,38 @@ const App: React.FC = () => {
         importedCount++;
       }
       
-      // Use recordChange for CSV import to ensure sorts are reset
-      recordChange(() => {
-        setShelves(prevShelves => 
-          prevShelves.map(shelf => ({
-            ...shelf,
-            strains: importedStrainsByShelf[shelf.id] || [], 
-            sortCriteria: null // Reset individual shelf sort criteria
-          }))
-        );
-      });
-
-      alert(`CSV Import Complete: ${importedCount} strains loaded.${skippedRowCount > 0 ? ` ${skippedRowCount} rows skipped (see console for details).` : ''}`);
-      if (csvImportInputRef.current) {
-        csvImportInputRef.current.value = "";
-      }
+      // Show loading overlay and update state directly (no reload needed)
+      setIsInitializing(true);
+      setInitMessage('Processing CSV import...');
+      
+      // Use setTimeout to allow the loading overlay to show
+      setTimeout(() => {
+        // Update state directly with imported data
+        const newShelvesData = shelves.map(shelf => ({
+          ...shelf,
+          strains: importedStrainsByShelf[shelf.id] || [], 
+          sortCriteria: null // Reset individual shelf sort criteria
+        }));
+        
+        console.log('Updating shelves with imported data:', newShelvesData.length, 'shelves');
+        console.log('Total strains imported:', newShelvesData.reduce((total, shelf) => total + shelf.strains.length, 0));
+        
+        // Update state directly
+        setGlobalSortCriteria(null);
+        setShelves(newShelvesData);
+        
+        // Show success message
+        setTimeout(() => {
+          setIsInitializing(false);
+          setInitMessage(`CSV Import Complete: ${importedCount} strains loaded.${skippedRowCount > 0 ? ` ${skippedRowCount} rows skipped.` : ''}`);
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            setInitMessage('');
+          }, 3000);
+        }, 800);
+        
+      }, 300);
     };
     reader.onerror = () => {
       alert("Error reading CSV file.");
@@ -917,6 +952,8 @@ const App: React.FC = () => {
   useEffect(() => {
     updateDynamicMenus();
   }, [updateDynamicMenus]);
+
+  // No longer needed - we handle CSV import without page reload
 
   // Electron menu command handlers
   useEffect(() => {
@@ -1339,6 +1376,41 @@ const App: React.FC = () => {
         )}
         
         <DebugConsole theme={theme} />
+        
+        {/* Loading/Initialization Overlay */}
+        {isInitializing && (
+          <div 
+            className="fixed inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center z-50"
+            role="alertdialog"
+            aria-live="assertive"
+            aria-busy="true"
+            aria-label="Initializing application"
+          >
+            <div className="bg-white p-8 rounded-lg shadow-xl text-gray-800 flex flex-col items-center space-y-4 max-w-md mx-4">
+              <svg className="animate-spin h-12 w-12 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="text-xl font-semibold text-center">{initMessage}</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Success Message Toast */}
+        {!isInitializing && initMessage && (
+          <div 
+            className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-40 max-w-md"
+            role="alert"
+            aria-live="polite"
+          >
+            <div className="flex items-center space-x-2">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <span className="font-medium">{initMessage}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   };

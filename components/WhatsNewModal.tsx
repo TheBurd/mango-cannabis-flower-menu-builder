@@ -72,15 +72,17 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
               <div className={`p-4 rounded-lg border-l-4 border-red-400 ${
                 theme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
               }`}>
-                <h4 className="font-semibold mb-2 text-red-600">CSV Import Functionality Restored</h4>
+                <h4 className="font-semibold mb-2 text-red-600">CSV Import Functionality Completely Restored</h4>
                 <p className="text-sm leading-relaxed mb-3">
-                  Fixed a critical bug where users couldn't modify strains or shelves after importing CSV data. 
-                  This was caused by a race condition in the state management system that prevented proper UI updates.
+                  Fixed a critical bug where all input fields became unresponsive after importing CSV data. 
+                  The issue was caused by React state synchronization conflicts in Electron production builds that broke input focus and typing functionality.
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
-                  <li><strong>Strain Management:</strong> Add, edit, and delete strains now works properly after CSV import</li>
-                  <li><strong>Shelf Operations:</strong> All shelf management features restored post-import</li>
-                  <li><strong>Data Integrity:</strong> CSV import no longer breaks the app's interactive functionality</li>
+                  <li><strong>Input Fields Fixed:</strong> All text inputs now work properly after CSV import (strain names, grower, THC, filename, etc.)</li>
+                  <li><strong>Improved UX:</strong> Added smooth loading overlay and success notifications instead of popup alerts</li>
+                  <li><strong>Better Performance:</strong> Eliminated page reloads for faster, more reliable CSV import process</li>
+                  <li><strong>Data Integrity:</strong> CSV import now preserves all data without clearing or corruption</li>
+                  <li><strong>Enhanced Stability:</strong> Resolved Electron-specific state management issues for production builds</li>
                 </ul>
               </div>
             </section>

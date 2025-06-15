@@ -137,10 +137,14 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 ## 🆕 **What's New in v1.0.2**
 
-### **🐛 Critical Bug Fix**
-- **CSV Import Restored** - Fixed issue where users couldn't modify strains or shelves after importing CSV data
-- **Strain Management** - Add/edit/delete strains now works properly after CSV import
-- **Shelf Operations** - All shelf management features restored post-import
+### **🐛 Critical Bug Fix - CSV Import Completely Restored**
+- **Input Fields Fixed** - All text inputs now work properly after CSV import (strain names, grower, THC, filename, etc.)
+- **Improved UX** - Added smooth loading overlay and success notifications instead of popup alerts
+- **Better Performance** - Eliminated page reloads for faster, more reliable CSV import process
+- **Data Integrity** - CSV import now preserves all data without clearing or corruption
+- **Enhanced Stability** - Resolved Electron-specific state management issues for production builds
+
+**Technical Details**: Fixed React state synchronization conflicts in Electron production builds that broke input focus and typing functionality. The new implementation uses direct state updates with loading overlays for a smoother, more reliable experience.
 
 ---
 
@@ -258,9 +262,9 @@ This tool was created specifically for Mango Cannabis to streamline menu creatio
 
 The app will notify you when updates are available. New versions are released to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)** with changelog information.
 
-**Current Version**: v1.0.2 *(Bug Fix: CSV import functionality restored - users can now properly modify strains after import)*
+**Current Version**: v1.0.2 *(Critical Bug Fix: CSV import functionality completely restored with improved UX and stability)*
 
 ### **Version History**
-- **v1.0.2** - Fixed critical bug where CSV import prevented strain/shelf modifications and add/delete operations
+- **v1.0.2** - Fixed critical bug where all input fields became unresponsive after CSV import. Resolved React state synchronization conflicts in Electron production builds. Added loading overlays and success notifications for better UX.
 - **v1.0.1** - Enhanced user experience with 6-column support, image feedback system, smart notifications, and improved zoom controls
 - **v1.0.0** - Initial release with cross-platform support and feedback system 
