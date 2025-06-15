@@ -292,7 +292,7 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ theme, isOpen, onC
         subject: formData.subject || `${formData.feedbackType.charAt(0).toUpperCase() + formData.feedbackType.slice(1)} from Mango Menu Builder`,
         message: formData.message,
         app_name: 'Mango Cannabis Flower Menu Builder',
-        app_version: '1.0.1',
+        app_version: '1.0.2',
         timestamp: new Date().toISOString(),
         to_email: EMAILJS_CONFIG.TO_EMAIL,
         // Add image information to the message

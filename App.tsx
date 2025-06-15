@@ -136,7 +136,7 @@ const App: React.FC = () => {
   const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
   const [hasViewedWhatsNew, setHasViewedWhatsNew] = useState<boolean>(() => {
     const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
-    return viewedVersion === '1.0.1'; // Check if current version has been viewed
+    return viewedVersion === '1.0.2'; // Check if current version has been viewed
   });
 
   // Theme toggle handler
@@ -156,7 +156,7 @@ const App: React.FC = () => {
     // Mark this version as viewed
     if (!hasViewedWhatsNew) {
       setHasViewedWhatsNew(true);
-      localStorage.setItem('mango-whats-new-viewed-version', '1.0.1');
+      localStorage.setItem('mango-whats-new-viewed-version', '1.0.2');
     }
   }, [hasViewedWhatsNew]);
 
@@ -247,9 +247,17 @@ const App: React.FC = () => {
         const insertIndex = targetIndex !== undefined ? targetIndex : newToStrains.length;
         newToStrains.splice(insertIndex, 0, strainToMove);
         
-        // Update shelves
-        newShelves[fromShelfIndex] = { ...fromShelf, strains: newFromStrains };
-        newShelves[toShelfIndex] = { ...toShelf, strains: newToStrains };
+        // Update shelves with reset sort criteria
+        newShelves[fromShelfIndex] = { 
+          ...fromShelf, 
+          strains: newFromStrains,
+          sortCriteria: null // Reset sort criteria when moving strain
+        };
+        newShelves[toShelfIndex] = { 
+          ...toShelf, 
+          strains: newToStrains,
+          sortCriteria: null // Reset sort criteria when moving strain
+        };
         
         return newShelves;
       });
@@ -277,7 +285,11 @@ const App: React.FC = () => {
         // Insert strain at new position
         newStrains.splice(adjustedToIndex, 0, strainToMove);
         
-        newShelves[shelfIndex] = { ...shelf, strains: newStrains };
+        newShelves[shelfIndex] = { 
+          ...shelf, 
+          strains: newStrains,
+          sortCriteria: null // Reset sort criteria when reordering strain
+        };
         return newShelves;
       });
     });
@@ -389,11 +401,8 @@ const App: React.FC = () => {
   }, [currentAppState]);
 
   const recordChange = (updater: () => void) => {
-    updater();
     setGlobalSortCriteria(null);
-    setShelves(prevShelves => 
-      prevShelves.map(shelf => ({ ...shelf, sortCriteria: null }))
-    );
+    updater();
   };
   
   useEffect(() => {
@@ -500,6 +509,7 @@ const App: React.FC = () => {
                     isLastJar: false,
                   },
                 ],
+                sortCriteria: null // Reset sort criteria when adding strain
               }
             : shelf
         )
@@ -518,6 +528,7 @@ const App: React.FC = () => {
                 strains: shelf.strains.map(strain =>
                   strain.id === strainId ? { ...strain, ...updatedStrain } : strain
                 ),
+                sortCriteria: null // Reset sort criteria when updating strain
               }
             : shelf
         )
@@ -530,7 +541,11 @@ const App: React.FC = () => {
       setShelves(prevShelves =>
         prevShelves.map(shelf =>
           shelf.id === shelfId
-            ? { ...shelf, strains: shelf.strains.filter(s => s.id !== strainId) }
+            ? { 
+                ...shelf, 
+                strains: shelf.strains.filter(s => s.id !== strainId),
+                sortCriteria: null // Reset sort criteria when removing strain
+              }
             : shelf
         )
       );
@@ -557,7 +572,11 @@ const App: React.FC = () => {
         }
         
         const updatedShelves = [...prevShelves];
-        updatedShelves[shelfIndex] = { ...currentShelf, strains: newStrains };
+        updatedShelves[shelfIndex] = { 
+          ...currentShelf, 
+          strains: newStrains,
+          sortCriteria: null // Reset sort criteria when copying strain
+        };
         return updatedShelves;
       });
     });
@@ -567,7 +586,13 @@ const App: React.FC = () => {
     recordChange(() => {
       setShelves(prevShelves =>
         prevShelves.map(shelf =>
-          shelf.id === shelfId ? { ...shelf, strains: [] } : shelf
+          shelf.id === shelfId 
+            ? { 
+                ...shelf, 
+                strains: [],
+                sortCriteria: null // Reset sort criteria when clearing shelf
+              } 
+            : shelf
         )
       );
     });
@@ -576,7 +601,11 @@ const App: React.FC = () => {
   const handleClearAllShelves = useCallback(() => {
     recordChange(() => {
       setShelves(prevShelves =>
-        prevShelves.map(shelf => ({ ...shelf, strains: [] }))
+        prevShelves.map(shelf => ({ 
+          ...shelf, 
+          strains: [],
+          sortCriteria: null // Reset sort criteria when clearing all shelves
+        }))
       );
     });
   }, []);
@@ -587,6 +616,7 @@ const App: React.FC = () => {
         prevShelves.map(shelf => ({
           ...shelf,
           strains: shelf.strains.map(strain => ({ ...strain, isLastJar: false })),
+          sortCriteria: null // Reset sort criteria when clearing last jars
         }))
       );
     });
@@ -820,10 +850,9 @@ const App: React.FC = () => {
           prevShelves.map(shelf => ({
             ...shelf,
             strains: importedStrainsByShelf[shelf.id] || [], 
-            // sortCriteria will be reset by recordChange
+            sortCriteria: null // Reset individual shelf sort criteria
           }))
         );
-        // globalSortCriteria will be reset by recordChange
       });
 
       alert(`CSV Import Complete: ${importedCount} strains loaded.${skippedRowCount > 0 ? ` ${skippedRowCount} rows skipped (see console for details).` : ''}`);
@@ -1096,7 +1125,7 @@ const App: React.FC = () => {
           break;
 
         case 'show-about':
-          alert('🥭 Mango Cannabis Flower Menu Builder v1.0.1\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
+          alert('🥭 Mango Cannabis Flower Menu Builder v1.0.2\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
           break;
 
         case 'reset-welcome':

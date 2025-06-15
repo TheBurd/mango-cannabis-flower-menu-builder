@@ -251,7 +251,7 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
         }`}>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
-              🥭 Mango Cannabis Flower Menu Builder v1.0.1
+              🥭 Mango Cannabis Flower Menu Builder v1.0.2
             </div>
             <button
               ref={feedbackButtonRef}

@@ -48,7 +48,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         <div className={`px-6 py-4 border-b flex items-center justify-between ${
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
-          <h2 className="text-2xl font-bold text-orange-500">🎉 What's New in v1.0.1</h2>
+          <h2 className="text-2xl font-bold text-orange-500">🎉 What's New in v1.0.2</h2>
           <button
             onClick={onClose}
             className={`p-2 rounded-lg hover:bg-opacity-80 transition-colors ${
@@ -66,15 +66,34 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         <div className="overflow-y-auto max-h-[calc(90vh-160px)]">
           <div className="p-6 space-y-6">
             
-            {/* Release Overview */}
+            {/* v1.0.2 Bug Fix */}
             <section>
-              <h3 className="text-xl font-semibold mb-3 text-orange-500">🚀 Release Highlights</h3>
+              <h3 className="text-xl font-semibold mb-3 text-red-500">🐛 Critical Bug Fix - v1.0.2</h3>
+              <div className={`p-4 rounded-lg border-l-4 border-red-400 ${
+                theme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
+              }`}>
+                <h4 className="font-semibold mb-2 text-red-600">CSV Import Functionality Restored</h4>
+                <p className="text-sm leading-relaxed mb-3">
+                  Fixed a critical bug where users couldn't modify strains or shelves after importing CSV data. 
+                  This was caused by a race condition in the state management system that prevented proper UI updates.
+                </p>
+                <ul className="text-sm space-y-1 list-disc list-inside">
+                  <li><strong>Strain Management:</strong> Add, edit, and delete strains now works properly after CSV import</li>
+                  <li><strong>Shelf Operations:</strong> All shelf management features restored post-import</li>
+                  <li><strong>Data Integrity:</strong> CSV import no longer breaks the app's interactive functionality</li>
+                </ul>
+              </div>
+            </section>
+
+            {/* Previous Release Overview */}
+            <section>
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">🔄 Previous Release - v1.0.1</h3>
               <div className={`p-4 rounded-lg ${
                 theme === 'dark' ? 'bg-gray-700' : 'bg-blue-50'
               }`}>
                 <p className="text-sm leading-relaxed">
-                  Version 1.0.1 brings significant improvements to layout flexibility, user experience, and visual feedback. 
-                  This update focuses on enhanced column layouts, smarter overflow detection, and improved zoom controls 
+                  Version 1.0.1 brought significant improvements to layout flexibility, user experience, and visual feedback. 
+                  This update focused on enhanced column layouts, smarter overflow detection, and improved zoom controls 
                   for a more professional menu building experience.
                 </p>
               </div>
@@ -216,7 +235,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         }`}>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
-              🥭 Flower Menu Builder v1.0.1
+              🥭 Flower Menu Builder v1.0.2
             </div>
             <button
               ref={feedbackButtonRef}

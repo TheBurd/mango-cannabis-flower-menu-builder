@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         />
         <h1 className="text-3xl font-bold tracking-tight" style={{fontFamily: "'Poppins', sans-serif"}}>
-          {appName} v1.0.1
+          {appName} v1.0.2
         </h1>
         <button
           onClick={onShowWhatsNew}
@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
             boxShadow: '0 0 15px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.1)',
             animation: 'subtle-glow 2s ease-in-out infinite alternate'
           } : undefined}
-          title="See what's new in v1.0.1"
+                      title="See what's new in v1.0.2"
         >
           What's New
         </button>
