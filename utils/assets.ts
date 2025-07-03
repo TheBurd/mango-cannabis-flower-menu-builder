@@ -15,6 +15,7 @@ export function getAssetPath(path: string): string {
 export const getLogoPath = () => getAssetPath('/logos/mcLogo_V3.svg');
 export const getIconPath = (iconName: string) => getAssetPath(`/icons/${iconName}`);
 export const getImagePath = (imageName: string) => getAssetPath(`/images/${imageName}`);
+export const getPatternPath = (patternName: string) => getAssetPath(`/patterns/${patternName}`);
 
 // Available header images
 export const HEADER_IMAGES = {

@@ -10,7 +10,7 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 ### **Step 1: Choose Your Platform**
 1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
-2. Find the latest version (v1.0.2)
+2. Find the latest version (v1.0.3)
 3. Choose your operating system below:
 
 ---
@@ -21,19 +21,19 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 - **`Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.2-x64.exe`** *(~81 MB)*
 - **Best choice for most users** - Creates Start menu shortcuts, handles updates automatically
 - Just double-click to install, then launch from Start menu
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.2/Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.2-x64.exe)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.3-x64.exe)
 
 #### **⚡ Alternative: Portable App**
 - **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.exe`** *(~81 MB)*
 - **No installation required** - Just download and run directly
 - Good for testing or if you can't install software on your computer
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.2/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.exe)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.3-x64.exe)
 
 #### **📦 ZIP Archive**
 - **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.zip`** *(~110 MB)*
 - Contains the portable app in a compressed archive
 - Extract and run the `.exe` file inside
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.2/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.zip)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.3-x64.zip)
 
 **Installation Steps:**
 - **Installer**: Double-click the Setup file → Follow prompts → Launch from Start menu
@@ -50,21 +50,21 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 **For Intel Macs (2020 and earlier):**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-x64.dmg`** *(~105 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.2/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-x64.dmg)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-x64.dmg)
 
 **For Apple Silicon Macs (M1/M2/M3):**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-arm64.dmg`** *(~100 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.2/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-arm64.dmg)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-arm64.dmg)
 
 #### **⚡ Alternative: ZIP Archive**
 
 **For Intel Macs:**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-x64.zip`** *(~101 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.2/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-x64.zip)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-x64.zip)
 
 **For Apple Silicon Macs:**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-arm64.zip`** *(~96 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.2/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-arm64.zip)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-arm64.zip)
 
 **Installation Steps:**
 1. **DMG**: Double-click the `.dmg` file → Drag app to Applications folder → Launch from Applications
@@ -135,16 +135,29 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 ---
 
-## 🆕 **What's New in v1.0.2**
+## 🆕 **What's New in v1.0.3**
 
-### **🐛 Critical Bug Fix - CSV Import Completely Restored**
-- **Input Fields Fixed** - All text inputs now work properly after CSV import (strain names, grower, THC, filename, etc.)
-- **Improved UX** - Added smooth loading overlay and success notifications instead of popup alerts
-- **Better Performance** - Eliminated page reloads for faster, more reliable CSV import process
-- **Data Integrity** - CSV import now preserves all data without clearing or corruption
-- **Enhanced Stability** - Resolved Electron-specific state management issues for production builds
+### **🚀 Major Feature - Auto-Format Menu**
 
-**Technical Details**: Fixed React state synchronization conflicts in Electron production builds that broke input focus and typing functionality. The new implementation uses direct state updates with loading overlays for a smoother, more reliable experience.
+**Introducing the revolutionary Auto-Format Menu feature!** This intelligent system automatically optimizes your menu layout for maximum readability and perfect artboard fit using real-time overflow detection and iterative adjustments.
+
+**✨ Intelligent Dual-Mode Operation:**
+- 📈 **Expansion Mode** (No Overflow): Maximizes readability by aggressively increasing font size up to 48px and optimizing line spacing up to 1.0
+- 📉 **Reduction Mode** (Overflow Detected): Preserves readability by reducing line spacing first (less impact), then font size only if necessary
+
+**⚡ Enhanced User Experience:**
+- 🎯 **Smart Visual Feedback**: Button changes color based on overflow status, "Optimizing..." state during process
+- 🔒 **Protected Optimization**: All controls disabled during optimization to prevent interference
+- ⚡ **Lightning Fast**: 25ms iteration delays for rapid optimization
+- 🎉 **Clean Completion**: Single success toast when optimization complete
+
+**⚙️ Improved Defaults:**
+- 🔧 **Shelf Splitting OFF**: Changed default to keep shelves together for cleaner layouts
+- 📐 **Text-Only Optimization**: Respects your column choice, focuses on font size and line height optimization
+
+**🏷️ New Shelf Types & Features:**
+- 🌿 **Michigan Infused Flower Shelves**: Exotic Live Resin, Premium Distillate, and Value Distillate infused options with special pricing (per-gram and 5g) and unique visual styling
+- 🏷️ **50% OFF Strains Shelf**: Available for all locations with toggle control, top placement, original shelf tracking, and eye-catching red-to-orange gradient design
 
 ---
 
@@ -251,7 +264,7 @@ Category,Strain Name,Grower/Brand,THC %,Class,Last Jar
 
 **Copyright**: © 2024 Mango Cannabis  
 **Developer**: TheBurd (Brad Forsythe) - [brad@mangocannabis.com](mailto:brad@mangocannabis.com)  
-**Version**: 1.0.2  
+**Version**: 1.0.3  
 **Built for**: Mango Cannabis Management Team
 
 This tool was created specifically for Mango Cannabis to streamline menu creation and inventory management across all locations. The software is owned by Mango Cannabis and developed by Brad Forsythe.
@@ -262,9 +275,10 @@ This tool was created specifically for Mango Cannabis to streamline menu creatio
 
 The app will notify you when updates are available. New versions are released to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)** with changelog information.
 
-**Current Version**: v1.0.2 *(Critical Bug Fix: CSV import functionality completely restored with improved UX and stability)*
+**Current Version**: v1.0.3 *(Major Feature: Auto-Format Menu with intelligent optimization and enhanced UX)*
 
 ### **Version History**
+- **v1.0.3** - Introduced revolutionary Auto-Format Menu feature with intelligent optimization, dual-mode operation (expansion/reduction), and enhanced UX with protected controls during optimization
 - **v1.0.2** - Fixed critical bug where all input fields became unresponsive after CSV import. Resolved React state synchronization conflicts in Electron production builds. Added loading overlays and success notifications for better UX.
 - **v1.0.1** - Enhanced user experience with 6-column support, image feedback system, smart notifications, and improved zoom controls
-- **v1.0.0** - Initial release with cross-platform support and feedback system 
+- **v1.0.0** - Initial release with cross-platform support and feedback system

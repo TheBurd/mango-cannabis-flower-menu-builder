@@ -1,17 +1,48 @@
-# 🥭 Mango Cannabis Flower Menu Builder v1.0.2
+# 🥭 Mango Cannabis Flower Menu Builder v1.0.3
 
-**Critical Bug Fix Release!** 🐛 **CSV Import Functionality Completely Restored**
+**Major Feature Release!** 🚀 **Auto-Format Menu - Intelligent Layout Optimization**
 
-## 🆕 What's New in v1.0.2
+## 🆕 What's New in v1.0.3
 
-### 🐛 **Critical Bug Fix - Input Fields Restored**
+### 🚀 **Revolutionary Auto-Format Menu Feature**
+- **Intelligent One-Click Optimization** - Automatically finds the perfect font size and line spacing for your content
+- **Dual-Mode Operation** - Expansion mode (maximizes readability) and Reduction mode (eliminates overflow)
+- **Real-Time Feedback** - Uses actual overflow detection as optimization guide for precise adjustments
+- **Lightning Fast** - 25ms iteration delays for rapid convergence to optimal settings
+- **Protected Process** - All controls disabled during optimization to prevent interference
+
+### ✨ **Smart Dual-Mode System**
+- **📈 Expansion Mode** (No Initial Overflow): Aggressively increases font size up to 48px, then optimizes line spacing up to 1.0
+- **📉 Reduction Mode** (Overflow Detected): Reduces line spacing first (preserves readability), then font size only if necessary
+- **Content Density Aware** - Larger increments/reductions for light content, smaller for dense content
+- **Intelligent Prioritization** - Font size first for expansion, line height first for reduction
+
+### ⚡ **Enhanced User Experience**
+- **Smart Visual Feedback** - Button changes from orange (overflow) to gray (optimized) with "Optimizing..." state
+- **Single Success Toast** - Clean completion notification instead of step-by-step messages
+- **Automatic Continuation** - No manual clicking required, system iterates until optimal fit found
+- **Full Range Utilization** - Uses complete slider ranges (8-48px font, 0.1-1.0 line height)
+
+### ⚙️ **Improved Defaults & Settings**
+- **Shelf Splitting OFF** - Changed default to keep shelves together for cleaner layouts
+- **User Column Respect** - Auto-Format works with your chosen column count instead of changing it
+- **Text-Only Optimization** - Focuses purely on typography for current layout
+- **Ceiling Detection** - Prevents infinite loops by remembering overflow boundaries
+
+**Technical Implementation**: Uses iterative optimization with state tracking, overflow ceiling detection, and automatic phase transitions. The system backs off when hitting overflow limits and smoothly transitions between font size and line height optimization phases.
+
+---
+
+## 🔄 **Previous Update - v1.0.2 Critical Bug Fix**
+
+### 🐛 **CSV Import Functionality Completely Restored**
 - **Input Fields Fixed** - All text inputs now work properly after CSV import (strain names, grower, THC, filename, etc.)
 - **Improved UX** - Added smooth loading overlay and success notifications instead of popup alerts
 - **Better Performance** - Eliminated page reloads for faster, more reliable CSV import process
 - **Data Integrity** - CSV import now preserves all data without clearing or corruption
 - **Enhanced Stability** - Resolved Electron-specific state management issues for production builds
 
-**Technical Details**: Fixed React state synchronization conflicts in Electron production builds that broke input focus and typing functionality. The issue was caused by `flushSync` and page reload mechanisms that disrupted React's event handling in the Electron environment. The new implementation uses direct state updates with loading overlays for a smoother, more reliable experience.
+**Technical Details**: Fixed React state synchronization conflicts in Electron production builds that broke input focus and typing functionality.
 
 ---
 
@@ -49,17 +80,17 @@
 ### 🪟 **Windows Installation**
 
 #### **🎯 Recommended: Full Installer**
-- **`Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.2-x64.exe`** *(~81 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.3-x64.exe`** *(~81 MB)*
 - Creates Start menu shortcuts, handles updates automatically
 - Just double-click to install, then launch from Start menu
 
 #### **⚡ Alternative: Portable App**
-- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.exe`** *(~81 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.3-x64.exe`** *(~81 MB)*
 - No installation required - Just download and run directly
 - Good for testing or if you can't install software
 
 #### **📦 ZIP Archive**
-- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.zip`** *(~110 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.3-x64.zip`** *(~110 MB)*
 - Contains the portable app in a compressed archive
 - Extract and run the `.exe` file inside
 
@@ -72,18 +103,18 @@
 #### **🎯 Recommended: DMG Installer**
 
 **For Intel Macs (2020 and earlier):**
-- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-x64.dmg`** *(~105 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-x64.dmg`** *(~105 MB)*
 
 **For Apple Silicon Macs (M1/M2/M3):**
-- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-arm64.dmg`** *(~100 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-arm64.dmg`** *(~100 MB)*
 
 #### **⚡ Alternative: ZIP Archive**
 
 **For Intel Macs:**
-- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-x64.zip`** *(~101 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-x64.zip`** *(~101 MB)*
 
 **For Apple Silicon Macs:**
-- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-arm64.zip`** *(~96 MB)*
+- **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-arm64.zip`** *(~96 MB)*
 
 **Installation Steps:**
 1. **DMG**: Double-click the `.dmg` file → Drag app to Applications folder → Launch from Applications
@@ -104,9 +135,9 @@
 - **Image feedback system** - Report issues with visual proof
 - **Smart notifications** - Stay informed about new features
 
-## 🚀 **Upgrade from v1.0.1**
-- **Critical Fix**: v1.0.2 resolves the CSV import issue that prevented strain/shelf modifications
-- **Automatic Updates**: The app will notify you when v1.0.2 is available
+## 🚀 **Upgrade from v1.0.2**
+- **Major Feature**: v1.0.3 introduces the revolutionary Auto-Format Menu for intelligent layout optimization
+- **Automatic Updates**: The app will notify you when v1.0.3 is available
 - **Manual Download**: Download the new version using the links above
 - **Settings Preserved**: Your preferences and theme settings will be maintained
 
@@ -131,6 +162,33 @@ The following files support the auto-update system and are required for the app 
 ---
 
 ## 📋 **Full Changelog**
+
+### v1.0.3 - Auto-Format Menu Feature
+#### Added
+- **Auto-Format Menu Button** - One-click intelligent optimization for perfect layout fit
+- **Dual-Mode Optimization** - Expansion mode (maximizes readability) and Reduction mode (eliminates overflow)
+- **Iterative Optimization Engine** - Uses real-time overflow detection as feedback for precise adjustments
+- **Content Density Awareness** - Intelligent increment/reduction sizes based on strain count and column density
+- **Protected Optimization Process** - All controls disabled during optimization to prevent interference
+- **Smart Visual Feedback** - Button color changes and "Optimizing..." state indication
+- **Ceiling Detection System** - Prevents infinite loops by tracking overflow boundaries
+- **Michigan Infused Flower Shelves** - Exotic Live Resin, Premium Distillate, and Value Distillate infused options with special pricing structure
+- **50% OFF Strains Shelf** - Available for all locations with toggle control, top placement, and original shelf tracking
+
+#### Improved
+- **Default Shelf Splitting** - Changed to OFF for cleaner layouts (shelves stay together)
+- **Optimization Speed** - 25ms iteration delays for lightning-fast convergence
+- **User Experience** - Single success toast instead of step-by-step messages
+- **Range Utilization** - Uses full slider ranges (8-48px font, 0.1-1.0 line height)
+- **Typography Focus** - Respects user's column choice, optimizes only font size and line height
+- **Infused Shelf Styling** - Unique gradient backgrounds and subtle pattern overlays for visual distinction
+- **Promotional Shelf Design** - Eye-catching red-to-orange gradient for 50% OFF shelf visibility
+
+#### Technical
+- **State Tracking** - Comprehensive optimization state management with mode persistence
+- **Phase Transitions** - Smooth transitions between font size and line height optimization
+- **Overflow Feedback Loop** - Real-time overflow detection drives optimization decisions
+- **Automatic Continuation** - No manual intervention required during optimization process
 
 ### v1.0.2 - Critical Bug Fix
 #### Fixed

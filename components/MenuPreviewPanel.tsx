@@ -18,6 +18,11 @@ interface MenuPreviewPanelProps {
   onExportComplete: () => void;
   currentState: SupportedStates;
   theme: Theme;
+  onOverflowDetected?: (hasOverflow: boolean) => void;
+  onAutoFormat?: () => void;
+  hasContentOverflow?: boolean;
+  isOptimizing?: boolean;
+  isControlsDisabled?: boolean;
 }
 
 export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
@@ -28,6 +33,11 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   onExportComplete,
   currentState,
   theme,
+  onOverflowDetected,
+  onAutoFormat,
+  hasContentOverflow: hasOverflow,
+  isOptimizing,
+  isControlsDisabled,
 }) => {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -417,6 +427,10 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
         onDirectZoomChange={handleZoomChangeFromControls}
         currentState={currentState}
         theme={theme}
+        onAutoFormat={onAutoFormat}
+        hasContentOverflow={hasOverflow}
+        isOptimizing={isOptimizing}
+        isControlsDisabled={isControlsDisabled}
       />
       
       <div className="flex-1 relative overflow-hidden">
@@ -476,7 +490,7 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
               shelves={shelves}
               settings={settings}
               currentState={currentState}
-              onOverflowDetected={handleOverflowDetected}
+              onOverflowDetected={onOverflowDetected || handleOverflowDetected}
             />
           </div>
         </div>

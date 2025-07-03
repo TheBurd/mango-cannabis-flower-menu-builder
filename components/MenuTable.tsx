@@ -1,7 +1,8 @@
 import React from 'react';
-import { Shelf, Strain } from '../types'; 
+import { Shelf, Strain, SupportedStates } from '../types'; 
 import { StrainTypeIndicator } from './common/StrainTypeIndicator';
-import { THC_DECIMAL_PLACES, MANGO_MAIN_ORANGE } from '../constants';
+import { THC_DECIMAL_PLACES, MANGO_MAIN_ORANGE, getShelfPricingByName } from '../constants';
+import { getPatternPath } from '../utils/assets';
 
 interface MenuTableProps {
   shelf: Shelf;
@@ -12,6 +13,7 @@ interface MenuTableProps {
   // headerText?: string; // Removed: No longer passing "(cont.)" text
   applyAvoidBreakStyle?: boolean;
   showOverflowWarning?: boolean; // Show subtle overlay warning for shelves that might overflow
+  currentState?: SupportedStates; // Current app state for pricing calculations
 }
 
 const getScaledFontSize = (base: number, multiplier: number, min: number = 7): string =>
@@ -21,8 +23,34 @@ const getScaledValue = (base: number, multiplier: number, min: number = 0): numb
     Math.max(min, base * multiplier);
 
 // Function to render shelves as flowing rows when tighten shelves is enabled
-const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSizePx: number, linePaddingMultiplier: number, marginBottomStyle?: string, applyAvoidBreakStyle?: boolean, showOverflowWarning?: boolean) => {
+const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSizePx: number, linePaddingMultiplier: number, marginBottomStyle?: string, applyAvoidBreakStyle?: boolean, showOverflowWarning?: boolean, currentState?: SupportedStates) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
+  
+  // Add CSS for infused pattern
+  const infusedPatternCSS = `
+    .infused-pattern::before, .infused-header::before, .infused-column-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("${getPatternPath('sick-ass-pattern.svg')}");
+      background-size: 300px 300px;
+      background-repeat: repeat;
+      background-position: 0 0;
+      filter: hue-rotate(30deg) saturate(0.4) brightness(1.5) opacity(0.06);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .infused-pattern > *, .infused-header > *, .infused-column-header > * {
+      position: relative;
+      z-index: 1;
+    }
+    .infused-header::before, .infused-column-header::before {
+      filter: hue-rotate(30deg) saturate(0.4) brightness(1.8) opacity(0.08);
+    }
+  `;
   
   // Map shelf colors to actual hex values for borders
   const getShelfBorderColor = (shelfColor: string): string => {
@@ -39,6 +67,10 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
       'bg-teal-600': '#0d9488',
       'bg-violet-500': '#8b5cf6',
       'bg-mango-gradient': '#fe9426', // Use the primary mango color for gradient borders
+      'bg-gradient-to-r from-red-500 to-orange-500': '#ef4444', // 50% OFF shelf - red-500
+      'bg-gradient-to-r from-rose-600 to-pink-600': '#e11d48', // Exotic Live Resin Infused - rose-600
+      'bg-gradient-to-r from-emerald-600 to-teal-600': '#059669', // Premium Distillate Infused - emerald-600
+      'bg-gradient-to-r from-gray-600 to-slate-600': '#4b5563', // Value Distillate Infused - gray-600
     };
     return colorMap[shelfColor] || '#6b7280'; // Default to gray if color not found
   };
@@ -65,11 +97,18 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
   
   const elements: React.ReactElement[] = [];
   
+  // Add CSS for infused pattern if needed
+  if (shelf.isInfused) {
+    elements.push(
+      <style key={`${shelf.id}-infused-css`} dangerouslySetInnerHTML={{ __html: infusedPatternCSS }} />
+    );
+  }
+  
   // Add header element
   elements.push(
     <div
       key={`${shelf.id}-header`}
-      className={`${shelf.color} ${shelf.textColor} shadow-md`}
+      className={`${shelf.color} ${shelf.textColor} shadow-md ${shelf.isInfused ? 'infused-header' : ''}`}
       style={{
         marginBottom: '0',
         padding: `${headerPaddingVertical}px ${getScaledValue(baseFontSizePx, 0.5, 5)}px`, // Reduced padding
@@ -98,25 +137,33 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
           marginBottom: `${spaceBetween}px`,
           lineHeight: titleLineHeight,
         }}>{shelf.name}</h3>
-        <p style={{
-          fontSize: getScaledFontSize(baseFontSizePx, 0.7, 7), // Reduced font size
-          opacity: 0.9,
-          lineHeight: pricingLineHeight,
-        }}>
-          {formatPrice(shelf.pricing.g)}/g | {formatPrice(shelf.pricing.eighth)}/8th | {formatPrice(shelf.pricing.quarter)}/Qtr | {formatPrice(shelf.pricing.half)}/Half | {formatPrice(shelf.pricing.oz)}/Oz
-        </p>
+        {!shelf.hidePricing && (
+          <p style={{
+            fontSize: getScaledFontSize(baseFontSizePx, 0.7, 7), // Reduced font size
+            opacity: 0.9,
+            lineHeight: pricingLineHeight,
+          }}>
+            {shelf.isInfused && shelf.pricing.fiveG ? 
+              `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.fiveG)}/5g` :
+              `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.eighth)}/8th | ${formatPrice(shelf.pricing.quarter)}/Qtr | ${formatPrice(shelf.pricing.half)}/Half | ${formatPrice(shelf.pricing.oz)}/Oz`
+            }
+          </p>
+        )}
       </div>
     </div>
   );
 
   // IMPROVED: More compact column headers
+  const isFiftyPercentOff = shelf.name === "50% OFF STRAINS";
+  const gridColumns = isFiftyPercentOff ? '25% 20% 28% 12% 15%' : '35% 30% 15% 20%';
+  
   elements.push(
     <div
       key={`${shelf.id}-column-headers`}
-      className={`${shelf.color} ${shelf.textColor}`}
+      className={`${shelf.color} ${shelf.textColor} ${shelf.isInfused ? 'infused-column-header' : ''}`}
       style={{
         display: 'grid',
-        gridTemplateColumns: '35% 30% 15% 20%',
+        gridTemplateColumns: gridColumns,
         alignItems: 'center',
         minHeight: `${getScaledValue(baseFontSizePx, 1.6, 16)}px`, // Reduced from 2.0
         padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`, // Reduced padding
@@ -134,6 +181,9 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
     >
       <div style={{ display: 'flex', alignItems: 'center' }}>Strain</div>
       <div style={{ display: 'flex', alignItems: 'center' }}>Grower/Brand</div>
+      {isFiftyPercentOff && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>50% OFF Price</div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Type</div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>THC %</div>
     </div>
@@ -143,13 +193,24 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
   strainsToRender.forEach((strain, index) => {
     const isLastRow = index === strainsToRender.length - 1;
     
+    // Calculate pricing for 50% OFF shelf
+    let originalPrice = 0;
+    let halfOffPrice = 0;
+    if (isFiftyPercentOff && strain.originalShelf && currentState) {
+      const originalShelfPricing = getShelfPricingByName(strain.originalShelf, currentState);
+      if (originalShelfPricing) {
+        originalPrice = originalShelfPricing.g;
+        halfOffPrice = originalPrice / 2;
+      }
+    }
+    
     elements.push(
       <div
         key={strain.id}
-        className={`bg-white ${strain.isLastJar ? 'last-jar-row' : ''}`}
+        className={`bg-white ${strain.isLastJar ? 'last-jar-row' : ''} ${shelf.isInfused ? 'infused-pattern' : ''}`}
         style={{
           display: 'grid',
-          gridTemplateColumns: '35% 30% 15% 20%',
+          gridTemplateColumns: gridColumns,
           alignItems: 'center',
           minHeight: `${rowHeight}px`,
           padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`, // Reduced padding
@@ -157,6 +218,7 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
           borderRight: `2px solid ${shelfBorderColor}`,
           borderBottom: isLastRow ? `2px solid ${shelfBorderColor}` : '1px solid #e5e7eb',
           backgroundColor: strain.isLastJar ? '#fff7ed' : '#ffffff',
+          position: 'relative',
           marginBottom: '0',
           fontSize: getScaledFontSize(baseFontSizePx, 0.85, 9), // Reduced from 0.9
           breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
@@ -188,6 +250,46 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
         }}>
           {strain.grower || '-'}
         </div>
+        
+        {/* 50% OFF Pricing */}
+        {isFiftyPercentOff && (
+          <div style={{
+            lineHeight: '1.3',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            whiteSpace: 'nowrap',
+            color: '#374151',
+          }}>
+            {strain.originalShelf && originalPrice > 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{
+                  textDecoration: 'line-through',
+                  color: '#ef4444',
+                  fontSize: getScaledFontSize(baseFontSizePx, 0.75, 8),
+                  fontWeight: 400,
+                }}>
+                  {formatPrice(originalPrice)}/g
+                </span>
+                <span style={{
+                  color: '#16a34a',
+                  fontSize: getScaledFontSize(baseFontSizePx, 0.9, 9),
+                  fontWeight: 700,
+                }}>
+                  {formatPrice(halfOffPrice)}/g
+                </span>
+              </div>
+            ) : (
+              <span style={{
+                color: '#9ca3af',
+                fontSize: getScaledFontSize(baseFontSizePx, 0.75, 8),
+                fontStyle: 'italic',
+              }}>
+                Select shelf
+              </span>
+            )}
+          </div>
+        )}
         
         {/* Type */}
         <div style={{
@@ -286,6 +388,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
   marginBottomStyle,
   applyAvoidBreakStyle,
   showOverflowWarning = false,
+  currentState,
 }) => {
 
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
@@ -293,7 +396,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
   // When tighten shelves is ON (applyAvoidBreakStyle = false), render as flowing divs
   // When tighten shelves is OFF (applyAvoidBreakStyle = true), render as table
   if (!applyAvoidBreakStyle) {
-    return renderAsFlowingRows(shelf, strainsToRender, baseFontSizePx, linePaddingMultiplier, marginBottomStyle, applyAvoidBreakStyle, showOverflowWarning);
+    return renderAsFlowingRows(shelf, strainsToRender, baseFontSizePx, linePaddingMultiplier, marginBottomStyle, applyAvoidBreakStyle, showOverflowWarning, currentState);
   }
 
   // IMPROVED: More compact table styles
@@ -396,6 +499,9 @@ export const MenuTable: React.FC<MenuTableProps> = ({
     if (shelfColor === 'bg-mango-gradient') {
       return '';
     }
+    if (shelfColor === 'bg-gradient-to-r from-red-500 to-orange-500') {
+      return 'border-red-500';
+    }
     return shelfColor.replace(/^bg-/, 'border-');
   };
 
@@ -403,6 +509,13 @@ export const MenuTable: React.FC<MenuTableProps> = ({
     if (shelfColor === 'bg-mango-gradient') {
       return {
         borderColor: '#fe9426',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+      };
+    }
+    if (shelfColor === 'bg-gradient-to-r from-red-500 to-orange-500') {
+      return {
+        borderColor: '#ef4444', // Tailwind red-500
         borderWidth: '1px',
         borderStyle: 'solid',
       };
@@ -438,10 +551,15 @@ export const MenuTable: React.FC<MenuTableProps> = ({
           paddingLeft: getScaledValue(baseFontSizePx, 0.5, 5), // Reduced padding
           paddingRight: getScaledValue(baseFontSizePx, 0.5, 5)
         }}>
-          <h3 style={shelfNameStyle}>{displayName}</h3>
+                  <h3 style={shelfNameStyle}>{displayName}</h3>
+        {!shelf.hidePricing && (
           <p style={pricingStyle}>
-            {formatPrice(shelf.pricing.g)}/g | {formatPrice(shelf.pricing.eighth)}/8th | {formatPrice(shelf.pricing.quarter)}/Qtr | {formatPrice(shelf.pricing.half)}/Half | {formatPrice(shelf.pricing.oz)}/Oz
+            {shelf.isInfused && shelf.pricing.fiveG ? 
+              `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.fiveG)}/5g` :
+              `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.eighth)}/8th | ${formatPrice(shelf.pricing.quarter)}/Qtr | ${formatPrice(shelf.pricing.half)}/Half | ${formatPrice(shelf.pricing.oz)}/Oz`
+            }
           </p>
+        )}
         </div>
       </div>
 

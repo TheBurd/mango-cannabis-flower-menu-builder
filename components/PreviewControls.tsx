@@ -17,6 +17,10 @@ interface PreviewControlsProps {
   onDirectZoomChange: (newZoom: number) => void;
   currentState: SupportedStates;
   theme: Theme;
+  onAutoFormat?: () => void;
+  hasContentOverflow?: boolean;
+  isOptimizing?: boolean;
+  isControlsDisabled?: boolean;
 }
 
 export const PreviewControls: React.FC<PreviewControlsProps> = ({
@@ -29,7 +33,11 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
   currentZoom,
   onDirectZoomChange,
   currentState,
-  theme
+  theme,
+  onAutoFormat,
+  hasContentOverflow,
+  isOptimizing,
+  isControlsDisabled
 }) => {
   const artboardSizeOptions = Object.values(ArtboardSize).map(size => ({
     value: size,
@@ -176,7 +184,7 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
       theme === 'dark'
         ? 'bg-gray-700 border-gray-600 text-gray-200'
         : 'bg-gray-50 border-gray-300 text-gray-800'
-    }`}>
+    } ${isControlsDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex items-center flex-wrap gap-x-6 gap-y-2">
         {/* Layout Settings Group */}
         <div className={`flex items-center space-x-4 px-3 py-2 rounded-md border h-[36px] ${
@@ -187,31 +195,34 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
           <CustomDropdown
               options={artboardSizeOptions}
               value={settings.artboardSize}
-              onChange={(value) => onSettingsChange({ artboardSize: value as ArtboardSize })}
+              onChange={isControlsDisabled ? () => {} : (value) => onSettingsChange({ artboardSize: value as ArtboardSize })}
               className="min-w-[180px]"
               icon={<DocumentTextIcon className={`w-3 h-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
               variant="compact"
               theme={theme}
+              disabled={isControlsDisabled}
           />
 
           <CustomDropdown
               options={headerImageSizeOptions}
               value={settings.headerImageSize}
-              onChange={(value) => onSettingsChange({ headerImageSize: value as HeaderImageSize })}
+              onChange={isControlsDisabled ? () => {} : (value) => onSettingsChange({ headerImageSize: value as HeaderImageSize })}
               className="min-w-[90px]"
               icon={<PhotoIcon className={`w-3 h-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
               variant="compact"
               theme={theme}
+              disabled={isControlsDisabled}
           />
           
           <CustomDropdown
               options={columnOptions}
               value={settings.columns}
-              onChange={(value) => onSettingsChange({ columns: parseInt(value.toString(), 10) as PreviewSettings['columns'] })}
+              onChange={isControlsDisabled ? () => {} : (value) => onSettingsChange({ columns: parseInt(value.toString(), 10) as PreviewSettings['columns'] })}
               className="min-w-[80px]"
               icon={<ColumnAddIcon className="w-3 h-3" theme={theme} />}
               variant="compact"
               theme={theme}
+              disabled={isControlsDisabled}
           />
         </div>
 
@@ -338,6 +349,33 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
                   </div>
               )}
           </div>
+          
+          {/* Auto-Format Button */}
+          {onAutoFormat && (
+            <button
+              onClick={isOptimizing ? undefined : onAutoFormat}
+              disabled={isOptimizing}
+              className={`flex items-center space-x-2 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                isOptimizing
+                  ? theme === 'dark'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  : hasContentOverflow 
+                    ? theme === 'dark'
+                      ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                      : 'bg-orange-500 hover:bg-orange-600 text-white'
+                    : theme === 'dark'
+                      ? 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+              }`}
+              title={isOptimizing ? "Fast automatic optimization in progress - testing adjustments using real overflow detection" : "Smart auto-format: aggressively increases font size (up to 48px) and line height (up to 1.0) until optimal fit using real overflow feedback"}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              </svg>
+              <span>{isOptimizing ? 'Optimizing...' : 'Auto-Format Menu'}</span>
+            </button>
+          )}
         </div>
 
         {/* Display Options Group */}

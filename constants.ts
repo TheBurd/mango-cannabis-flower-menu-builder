@@ -1,4 +1,4 @@
-import { Shelf, ArtboardSize, ArtboardDimensions, PreviewSettings, SupportedStates, StrainType, HeaderImageSize } from './types';
+import { Shelf, ArtboardSize, ArtboardDimensions, PreviewSettings, SupportedStates, StrainType, HeaderImageSize, PriceTiers } from './types';
 import { getImagePath } from './utils/assets';
 import { getIconPath } from './utils/assets';
 
@@ -25,6 +25,10 @@ export const MICHIGAN_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCri
   { name: "Premium Flower", pricing: { g: 5, eighth: 15, quarter: 25, half: 45, oz: 80 }, color: "bg-emerald-500", textColor: "text-emerald-50" },
   { name: "Deluxe Flower", pricing: { g: 4, eighth: 12, quarter: 20, half: 35, oz: 60 }, color: "bg-indigo-500", textColor: "text-indigo-50" },
   { name: "Value Flower", pricing: { g: 3, eighth: 7, quarter: 13, half: 20, oz: 30 }, color: "bg-gray-500", textColor: "text-gray-50" },
+  // Infused Flower Shelves (Michigan only)
+  { name: "Exotic Live Resin Infused Flower", pricing: { g: 8, eighth: 0, quarter: 0, half: 0, oz: 0, fiveG: 35 }, color: "bg-gradient-to-r from-rose-600 to-pink-600", textColor: "text-white", isInfused: true },
+  { name: "Premium Distillate Infused Flower", pricing: { g: 7, eighth: 0, quarter: 0, half: 0, oz: 0, fiveG: 30 }, color: "bg-gradient-to-r from-emerald-600 to-teal-600", textColor: "text-white", isInfused: true },
+  { name: "Value Distillate Infused Flower", pricing: { g: 6, eighth: 0, quarter: 0, half: 0, oz: 0, fiveG: 25 }, color: "bg-gradient-to-r from-gray-600 to-slate-600", textColor: "text-white", isInfused: true },
   { name: "Legendary Shake", pricing: { g: 2, eighth: 5, quarter: 8, half: 14, oz: 20 }, color: "bg-lime-600", textColor: "text-lime-50" },
 ];
 
@@ -39,7 +43,78 @@ export const NEW_MEXICO_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortC
   { name: "Shake", pricing: { g: 3, eighth: 5, quarter: 10, half: 20, oz: 30 }, color: "bg-lime-600", textColor: "text-lime-50" },
 ];
 
-export const getDefaultShelves = (state: SupportedStates): Shelf[] => {
+// 50% OFF shelf configuration - appears at the top when enabled
+export const FIFTY_PERCENT_OFF_SHELF: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'> = {
+  name: "50% OFF STRAINS",
+  pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, // Placeholder pricing, won't be displayed
+  color: "bg-gradient-to-r from-red-500 to-orange-500",
+  textColor: "text-white",
+  hidePricing: true, // Don't show pricing for this shelf
+};
+
+// Shelf hierarchy for sorting (0 = highest tier, higher numbers = lower tier)
+export const OKLAHOMA_SHELF_HIERARCHY: Record<string, number> = {
+  "Superior Flower": 0,
+  "Legendary Flower": 1,
+  "Diamond Flower": 2,
+  "Platinum Flower": 3,
+  "Exotic Flower": 4,
+  "Premium Flower": 5,
+  "Deluxe Flower": 6,
+  "Value Flower": 7,
+  "Legendary Shake": 8,
+  "Exotic Shake": 9,
+};
+
+export const MICHIGAN_SHELF_HIERARCHY: Record<string, number> = {
+  "Exclusive Flower": 0,
+  "Legendary Flower": 1,
+  "Diamond Flower": 2,
+  "Platinum Flower": 3,
+  "Exotic Flower": 4,
+  "Superior Flower": 5,
+  "Premium Flower": 6,
+  "Deluxe Flower": 7,
+  "Value Flower": 8,
+  "Exotic Live Resin Infused Flower": 9,
+  "Premium Distillate Infused Flower": 10,
+  "Value Distillate Infused Flower": 11,
+  "Legendary Shake": 12,
+};
+
+export const NEW_MEXICO_SHELF_HIERARCHY: Record<string, number> = {
+  "Exclusive Flower": 0,
+  "Legendary Flower": 1,
+  "Diamond Flower": 2,
+  "Platinum Flower": 3,
+  "Exotic Flower": 4,
+  "Premium Flower": 5,
+  "Value Flower": 6,
+  "Shake": 7,
+};
+
+// Helper function to get shelf hierarchy for current state
+export const getShelfHierarchy = (state: SupportedStates): Record<string, number> => {
+  switch (state) {
+    case SupportedStates.OKLAHOMA:
+      return OKLAHOMA_SHELF_HIERARCHY;
+    case SupportedStates.MICHIGAN:
+      return MICHIGAN_SHELF_HIERARCHY;
+    case SupportedStates.NEW_MEXICO:
+      return NEW_MEXICO_SHELF_HIERARCHY;
+    default:
+      return OKLAHOMA_SHELF_HIERARCHY;
+  }
+};
+
+// Helper function to get shelf pricing by name for a state
+export const getShelfPricingByName = (shelfName: string, state: SupportedStates): PriceTiers | null => {
+  const shelves = getDefaultShelves(state, false);
+  const shelf = shelves.find(s => s.name === shelfName);
+  return shelf ? shelf.pricing : null;
+};
+
+export const getDefaultShelves = (state: SupportedStates, includeFiftyPercentOff: boolean = false): Shelf[] => {
   let hierarchy: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [];
   
   switch (state) {
@@ -54,6 +129,11 @@ export const getDefaultShelves = (state: SupportedStates): Shelf[] => {
       break;
     default:
       hierarchy = OKLAHOMA_PRICING_HIERARCHY;
+  }
+
+  // Add 50% OFF shelf at the beginning if enabled
+  if (includeFiftyPercentOff) {
+    hierarchy = [FIFTY_PERCENT_OFF_SHELF, ...hierarchy];
   }
 
   return hierarchy.map(shelf => ({
@@ -76,7 +156,7 @@ export const INITIAL_PREVIEW_SETTINGS: PreviewSettings = {
   baseFontSizePx: 10,
   columns: 1,
   zoomLevel: 0.25, 
-  forceShelfFit: false, // Allow Shelf Splitting is ON by default (false = splitting allowed)
+  forceShelfFit: true, // Allow Shelf Splitting is OFF by default (true = no splitting, shelves stay together)
   headerImageSize: HeaderImageSize.NONE, // Default header image size
   linePaddingMultiplier: 0.3, // Default padding multiplier (corresponds to current tightened padding)
   showThcIcon: true, // Default to showing THC icon

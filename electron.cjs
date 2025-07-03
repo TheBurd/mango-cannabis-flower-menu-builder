@@ -109,7 +109,7 @@ async function showConfirmDialog(message, detail = '') {
 }
 
 // Create application menu with dynamic data
-function createMenu(dynamicData = { shelves: [], darkMode: false }) {
+function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOffEnabled: false }) {
   const template = [
     {
       label: 'File',
@@ -263,6 +263,12 @@ function createMenu(dynamicData = { shelves: [], darkMode: false }) {
           type: 'checkbox',
           checked: dynamicData.darkMode,
           click: (menuItem) => sendToRenderer('toggle-dark-mode', menuItem.checked)
+        },
+        {
+          label: '50% OFF Shelf',
+          type: 'checkbox',
+          checked: dynamicData.fiftyPercentOffEnabled,
+          click: () => sendToRenderer('toggle-fifty-percent-off')
         },
         { type: 'separator' },
         {

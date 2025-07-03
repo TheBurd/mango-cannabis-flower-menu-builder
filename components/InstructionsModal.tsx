@@ -80,14 +80,93 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="font-semibold text-orange-400 min-w-[20px]">3.</span>
-                  <span><strong>Customize your menu</strong> using the preview controls on the right</span>
+                  <span><strong>Use Auto-Format</strong> to automatically optimize your layout for perfect fit</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="font-semibold text-orange-400 min-w-[20px]">4.</span>
+                  <span><strong>Customize further</strong> using the preview controls on the right if needed</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-orange-400 min-w-[20px]">5.</span>
                   <span><strong>Export your menu</strong> as PNG, JPEG, or CSV when ready</span>
                 </div>
               </div>
             </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
+            {/* Auto-Format Feature */}
+            <section>
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">🚀 Auto-Format Menu (NEW!)</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2 text-green-600">📈 Expansion Mode</h4>
+                  <p className="text-sm mb-2">When your menu has no overflow, Auto-Format maximizes readability:</p>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li>Increases font size up to 48px for maximum impact</li>
+                    <li>Optimizes line spacing up to 1.0 for perfect readability</li>
+                    <li>Uses real-time overflow detection as feedback</li>
+                    <li>Automatically finds the perfect balance</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 text-red-600">📉 Reduction Mode</h4>
+                  <p className="text-sm mb-2">When your menu has overflow, Auto-Format eliminates it intelligently:</p>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li>Reduces line spacing first (preserves readability)</li>
+                    <li>Only reduces font size if absolutely necessary</li>
+                    <li>Makes larger adjustments for dense content</li>
+                    <li>Suggests increasing columns if optimization fails</li>
+                  </ul>
+                </div>
+              </div>
+              <div className={`mt-4 p-3 rounded-lg border-l-4 border-orange-400 ${
+                theme === 'dark' ? 'bg-orange-900/20' : 'bg-orange-50'
+              }`}>
+                <p className="text-sm">
+                  <strong>💡 Pro Tip:</strong> The Auto-Format button changes color based on your menu status - 
+                  <span className="text-orange-600"> orange when overflow detected</span>, 
+                  <span className="text-gray-600"> gray when optimized</span>. 
+                  All controls are disabled during optimization to prevent interference.
+                </p>
+              </div>
+            </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
+            {/* New Shelf Types */}
+            <section>
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">🏷️ Special Shelf Types (NEW!)</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2 text-green-600">🌿 Michigan Infused Flower</h4>
+                  <p className="text-sm mb-2">Michigan locations now have specialized infused flower shelves:</p>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li><strong>Exotic Live Resin Infused:</strong> Premium tier with gradient styling</li>
+                    <li><strong>Premium Distillate Infused:</strong> Mid-tier options</li>
+                    <li><strong>Value Distillate Infused:</strong> Budget-friendly choices</li>
+                    <li><strong>Special Pricing:</strong> Per-gram and 5g structure</li>
+                    <li><strong>Visual Pattern:</strong> Subtle background pattern for distinction</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 text-red-600">🏷️ 50% OFF Strains</h4>
+                  <p className="text-sm mb-2">All locations can now use a promotional shelf for marked-down strains:</p>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li><strong>Toggle Control:</strong> Easy on/off switch in left panel</li>
+                    <li><strong>Top Placement:</strong> Appears at top for maximum visibility</li>
+                    <li><strong>Original Shelf Tracking:</strong> Remembers source shelf</li>
+                    <li><strong>Eye-Catching Design:</strong> Red-to-orange gradient</li>
+                    <li><strong>Special Sorting:</strong> Includes "Original Shelf" option</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
 
             {/* Strain Management */}
             <section>
@@ -114,6 +193,9 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
               </div>
             </section>
 
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
             {/* Layout & Design */}
             <section>
               <h3 className="text-xl font-semibold mb-3 text-orange-500">🎨 Menu Design</h3>
@@ -130,40 +212,76 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
                 <div>
                   <h4 className="font-semibold mb-2">Typography</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li><strong>Font Size:</strong> Adjust base text size (8-24px)</li>
-                    <li><strong>Line Spacing:</strong> Control padding between items</li>
-                    <li><strong>Shelf Splitting:</strong> Allow/prevent shelves across columns</li>
+                    <li><strong>Font Size:</strong> Adjust base text size (8-48px) or use Auto-Format</li>
+                    <li><strong>Line Spacing:</strong> Control padding between items (0.1-1.0)</li>
+                    <li><strong>Auto-Format:</strong> One-click intelligent optimization for perfect fit</li>
+                    <li><strong>Shelf Splitting:</strong> Allow/prevent shelves across columns (default: OFF)</li>
                     <li><strong>Responsive:</strong> Text scales with zoom level</li>
                   </ul>
                 </div>
               </div>
             </section>
 
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
             {/* Preview Controls */}
             <section>
               <h3 className="text-xl font-semibold mb-3 text-orange-500">🔍 Preview Controls</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-semibold mb-2">Navigation</h4>
+                  <h4 className="font-semibold mb-2">Layout Optimization</h4>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li><strong>Auto-Format Menu:</strong> One-click intelligent optimization</li>
+                    <li><strong>Font Size Control:</strong> Precise adjustment (8-48px range)</li>
+                    <li><strong>Line Spacing:</strong> Fine-tune padding (0.1-1.0 range)</li>
+                    <li><strong>Columns:</strong> 1-6 column layouts for any display size</li>
+                    <li><strong>Overflow Detection:</strong> Real-time warnings with optimization suggestions</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Navigation & View</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
                     <li><strong>Pan:</strong> Click and drag to move around</li>
                     <li><strong>Zoom:</strong> Mouse wheel (around cursor) or +/- buttons</li>
                     <li><strong>Fit to Window:</strong> Auto-size to screen</li>
                     <li><strong>Reset:</strong> Return to default view</li>
-                    <li><strong>Overflow Detection:</strong> Warnings when content extends beyond artboard</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Keyboard Shortcuts</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li><strong>Ctrl+F:</strong> Fit to window</li>
-                    <li><strong>Ctrl + / Ctrl -:</strong> Zoom in/out</li>
-                    <li><strong>Ctrl+N:</strong> New menu</li>
-                    <li><strong>Ctrl+O:</strong> Open CSV file</li>
+                    <li><strong>Protected Mode:</strong> Controls lock during Auto-Format optimization</li>
                   </ul>
                 </div>
               </div>
             </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
+            {/* Keyboard Shortcuts */}
+            <section>
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">⌨️ Keyboard Shortcuts</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Navigation</h4>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li><strong>Ctrl+F:</strong> Fit to window</li>
+                    <li><strong>Ctrl + / Ctrl -:</strong> Zoom in/out</li>
+                    <li><strong>Mouse Wheel:</strong> Zoom around cursor</li>
+                    <li><strong>Click + Drag:</strong> Pan around artboard</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">File Operations</h4>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li><strong>Ctrl+N:</strong> New menu (clear all)</li>
+                    <li><strong>Ctrl+O:</strong> Open CSV file</li>
+                    <li><strong>Ctrl+S:</strong> Export menu (PNG)</li>
+                    <li><strong>Esc:</strong> Close modals</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
 
             {/* Export Options */}
             <section>
@@ -184,6 +302,9 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
               </div>
             </section>
 
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
             {/* State Compliance */}
             <section>
               <h3 className="text-xl font-semibold mb-3 text-orange-500">📋 State Compliance</h3>
@@ -203,6 +324,9 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
               </div>
             </section>
 
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
             {/* CSV Format */}
             <section>
               <h3 className="text-xl font-semibold mb-3 text-orange-500">📊 CSV Import Format</h3>
@@ -217,25 +341,30 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
               </div>
             </section>
 
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
             {/* Tips & Tricks */}
             <section>
               <h3 className="text-xl font-semibold mb-3 text-orange-500">💡 Tips & Tricks</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-semibold mb-2">Efficiency Tips</h4>
+                  <h4 className="font-semibold mb-2">Auto-Format Best Practices</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Use shelf tabs to quickly jump between sections</li>
-                    <li>Copy similar strains to save time</li>
-                    <li>Sort globally before fine-tuning individual shelves</li>
-                    <li>Save CSV backups of your strain data</li>
+                    <li>Start with Auto-Format for instant optimization</li>
+                    <li>Choose your column count first, then auto-format</li>
+                    <li>Use 50% OFF toggle before auto-formatting for best results</li>
+                    <li>Auto-Format works best with 20-50 strains per menu</li>
+                    <li>Let optimization complete before making manual adjustments</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">Design Best Practices</h4>
+                  <h4 className="font-semibold mb-2">Workflow Efficiency</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Use 2-3 columns for optimal readability</li>
-                    <li>Enable THC icons to indicate which state your menu is from</li>
-                    <li>Adjust font size based on final output size</li>
+                    <li>Use shelf tabs to quickly jump between sections</li>
+                    <li>Copy similar strains to save time on data entry</li>
+                    <li>Sort globally before fine-tuning individual shelves</li>
+                    <li>Save CSV backups of your strain data regularly</li>
                     <li>Preview at 100% zoom before exporting</li>
                   </ul>
                 </div>
@@ -251,7 +380,7 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
         }`}>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
-              🥭 Mango Cannabis Flower Menu Builder v1.0.2
+              🥭 Mango Cannabis Flower Menu Builder v1.0.3
             </div>
             <button
               ref={feedbackButtonRef}

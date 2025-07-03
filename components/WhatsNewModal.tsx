@@ -48,7 +48,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         <div className={`px-6 py-4 border-b flex items-center justify-between ${
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
-          <h2 className="text-2xl font-bold text-orange-500">🎉 What's New in v1.0.2</h2>
+          <h2 className="text-2xl font-bold text-orange-500">🎉 What's New in v1.0.3</h2>
           <button
             onClick={onClose}
             className={`p-2 rounded-lg hover:bg-opacity-80 transition-colors ${
@@ -66,164 +66,131 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         <div className="overflow-y-auto max-h-[calc(90vh-160px)]">
           <div className="p-6 space-y-6">
             
-            {/* v1.0.2 Bug Fix */}
+            {/* Main Feature */}
             <section>
-              <h3 className="text-xl font-semibold mb-3 text-red-500">🐛 Critical Bug Fix - v1.0.2</h3>
-              <div className={`p-4 rounded-lg border-l-4 border-red-400 ${
-                theme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
-              }`}>
-                <h4 className="font-semibold mb-2 text-red-600">CSV Import Functionality Completely Restored</h4>
-                <p className="text-sm leading-relaxed mb-3">
-                  Fixed a critical bug where all input fields became unresponsive after importing CSV data. 
-                  The issue was caused by React state synchronization conflicts in Electron production builds that broke input focus and typing functionality.
-                </p>
-                <ul className="text-sm space-y-1 list-disc list-inside">
-                  <li><strong>Input Fields Fixed:</strong> All text inputs now work properly after CSV import (strain names, grower, THC, filename, etc.)</li>
-                  <li><strong>Improved UX:</strong> Added smooth loading overlay and success notifications instead of popup alerts</li>
-                  <li><strong>Better Performance:</strong> Eliminated page reloads for faster, more reliable CSV import process</li>
-                  <li><strong>Data Integrity:</strong> CSV import now preserves all data without clearing or corruption</li>
-                  <li><strong>Enhanced Stability:</strong> Resolved Electron-specific state management issues for production builds</li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Previous Release Overview */}
-            <section>
-              <h3 className="text-xl font-semibold mb-3 text-orange-500">🔄 Previous Release - v1.0.1</h3>
-              <div className={`p-4 rounded-lg ${
-                theme === 'dark' ? 'bg-gray-700' : 'bg-blue-50'
-              }`}>
-                <p className="text-sm leading-relaxed">
-                  Version 1.0.1 brought significant improvements to layout flexibility, user experience, and visual feedback. 
-                  This update focused on enhanced column layouts, smarter overflow detection, and improved zoom controls 
-                  for a more professional menu building experience.
-                </p>
-              </div>
-            </section>
-
-            {/* Layout Enhancements */}
-            <section>
-              <h3 className="text-xl font-semibold mb-3 text-orange-500">📐 Layout Enhancements</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold mb-2 text-green-600">✨ 6-Column Support</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Extended column options from 1-4 to 1-6 columns</li>
-                    <li>Perfect for high-resolution displays and large format printing</li>
-                    <li>Automatically adjusts content to fit more strains per page</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2 text-green-600">🔄 Improved Shelf Splitting</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Sequential column filling instead of balanced heights</li>
-                    <li>More natural left-to-right content flow</li>
-                    <li>Better space utilization for varying shelf sizes</li>
-                    <li>Default enabled for optimal layout</li>
-                  </ul>
-                </div>
-              </div>
-            </section>
-
-            {/* Artboard & Display */}
-            <section>
-              <h3 className="text-xl font-semibold mb-3 text-orange-500">🖼️ Artboard & Display</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold mb-2 text-green-600">📏 Optimized 16:9 Artboards</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Updated to 3300x1856px (landscape) and 1872x3328px (portrait)</li>
-                    <li>Matches high-resolution header image dimensions</li>
-                    <li>Better quality for large format displays and printing</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2 text-green-600">⚠️ Smart Overflow Detection</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Real-time detection when content extends beyond artboard</li>
-                    <li>Subtle shelf overlay warnings for problematic layouts</li>
-                    <li>Helpful suggestions for layout optimization</li>
-                    <li>Warnings hidden during export for clean output</li>
-                  </ul>
-                </div>
-              </div>
-            </section>
-
-            {/* User Experience */}
-            <section>
-              <h3 className="text-xl font-semibold mb-3 text-orange-500">🎯 User Experience</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold mb-2 text-green-600">🔍 Enhanced Zoom Controls</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Mouse wheel zooming now centers around cursor position</li>
-                    <li>UI zoom buttons center around preview window</li>
-                    <li>Fixed "Fit to Window" and "Reset Zoom" positioning</li>
-                    <li>Improved artboard centering and navigation</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2 text-green-600">🎨 UI Improvements</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Unified preview control heights and styling</li>
-                    <li>Compact dropdown variants for better space usage</li>
-                    <li>Repositioned Global Sort controls for better workflow</li>
-                    <li>Consistent visual feedback throughout the app</li>
-                  </ul>
-                </div>
-              </div>
-            </section>
-
-            {/* Technical Improvements */}
-            <section>
-              <h3 className="text-xl font-semibold mb-3 text-orange-500">⚙️ Technical Improvements</h3>
-              <div className="space-y-3">
-                <div>
-                  <h4 className="font-semibold mb-2 text-green-600">🔧 Performance & Stability</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Improved CSS column layout with <code className={`px-1 py-0.5 rounded text-xs ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>column-fill: auto</code></li>
-                    <li>Enhanced overflow detection using ResizeObserver</li>
-                    <li>Better memory management for large menus</li>
-                    <li>Optimized rendering performance</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2 text-green-600">🛠️ Bug Fixes</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Fixed shelf headers getting stuck in wrong columns</li>
-                    <li>Resolved double scaling issues in zoom calculations</li>
-                    <li>Corrected artboard positioning and centering</li>
-                    <li>Improved export quality and consistency</li>
-                  </ul>
-                </div>
-              </div>
-            </section>
-
-            {/* Coming Soon */}
-            <section>
-              <h3 className="text-xl font-semibold mb-3 text-orange-500">🔮 Looking Ahead</h3>
-              <div className={`p-4 rounded-lg ${
-                theme === 'dark' ? 'bg-gray-700' : 'bg-purple-50'
-              }`}>
-                <p className="text-sm leading-relaxed mb-3">
-                  We're continuously working to improve Flower Menu Builder based on your feedback. 
-                  Here's what's on our roadmap for future releases:
-                </p>
-                <ul className="text-sm space-y-2 list-disc list-inside mb-4">
-                  <li><strong>User Profiles & Cloud Storage:</strong> Create local user profiles and connect with mangocannabis.com Google Drive accounts to save and sync your flower menu projects across devices</li>
-                  <li><strong>Custom Shelf Creation:</strong> Build your own custom shelves with personalized pricing tiers and naming conventions</li>
-                  <li><strong>Pre-Packaged Flower Support:</strong> Enhanced features for states transitioning to pre-packaged flower requirements</li>
-                  <li><strong>Advanced Templates:</strong> Pre-built menu templates for different dispensary styles and state requirements</li>
-                  <li><strong>Batch Operations:</strong> Import/export multiple menu configurations and bulk strain management tools</li>
-                  <li><strong>Enhanced Analytics:</strong> Track popular strains, pricing trends, and menu performance insights</li>
-                </ul>
-                <div className={`p-3 rounded border-l-4 border-orange-400 ${
-                  theme === 'dark' ? 'bg-gray-600' : 'bg-orange-50'
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">🚀 Auto-Format Menu</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                The game-changing feature you've been waiting for! One-click intelligent optimization that automatically finds the perfect font size and line spacing for your menu layout.
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div className={`p-4 rounded-lg border-l-4 border-green-500 ${
+                  theme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'
                 }`}>
-                  <p className="text-sm">
-                    <strong>💡 Have ideas or feedback?</strong> Use the "Leave Feedback" button below to contact <strong>brad@mangocannabis.com</strong> directly. 
-                    Your input helps shape the future of Flower Menu Builder!
-                  </p>
+                  <h4 className="font-semibold text-green-600 mb-2">📈 Expansion Mode</h4>
+                  <p className="text-sm">When no overflow detected, maximizes font size up to 48px and optimizes line spacing for maximum readability and visual impact.</p>
+                </div>
+                <div className={`p-4 rounded-lg border-l-4 border-red-500 ${
+                  theme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
+                }`}>
+                  <h4 className="font-semibold text-red-600 mb-2">📉 Reduction Mode</h4>
+                  <p className="text-sm">When overflow detected, intelligently reduces line spacing first, then font size only if needed to eliminate overflow.</p>
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-lg border-l-4 border-orange-400 ${
+                theme === 'dark' ? 'bg-orange-900/20' : 'bg-orange-50'
+              }`}>
+                <p className="text-sm">
+                  <strong>✨ Smart Features:</strong> Real-time feedback, automatic iteration, visual button states, and protected controls during optimization. Works with any column count you choose!
+                </p>
+              </div>
+            </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
+            {/* New Shelf Types */}
+            <section>
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">🏷️ New Shelf Types & Features</h3>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className={`p-4 rounded-lg border-l-4 border-green-500 ${
+                  theme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'
+                }`}>
+                  <h4 className="font-semibold text-green-600 mb-2">🌿 Michigan Infused Flower</h4>
+                  <p className="text-sm mb-2">Three new specialized shelf types for Michigan locations:</p>
+                  <ul className="text-xs space-y-1 list-disc list-inside">
+                    <li><strong>Exotic Live Resin Infused</strong> - Premium tier with gradient styling</li>
+                    <li><strong>Premium Distillate Infused</strong> - Mid-tier options</li>
+                    <li><strong>Value Distillate Infused</strong> - Budget-friendly choices</li>
+                  </ul>
+                  <p className="text-xs mt-2 opacity-75">Features per-gram and 5g pricing structure with subtle background patterns.</p>
+                </div>
+
+                <div className={`p-4 rounded-lg border-l-4 border-red-500 ${
+                  theme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
+                }`}>
+                  <h4 className="font-semibold text-red-600 mb-2">🏷️ 50% OFF Strains</h4>
+                  <p className="text-sm mb-2">New promotional shelf for all locations:</p>
+                  <ul className="text-xs space-y-1 list-disc list-inside">
+                    <li><strong>Toggle Control</strong> - Easy on/off switch in left panel</li>
+                    <li><strong>Top Placement</strong> - Appears at top for maximum visibility</li>
+                    <li><strong>Original Shelf Tracking</strong> - Remembers source shelf</li>
+                    <li><strong>Eye-Catching Design</strong> - Red-to-orange gradient</li>
+                  </ul>
+                  <p className="text-xs mt-2 opacity-75">Includes "Original Shelf" as a sorting option to maintain organization.</p>
+                </div>
+              </div>
+            </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
+            {/* Enhanced Features */}
+            <section>
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">⚡ Enhanced Features</h3>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2">🎯 Expanded Ranges</h4>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li><strong>Font Size:</strong> Now up to 48px (was 24px)</li>
+                    <li><strong>Line Spacing:</strong> Full 0.1-1.0 range</li>
+                    <li><strong>Better Defaults:</strong> Shelf splitting now OFF by default</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">🔧 User Experience</h4>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li><strong>Protected Controls:</strong> Disabled during optimization</li>
+                    <li><strong>Visual Feedback:</strong> Color-coded button states</li>
+                    <li><strong>Fast Processing:</strong> 25ms iteration delays</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
+            {/* Getting Started */}
+            <section>
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">🎯 Getting Started</h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                  <div>
+                    <strong>Add your strains</strong> to the appropriate shelves
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                  <div>
+                    <strong>Choose your column count</strong> (2-3 columns recommended)
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                  <div>
+                    <strong>Click Auto-Format Menu</strong> for instant optimization
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
+                  <div>
+                    <strong>Export your perfectly formatted menu</strong> as PNG or JPEG
+                  </div>
                 </div>
               </div>
             </section>
@@ -237,7 +204,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         }`}>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
-              🥭 Flower Menu Builder v1.0.2
+              🥭 Flower Menu Builder v1.0.3
             </div>
             <button
               ref={feedbackButtonRef}

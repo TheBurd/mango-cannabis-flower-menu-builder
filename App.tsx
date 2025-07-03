@@ -9,7 +9,7 @@ declare global {
       showConfirmDialog: (message: string, detail?: string) => Promise<boolean>;
       updateMenuState: (updates: any) => void;
       readFile: (filePath: string) => Promise<string>;
-      updateDynamicMenus: (menuData: { shelves: Array<{id: string, name: string}>, darkMode: boolean }) => Promise<void>;
+      updateDynamicMenus: (menuData: { shelves: Array<{id: string, name: string}>, darkMode: boolean, fiftyPercentOffEnabled: boolean }) => Promise<void>;
       // Update-related methods
       checkForUpdates: () => Promise<any>;
       downloadUpdate: () => Promise<boolean>;
@@ -35,6 +35,7 @@ import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
 import { UpdateNotification } from './components/UpdateNotification';
 import { DebugConsole } from './components/DebugConsole';
+import { FiftyPercentOffToggle } from './components/FiftyPercentOffToggle';
 import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme } from './types';
 import { 
   INITIAL_PREVIEW_SETTINGS, 
@@ -46,8 +47,10 @@ import {
   CSV_STRAIN_TYPE_MAP,
   APP_STRAIN_TYPE_TO_CSV_SUFFIX,
   THC_DECIMAL_PLACES,
-  STRAIN_TYPES_ORDERED
+  STRAIN_TYPES_ORDERED,
+  getShelfHierarchy
 } from './constants';
+import { getNextAutoFormatAdjustment, getComprehensiveAutoFormat, getSmartAutoFormat, getOverflowDrivenAutoFormat, AutoFormatState } from './utils/autoFormat';
 
 
 
@@ -59,7 +62,7 @@ export interface ExportAction {
   timestamp: number; // To trigger effect even if other params are same
 }
 
-const sortStrains = (strains: Strain[], criteria: SortCriteria | null): Strain[] => {
+const sortStrains = (strains: Strain[], criteria: SortCriteria | null, currentState?: SupportedStates): Strain[] => {
   if (!criteria) return strains;
 
   const sortedStrains = [...strains]; // Create a copy to sort
@@ -89,6 +92,16 @@ const sortStrains = (strains: Strain[], criteria: SortCriteria | null): Strain[]
       case 'isLastJar':
         valA = a.isLastJar;
         valB = b.isLastJar;
+        break;
+      case 'originalShelf':
+        if (currentState) {
+          const hierarchy = getShelfHierarchy(currentState);
+          valA = a.originalShelf ? (hierarchy[a.originalShelf] ?? 999) : 999;
+          valB = b.originalShelf ? (hierarchy[b.originalShelf] ?? 999) : 999;
+        } else {
+          valA = a.originalShelf || '';
+          valB = b.originalShelf || '';
+        }
         break;
       default:
         return 0;
@@ -130,7 +143,8 @@ const App: React.FC = () => {
         console.error('Error loading imported shelves:', error);
       }
     }
-    const defaultShelves = getDefaultShelves(currentAppState);
+    const savedFiftyPercentOffEnabled = localStorage.getItem('mango-fifty-percent-off-enabled') === 'true';
+    const defaultShelves = getDefaultShelves(currentAppState, savedFiftyPercentOffEnabled);
     console.log('Using default shelves:', defaultShelves.length, 'shelves');
     return defaultShelves;
   });
@@ -146,6 +160,12 @@ const App: React.FC = () => {
     return !hasSeenWelcome; // Show if user hasn't seen it before
   });
   
+  // 50% OFF shelf toggle state
+  const [fiftyPercentOffEnabled, setFiftyPercentOffEnabled] = useState<boolean>(() => {
+    const savedState = localStorage.getItem('mango-fifty-percent-off-enabled');
+    return savedState === 'true';
+  });
+  
   const [newlyAddedStrainId, setNewlyAddedStrainId] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [initMessage, setInitMessage] = useState<string>('');
@@ -157,6 +177,10 @@ const App: React.FC = () => {
     const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
     return viewedVersion === '1.0.2'; // Check if current version has been viewed
   });
+  const [hasContentOverflow, setHasContentOverflow] = useState<boolean>(false);
+  const [autoFormatMessage, setAutoFormatMessage] = useState<string>('');
+  const [autoFormatState, setAutoFormatState] = useState<AutoFormatState | null>(null);
+  const [shouldContinueOptimization, setShouldContinueOptimization] = useState<boolean>(false);
 
   // Theme toggle handler
   const handleThemeChange = useCallback((newTheme: Theme) => {
@@ -229,6 +253,74 @@ const App: React.FC = () => {
         setNoUpdatesFound(true);
       }, 1500);
     }
+  }, []);
+
+  // Auto-format handler with iterative optimization
+  const handleAutoFormat = useCallback(() => {
+    // Calculate content data for intelligent auto-formatting
+    const shelfCount = shelves.filter(shelf => shelf.strains.length > 0).length;
+    const totalStrains = shelves.reduce((total, shelf) => total + shelf.strains.length, 0);
+    
+    const contentData = {
+      shelfCount,
+      totalStrains,
+      hasContentOverflow
+    };
+    
+    // Use iterative auto-format with state tracking - pass the current state!
+    const result = getOverflowDrivenAutoFormat(previewSettings, contentData, autoFormatState || undefined);
+    
+    if (result.success && result.settings) {
+      setPreviewSettings(prev => ({ ...prev, ...result.settings }));
+      setAutoFormatMessage(result.message);
+      
+      // Update auto-format state if optimization should continue
+      if (result.shouldContinue) {
+        // Create new state based on the optimization phase returned
+        const newState: AutoFormatState = {
+          phase: result.optimizationPhase as AutoFormatState['phase'] || 'font-size',
+          mode: autoFormatState?.mode || (hasContentOverflow ? 'reduction' : 'expansion'),
+          isOptimizing: true,
+          // Update ceiling flags based on result OR preserve from existing state
+          hitFontSizeCeiling: result.hitFontSizeCeiling ?? autoFormatState?.hitFontSizeCeiling ?? false,
+          hitLineHeightCeiling: result.hitLineHeightCeiling ?? autoFormatState?.hitLineHeightCeiling ?? false
+        };
+        setAutoFormatState(newState);
+        setShouldContinueOptimization(true);
+        // Don't show intermediate messages during optimization
+        setAutoFormatMessage('');
+      } else {
+        // Optimization complete - show final message
+        setAutoFormatState(null);
+        setShouldContinueOptimization(false);
+        setAutoFormatMessage(result.message);
+        // Clear final message after 4 seconds
+        setTimeout(() => setAutoFormatMessage(''), 4000);
+      }
+    } else {
+      setAutoFormatMessage(result.message);
+      setAutoFormatState(null);
+      setShouldContinueOptimization(false);
+      setTimeout(() => setAutoFormatMessage(''), 5000);
+    }
+  }, [previewSettings, shelves, hasContentOverflow, autoFormatState]);
+
+  // Automatic continuation of optimization
+  useEffect(() => {
+    if (shouldContinueOptimization && autoFormatState?.isOptimizing) {
+      // Wait for UI to re-render and overflow detection to update
+      const continueTimeout = setTimeout(() => {
+        setShouldContinueOptimization(false);
+        handleAutoFormat();
+      }, 25); // 25ms delay for UI to update - very fast iteration
+      
+      return () => clearTimeout(continueTimeout);
+    }
+  }, [shouldContinueOptimization, autoFormatState?.isOptimizing, handleAutoFormat]);
+
+  // Handle overflow detection from preview
+  const handleOverflowDetected = useCallback((hasOverflow: boolean) => {
+    setHasContentOverflow(hasOverflow);
   }, []);
 
 
@@ -414,10 +506,16 @@ const App: React.FC = () => {
     setShowWelcomeModal(false);
   }, []);
 
+  // 50% OFF shelf toggle handler
+  const handleFiftyPercentOffToggle = useCallback((enabled: boolean) => {
+    setFiftyPercentOffEnabled(enabled);
+    localStorage.setItem('mango-fifty-percent-off-enabled', enabled.toString());
+  }, []);
+
   useEffect(() => {
-    setShelves(getDefaultShelves(currentAppState));
+    setShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
     setGlobalSortCriteria(null); // Reset global sort on state change
-  }, [currentAppState]);
+  }, [currentAppState, fiftyPercentOffEnabled]);
 
   const recordChange = (updater: () => void) => {
     setGlobalSortCriteria(null);
@@ -733,13 +831,13 @@ const App: React.FC = () => {
   }, [isExporting, exportFilename, previewSettings.artboardSize]);
 
   const handleExportCSV = useCallback(() => {
-    const header = ["Category", "Strain Name", "Grow/Brand", "THC Percentage", "Class", "lastjar"];
+    const header = ["Category", "Strain Name", "Grow/Brand", "THC Percentage", "Class", "lastjar", "originalShelf"];
     
     const rows = shelves.flatMap(shelf => {
       if (shelf.strains.length === 0) return [];
       // Use sorted strains for CSV export based on current criteria
       const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
-      const strainsToExport = sortStrains([...shelf.strains], activeSortCriteria);
+      const strainsToExport = sortStrains([...shelf.strains], activeSortCriteria, currentAppState);
 
       return strainsToExport.map(strain => {
         const thcPercentageString = strain.thc === null ? "-" : `${strain.thc.toFixed(THC_DECIMAL_PLACES)}%`;
@@ -751,7 +849,8 @@ const App: React.FC = () => {
           strain.grower || "",
           thcPercentageString,
           classString,
-          strain.isLastJar ? "lastjar" : ""
+          strain.isLastJar ? "lastjar" : "",
+          strain.originalShelf || ""
         ].map(field => `"${String(field).replace(/"/g, '""')}"`);
       });
     });
@@ -819,6 +918,7 @@ const App: React.FC = () => {
         const csvThcPercentString = cells[3];
         const csvClassString = cells[4];
         const csvLastJar = cells.length > 5 ? cells[5]?.toLowerCase() === 'lastjar' : false;
+        const csvOriginalShelf = cells.length > 6 ? cells[6] : '';
         
         const targetShelfId = shelfNameMap.get(csvCategory);
         if (!targetShelfId) {
@@ -853,6 +953,7 @@ const App: React.FC = () => {
           thc: thcValue,
           type: strainType,
           isLastJar: csvLastJar,
+          ...(csvOriginalShelf && { originalShelf: csvOriginalShelf })
         };
 
         if (!importedStrainsByShelf[targetShelfId]) {
@@ -930,23 +1031,24 @@ const App: React.FC = () => {
     if (window.electronAPI?.updateDynamicMenus) {
       const menuData = {
         shelves: shelves.map(shelf => ({ id: shelf.id, name: shelf.name })),
-        darkMode: theme === 'dark'
+        darkMode: theme === 'dark',
+        fiftyPercentOffEnabled: fiftyPercentOffEnabled
       };
       window.electronAPI.updateDynamicMenus(menuData).catch(error => {
         console.error('Error updating dynamic menus:', error);
       });
     }
-  }, [shelves, theme]);
+  }, [shelves, theme, fiftyPercentOffEnabled]);
 
   const processedShelves = useMemo(() => {
     return shelves.map(shelf => {
       const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
       return {
         ...shelf,
-        strains: sortStrains(shelf.strains, activeSortCriteria) 
+        strains: sortStrains(shelf.strains, activeSortCriteria, currentAppState) 
       };
     });
-  }, [shelves, globalSortCriteria]);
+  }, [shelves, globalSortCriteria, currentAppState]);
 
   // Update dynamic menus when shelves or theme changes
   useEffect(() => {
@@ -1046,7 +1148,8 @@ const App: React.FC = () => {
             'grower': 'grower',
             'class': 'type',
             'thc': 'thc',
-            'lastjar': 'isLastJar'
+            'lastjar': 'isLastJar',
+            'originalshelf': 'originalShelf'
           };
           const sortKey = sortMap[data];
           if (sortKey) {
@@ -1112,6 +1215,10 @@ const App: React.FC = () => {
           }));
           break;
 
+        case 'toggle-fifty-percent-off':
+          handleFiftyPercentOffToggle(!fiftyPercentOffEnabled);
+          break;
+
         case 'reset-zoom':
           setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
           break;
@@ -1162,7 +1269,7 @@ const App: React.FC = () => {
           break;
 
         case 'show-about':
-          alert('🥭 Mango Cannabis Flower Menu Builder v1.0.2\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
+          alert('🥭 Mango Cannabis Flower Menu Builder v1.0.3\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
           break;
 
         case 'reset-welcome':
@@ -1191,6 +1298,10 @@ const App: React.FC = () => {
         case 'reset-welcome-state':
           localStorage.removeItem('mango-has-seen-welcome');
           setShowWelcomeModal(true);
+          break;
+
+        case 'auto-format-menu':
+          handleAutoFormat();
           break;
 
         case 'test-connection':
@@ -1270,24 +1381,33 @@ const App: React.FC = () => {
       <main ref={mainContainerRef} className={`flex flex-1 overflow-hidden pt-2 px-2 pb-2 ${
         theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
       }`}>
-        <FlowerShelvesPanel
-          ref={shelvesRef}
-          style={{ width: `${shelvesPanelWidth}px`, flexShrink: 0 }}
-          shelves={processedShelves} // Use processed (sorted) shelves
-          onAddStrain={handleAddStrain}
-          onUpdateStrain={handleUpdateStrain}
-          onRemoveStrain={handleRemoveStrain}
-          onCopyStrain={handleCopyStrain}
-          onClearShelfStrains={handleClearShelfStrains}
-          newlyAddedStrainId={newlyAddedStrainId}
-          onUpdateShelfSortCriteria={handleUpdateShelfSortCriteria}
-          onScrollToShelf={handleScrollToShelf}
-          theme={theme}
-          onMoveStrain={handleMoveStrain}
-          onReorderStrain={handleReorderStrain}
-          dragState={dragState}
-          onDragStart={handleDragStart}
-        />
+        <div className="flex flex-col" style={{ width: `${shelvesPanelWidth}px`, flexShrink: 0 }}>
+          <FiftyPercentOffToggle
+            enabled={fiftyPercentOffEnabled}
+            onToggle={handleFiftyPercentOffToggle}
+            theme={theme}
+          />
+          <FlowerShelvesPanel
+            ref={shelvesRef}
+            style={{ flex: 1 }}
+            shelves={processedShelves} // Use processed (sorted) shelves
+            onAddStrain={handleAddStrain}
+            onUpdateStrain={handleUpdateStrain}
+            onRemoveStrain={handleRemoveStrain}
+            onCopyStrain={handleCopyStrain}
+            onClearShelfStrains={handleClearShelfStrains}
+            newlyAddedStrainId={newlyAddedStrainId}
+            onUpdateShelfSortCriteria={handleUpdateShelfSortCriteria}
+            onScrollToShelf={handleScrollToShelf}
+            theme={theme}
+            onMoveStrain={handleMoveStrain}
+            onReorderStrain={handleReorderStrain}
+            dragState={dragState}
+            onDragStart={handleDragStart}
+            currentState={currentAppState}
+            isControlsDisabled={autoFormatState?.isOptimizing || false}
+          />
+        </div>
         <div
           className={`panel-divider ${isResizing.current ? 'dragging' : ''}`}
           onMouseDown={handleMouseDownOnDivider}
@@ -1313,6 +1433,11 @@ const App: React.FC = () => {
             }}
             currentState={currentAppState}
             theme={theme}
+            onOverflowDetected={handleOverflowDetected}
+            onAutoFormat={handleAutoFormat}
+            hasContentOverflow={hasContentOverflow}
+            isOptimizing={autoFormatState?.isOptimizing || false}
+            isControlsDisabled={autoFormatState?.isOptimizing || false}
           />
         </div>
       </main>
@@ -1408,6 +1533,22 @@ const App: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
               </svg>
               <span className="font-medium">{initMessage}</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Auto-Format Message Toast */}
+        {autoFormatMessage && (
+          <div 
+            className="fixed top-20 right-4 bg-orange-500 text-white p-4 rounded-lg shadow-lg z-40 max-w-md"
+            role="alert"
+            aria-live="polite"
+          >
+            <div className="flex items-center space-x-2">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              </svg>
+              <span className="font-medium">{autoFormatMessage}</span>
             </div>
           </div>
         )}

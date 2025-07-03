@@ -13,6 +13,7 @@ export interface Strain {
   thc: number | null;
   type: StrainType;
   isLastJar: boolean;
+  originalShelf?: string; // For 50% OFF shelf - tracks which shelf this strain originally came from
 }
 
 export interface PriceTiers {
@@ -21,10 +22,11 @@ export interface PriceTiers {
   quarter: number;
   half: number;
   oz: number;
+  fiveG?: number; // Optional 5g pricing for infused flower shelves
 }
 
 export interface SortCriteria {
-  key: 'name' | 'grower' | 'type' | 'thc' | 'isLastJar';
+  key: 'name' | 'grower' | 'type' | 'thc' | 'isLastJar' | 'originalShelf';
   direction: 'asc' | 'desc';
 }
 
@@ -36,6 +38,8 @@ export interface Shelf {
   textColor: string; // Tailwind text color class e.g., 'text-white'
   strains: Strain[];
   sortCriteria: SortCriteria | null; // Added for individual shelf sorting
+  hidePricing?: boolean; // Optional flag to hide pricing display for special shelves like 50% OFF
+  isInfused?: boolean; // Optional flag to identify infused flower shelves with different pricing display
 }
 
 export enum ArtboardSize {

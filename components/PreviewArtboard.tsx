@@ -105,6 +105,7 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
           marginBottomStyle={rowGapPx}
           applyAvoidBreakStyle={applyAvoidBreak}
           showOverflowWarning={showOverflowWarning}
+          currentState={currentState}
         />
       );
     });

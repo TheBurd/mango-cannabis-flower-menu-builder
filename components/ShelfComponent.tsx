@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shelf, Strain, SortCriteria, Theme } from '../types';
+import { Shelf, Strain, SortCriteria, Theme, SupportedStates } from '../types';
 import { StrainInputRow } from './StrainInputRow';
 import { DropZone } from './common/DropZone';
 import { Button } from './common/Button';
 import { PlusIcon, TrashXmarkIcon, MinusCircleIcon, SortAscendingIcon, SortDescendingIcon } from './common/Icon';
+import { getPatternPath } from '../utils/assets';
 
 interface ShelfComponentProps {
   shelf: Shelf; // shelf.strains is pre-sorted
@@ -20,6 +20,9 @@ interface ShelfComponentProps {
   onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
   dragState?: { strainId: string; shelfId: string; strainIndex: number } | null;
   onDragStart?: (strainId: string, shelfId: string, strainIndex: number) => void;
+  availableShelves?: Shelf[]; // For 50% OFF shelf original shelf selection
+  currentState?: SupportedStates; // Current app state for shelf hierarchy
+  isControlsDisabled?: boolean;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -67,6 +70,9 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   onReorderStrain,
   dragState,
   onDragStart,
+  availableShelves = [],
+  currentState,
+  isControlsDisabled,
 }) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
   const [confirmClear, setConfirmClear] = useState(false);
@@ -95,12 +101,41 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
     }
   };
   
+  const isFiftyPercentOff = shelf.name === "50% OFF STRAINS";
+  
+  // CSS for infused shelf pattern
+  const infusedShelfCSS = `
+    .infused-shelf-container > div:first-child::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("${getPatternPath('sick-ass-pattern.svg')}");
+      background-size: 300px 300px;
+      background-repeat: repeat;
+      background-position: 0 0;
+      filter: hue-rotate(30deg) saturate(0.4) brightness(1.8) opacity(0.08);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .infused-shelf-container > div:first-child {
+      position: relative;
+    }
+    .infused-shelf-container > div:first-child > * {
+      position: relative;
+      z-index: 1;
+    }
+  `;
+  
   const sortOptions: Array<{ label: string; key: SortCriteria['key'] }> = [
     { label: "Name", key: "name" },
     { label: "Grower", key: "grower" },
     { label: "Class", key: "type" },
     { label: "THC%", key: "thc" },
     { label: "Last Jar", key: "isLastJar" },
+    ...(isFiftyPercentOff ? [{ label: "Original Shelf", key: "originalShelf" as SortCriteria['key'] }] : []),
   ];
 
   const handleDropBetweenStrains = (dragData: any, targetIndex: number) => {
@@ -132,18 +167,27 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   };
 
   return (
-    <div 
-      data-shelf-id={shelf.id}
-      className={`rounded-lg shadow-md overflow-hidden border ${
-        theme === 'dark' ? 'border-gray-700' : 'border-gray-300'
-      } ${shelf.color}`}>
+    <>
+      {shelf.isInfused && (
+        <style dangerouslySetInnerHTML={{ __html: infusedShelfCSS }} />
+      )}
+      <div 
+        data-shelf-id={shelf.id}
+        className={`rounded-lg shadow-md overflow-hidden border ${
+          theme === 'dark' ? 'border-gray-700' : 'border-gray-300'
+        } ${shelf.color} ${shelf.isInfused ? 'infused-shelf-container' : ''}`}>
       <div className={`p-3 ${shelf.textColor} flex flex-col`}>
         <div className="flex justify-between items-start mb-1.5">
             <div>
                 <h3 className="text-xl font-semibold">{shelf.name}</h3>
-                <p className="text-xs opacity-90">
-                {formatPrice(shelf.pricing.g)}/g | {formatPrice(shelf.pricing.eighth)}/8th | {formatPrice(shelf.pricing.quarter)}/Qtr | {formatPrice(shelf.pricing.half)}/Half | {formatPrice(shelf.pricing.oz)}/Oz
-                </p>
+                {!shelf.hidePricing && (
+                  <p className="text-xs opacity-90">
+                    {shelf.isInfused && shelf.pricing.fiveG ? 
+                      `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.fiveG)}/5g` :
+                      `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.eighth)}/8th | ${formatPrice(shelf.pricing.quarter)}/Qtr | ${formatPrice(shelf.pricing.half)}/Half | ${formatPrice(shelf.pricing.oz)}/Oz`
+                    }
+                  </p>
+                )}
             </div>
             <Button 
                 onClick={handleClearStrainsClick} 
@@ -211,6 +255,10 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
                   strainIndex={index}
                   isDragging={dragState?.strainId === strain.id}
                   onDragStart={onDragStart}
+                  isFiftyPercentOff={isFiftyPercentOff}
+                  availableShelves={availableShelves}
+                  currentState={currentState}
+                  isInfused={shelf.isInfused}
                 />
                 
                 {/* Drop zone between strains */}
@@ -249,5 +297,6 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
         )}
       </div>
     </div>
+    </>
   );
 };

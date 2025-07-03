@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shelf, Strain, SortCriteria, Theme } from '../types';
+import { Shelf, Strain, SortCriteria, Theme, SupportedStates } from '../types';
 import { ShelfComponent } from './ShelfComponent';
 import { ShelfTabs } from './ShelfTabs';
 
@@ -19,6 +19,8 @@ interface FlowerShelvesPanelProps {
   onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
   dragState?: { strainId: string; shelfId: string; strainIndex: number } | null;
   onDragStart?: (strainId: string, shelfId: string, strainIndex: number) => void;
+  currentState?: SupportedStates; // Current app state for shelf hierarchy
+  isControlsDisabled?: boolean;
 }
 
 export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelvesPanelProps>(({
@@ -37,6 +39,8 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
   onReorderStrain,
   dragState,
   onDragStart,
+  currentState,
+  isControlsDisabled,
 }, ref) => {
   return (
     <div 
@@ -44,7 +48,7 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
       id="flower-shelves-panel" // Added ID for aria-controls
       className={`no-print flex-shrink-0 rounded-lg shadow-lg overflow-y-auto ${
         theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-      }`}
+      } ${isControlsDisabled ? 'opacity-50 pointer-events-none' : ''}`}
       style={style} // Apply dynamic width for resizable panel
     >
       <ShelfTabs 
@@ -70,6 +74,9 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
               onReorderStrain={onReorderStrain}
               dragState={dragState}
               onDragStart={onDragStart}
+              availableShelves={shelves}
+              currentState={currentState}
+              isControlsDisabled={isControlsDisabled}
             />
           </div>
         ))}
