@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './common/Button';
 import { DownloadIcon, UploadIcon, SortAscendingIcon, SortDescendingIcon, FlowerJarIcon, TrashXmarkIcon } from './common/Icon';
-import { SortCriteria, Theme } from '../types';
+import { SortCriteria, Theme, MenuMode } from '../types';
 
 interface ToolbarProps {
   onClearAllShelves: () => void;
@@ -16,6 +16,7 @@ interface ToolbarProps {
   globalSortCriteria: SortCriteria | null;
   onUpdateGlobalSortCriteria: (key: SortCriteria['key']) => void;
   theme: Theme;
+  menuMode: MenuMode;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -59,6 +60,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   globalSortCriteria,
   onUpdateGlobalSortCriteria,
   theme,
+  menuMode,
 }) => {
   const [confirmClearShelves, setConfirmClearShelves] = useState(false);
   const [confirmClearLastJars, setConfirmClearLastJars] = useState(false);
@@ -171,7 +173,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             title="Import strains from CSV file"
           >
             <UploadIcon className="w-4 h-4" />
-            <span>Import CSV</span>
+            <span>{menuMode === MenuMode.BULK ? 'Import Bulk Flower CSV' : 'Import Pre-Pack CSV'}</span>
           </Button>
 
                       <div className="flex items-center space-x-2">

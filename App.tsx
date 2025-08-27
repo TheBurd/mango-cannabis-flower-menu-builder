@@ -1,5 +1,36 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 
+/**
+ * PANEL INTEGRATION ARCHITECTURE
+ * ==============================
+ * 
+ * This App component now supports conditional rendering of panels based on menu mode:
+ * 
+ * BULK FLOWER MODE (MenuMode.BULK):
+ * - Uses FlowerShelvesPanel for strain management
+ * - Uses MenuPreviewPanel for bulk flower menu preview
+ * - Data: bulkShelves (Shelf[] with strains)
+ * 
+ * PRE-PACKAGED MODE (MenuMode.PREPACKAGED):
+ * - Uses PrePackagedPanel for product management
+ * - Uses PrePackagedCanvas for pre-packaged menu preview with zoom/pan
+ * - Data: prePackagedShelves (PrePackagedShelf[] with products)
+ * 
+ * STATE MANAGEMENT:
+ * - Dual state system maintains both bulk and pre-packaged data separately
+ * - Mode switching preserves data in both modes
+ * - Generic handlers (handleAddItem, handleUpdateItem, etc.) work with both modes
+ * - Specific aliases (handleAddProduct, handleUpdateProduct, etc.) for PrePackaged components
+ * - Backward compatibility maintained with existing handler names
+ * 
+ * SORTING SYSTEM:
+ * - sortStrains() for bulk flower data
+ * - sortPrePackagedProducts() for pre-packaged data
+ * - processedShelves useMemo handles both modes with proper type safety
+ * 
+ * INTEGRATION COMPLETE: Full PrePackaged system now operational
+ */
+
 // Type declaration for Electron API
 declare global {
   interface Window {
@@ -28,15 +59,20 @@ declare global {
 }
 import { Header } from './components/Header';
 import { Toolbar } from './components/Toolbar';
-import { InstructionsModal } from './components/InstructionsModal';
+import { InstructionsModalTabs } from './components/InstructionsModalTabs';
 import { WelcomeModal } from './components/WelcomeModal';
-import { WhatsNewModal } from './components/WhatsNewModal';
+import { WhatsNewModalTabs } from './components/WhatsNewModalTabs';
+import { CsvImportModal } from './components/CsvImportModal';
+import { CsvExportModal } from './components/CsvExportModal';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
+import { PrePackagedPanel } from './components/PrePackagedPanel';
+import { PrePackagedCanvas } from './components/PrePackagedCanvas';
 import { UpdateNotification } from './components/UpdateNotification';
 import { DebugConsole } from './components/DebugConsole';
 import { FiftyPercentOffToggle } from './components/FiftyPercentOffToggle';
-import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme } from './types';
+import { ToastProvider, useToast } from './components/ToastContainer';
+import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme, MenuMode, PrePackagedShelf, PrePackagedProduct, PrePackagedSortCriteria, PrePackagedWeight } from './types';
 import { 
   INITIAL_PREVIEW_SETTINGS, 
   getDefaultShelves, 
@@ -48,9 +84,10 @@ import {
   APP_STRAIN_TYPE_TO_CSV_SUFFIX,
   THC_DECIMAL_PLACES,
   STRAIN_TYPES_ORDERED,
-  getShelfHierarchy
+  getShelfHierarchy,
+  getDefaultPrePackagedShelves
 } from './constants';
-import { getNextAutoFormatAdjustment, getComprehensiveAutoFormat, getSmartAutoFormat, getOverflowDrivenAutoFormat, AutoFormatState } from './utils/autoFormat';
+import { getOverflowDrivenAutoFormat, AutoFormatState } from './utils/autoFormat';
 
 
 
@@ -118,8 +155,65 @@ const sortStrains = (strains: Strain[], criteria: SortCriteria | null, currentSt
   return sortedStrains;
 };
 
+const sortPrePackagedProducts = (products: PrePackagedProduct[], criteria: PrePackagedSortCriteria | SortCriteria | null, currentState?: SupportedStates): PrePackagedProduct[] => {
+  if (!criteria) return products;
 
-const App: React.FC = () => {
+  const sortedProducts = [...products]; // Create a copy to sort
+
+  sortedProducts.sort((a, b) => {
+    let valA: any;
+    let valB: any;
+
+    switch (criteria.key) {
+      case 'name':
+        valA = a.name?.toLowerCase() || '';
+        valB = b.name?.toLowerCase() || '';
+        break;
+      case 'brand':
+        valA = a.brand?.toLowerCase() || '';
+        valB = b.brand?.toLowerCase() || '';
+        break;
+      case 'type':
+        valA = STRAIN_TYPES_ORDERED.indexOf(a.type);
+        valB = STRAIN_TYPES_ORDERED.indexOf(b.type);
+        break;
+      case 'thc':
+        // Nulls are considered "lesser"
+        valA = a.thc === null ? -Infinity : a.thc;
+        valB = b.thc === null ? -Infinity : b.thc;
+        break;
+      case 'terpenes':
+        // Nulls are considered "lesser"
+        valA = a.terpenes === null ? -Infinity : a.terpenes;
+        valB = b.terpenes === null ? -Infinity : b.terpenes;
+        break;
+      case 'price':
+        valA = a.price;
+        valB = b.price;
+        break;
+      case 'isLowStock':
+        // Sort low stock items first when sorting asc, last when sorting desc
+        valA = a.isLowStock ? '1' : '0';
+        valB = b.isLowStock ? '1' : '0';
+        break;
+      default:
+        return 0;
+    }
+
+    if (valA < valB) {
+      return criteria.direction === 'asc' ? -1 : 1;
+    }
+    if (valA > valB) {
+      return criteria.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+  return sortedProducts;
+};
+
+
+const AppContent: React.FC = () => {
+  const { addToast } = useToast();
   // Initialize state from localStorage or default
   const [currentAppState, setCurrentAppState] = useState<SupportedStates>(() => {
     const savedState = localStorage.getItem('mango-selected-state');
@@ -128,26 +222,70 @@ const App: React.FC = () => {
     }
     return SupportedStates.OKLAHOMA; // Default fallback
   });
+
+  // Menu mode state - determines if using bulk flower or pre-packaged products (Oklahoma only)
+  const [menuMode, setMenuMode] = useState<MenuMode>(() => {
+    const savedMode = localStorage.getItem('mango-oklahoma-menu-mode');
+    if (savedMode && Object.values(MenuMode).includes(savedMode as MenuMode)) {
+      return savedMode as MenuMode;
+    }
+    return MenuMode.BULK; // Default to bulk flower mode
+  });
   
-  const [shelves, setShelves] = useState<Shelf[]>(() => {
-    // Check if we have imported data from CSV import
-    const importedData = localStorage.getItem('mango-imported-shelves');
-    console.log('Checking for imported data:', importedData ? 'Found' : 'Not found');
+  // Bulk flower shelves state
+  const [bulkShelves, setBulkShelves] = useState<Shelf[]>(() => {
+    // Check if we have imported bulk flower data from CSV import
+    const importedData = localStorage.getItem('mango-imported-bulk-shelves');
+    console.log('Checking for imported bulk data:', importedData ? 'Found' : 'Not found');
     if (importedData) {
       try {
         const parsedShelves = JSON.parse(importedData);
-        console.log('Successfully parsed imported shelves:', parsedShelves.length, 'shelves');
-        localStorage.removeItem('mango-imported-shelves'); // Clean up
+        console.log('Successfully parsed imported bulk shelves:', parsedShelves.length, 'shelves');
+        localStorage.removeItem('mango-imported-bulk-shelves'); // Clean up
         return parsedShelves;
       } catch (error) {
-        console.error('Error loading imported shelves:', error);
+        console.error('Error loading imported bulk shelves:', error);
       }
     }
     const savedFiftyPercentOffEnabled = localStorage.getItem('mango-fifty-percent-off-enabled') === 'true';
     const defaultShelves = getDefaultShelves(currentAppState, savedFiftyPercentOffEnabled);
-    console.log('Using default shelves:', defaultShelves.length, 'shelves');
+    console.log('Using default bulk shelves:', defaultShelves.length, 'shelves');
     return defaultShelves;
   });
+
+  // Pre-packaged shelves state
+  const [prePackagedShelves, setPrePackagedShelves] = useState<PrePackagedShelf[]>(() => {
+    // Check if we have imported pre-packaged data from CSV import
+    const importedData = localStorage.getItem('mango-imported-prepackaged-shelves');
+    console.log('Checking for imported pre-packaged data:', importedData ? 'Found' : 'Not found');
+    if (importedData) {
+      try {
+        const parsedShelves = JSON.parse(importedData);
+        console.log('Successfully parsed imported pre-packaged shelves:', parsedShelves.length, 'shelves');
+        localStorage.removeItem('mango-imported-prepackaged-shelves'); // Clean up
+        return parsedShelves;
+      } catch (error) {
+        console.error('Error loading imported pre-packaged shelves:', error);
+      }
+    }
+    const defaultShelves = getDefaultPrePackagedShelves(currentAppState);
+    console.log('Using default pre-packaged shelves:', defaultShelves.length, 'shelves');
+    return defaultShelves;
+  });
+
+  // Current active shelves based on mode - this maintains backward compatibility
+  const shelves = useMemo(() => {
+    return menuMode === MenuMode.BULK ? bulkShelves : prePackagedShelves as unknown as Shelf[];
+  }, [menuMode, bulkShelves, prePackagedShelves]);
+
+  // Setter for current shelves based on mode
+  const setShelves = useCallback((updater: React.SetStateAction<Shelf[]> | React.SetStateAction<PrePackagedShelf[]>) => {
+    if (menuMode === MenuMode.BULK) {
+      setBulkShelves(updater as React.SetStateAction<Shelf[]>);
+    } else {
+      setPrePackagedShelves(updater as React.SetStateAction<PrePackagedShelf[]>);
+    }
+  }, [menuMode]);
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(INITIAL_PREVIEW_SETTINGS);
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('mango-theme');
@@ -169,16 +307,19 @@ const App: React.FC = () => {
   const [newlyAddedStrainId, setNewlyAddedStrainId] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [initMessage, setInitMessage] = useState<string>('');
+  const [skippedRows, setSkippedRows] = useState<{rowIndex: number, rowData: any, reason: string}[]>([]);
+  const [showSkippedModal, setShowSkippedModal] = useState<boolean>(false);
   
   // Modal states
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
   const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
+  const [showCsvImportModal, setShowCsvImportModal] = useState<boolean>(false);
+  const [showCsvExportModal, setShowCsvExportModal] = useState<boolean>(false);
   const [hasViewedWhatsNew, setHasViewedWhatsNew] = useState<boolean>(() => {
     const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
     return viewedVersion === '1.0.2'; // Check if current version has been viewed
   });
   const [hasContentOverflow, setHasContentOverflow] = useState<boolean>(false);
-  const [autoFormatMessage, setAutoFormatMessage] = useState<string>('');
   const [autoFormatState, setAutoFormatState] = useState<AutoFormatState | null>(null);
   const [shouldContinueOptimization, setShouldContinueOptimization] = useState<boolean>(false);
 
@@ -187,6 +328,29 @@ const App: React.FC = () => {
     setTheme(newTheme);
     localStorage.setItem('mango-theme', newTheme);
   }, []);
+
+  // Menu mode change handler
+  const handleMenuModeChange = useCallback((newMode: MenuMode) => {
+    if (newMode === menuMode) return; // No change needed
+    
+    // Check if current mode has content before switching
+    const currentModeHasContent = menuMode === MenuMode.BULK
+      ? bulkShelves.some(shelf => shelf.strains.length > 0)
+      : prePackagedShelves.some(shelf => shelf.products.length > 0);
+    
+    if (currentModeHasContent) {
+      const confirmMessage = `You have items in your current ${menuMode} menu.\n\n` +
+        `⚠️ WARNING: Switching to ${newMode} WILL DELETE your current ${menuMode.toLowerCase()} menu data.\n\n` +
+        `Are you sure you want to continue?`;
+      
+      if (!confirm(confirmMessage)) {
+        return; // User cancelled, don't change mode
+      }
+    }
+    
+    setMenuMode(newMode);
+    localStorage.setItem('mango-oklahoma-menu-mode', newMode);
+  }, [menuMode, bulkShelves, prePackagedShelves]);
 
   // Instructions modal handler
   const handleShowInstructions = useCallback(() => {
@@ -257,14 +421,23 @@ const App: React.FC = () => {
 
   // Auto-format handler with iterative optimization
   const handleAutoFormat = useCallback(() => {
-    // Calculate content data for intelligent auto-formatting
-    const shelfCount = shelves.filter(shelf => shelf.strains.length > 0).length;
-    const totalStrains = shelves.reduce((total, shelf) => total + shelf.strains.length, 0);
+    // Calculate content data for intelligent auto-formatting based on current mode
+    const shelfCount = menuMode === MenuMode.BULK
+      ? bulkShelves.filter(shelf => shelf.strains.length > 0).length
+      : prePackagedShelves.filter(shelf => shelf.products.length > 0).length;
+    
+    const totalItems = menuMode === MenuMode.BULK
+      ? bulkShelves.reduce((total, shelf) => total + shelf.strains.length, 0)
+      : prePackagedShelves.reduce((total, shelf) => total + shelf.products.length, 0);
     
     const contentData = {
       shelfCount,
-      totalStrains,
-      hasContentOverflow
+      totalStrains: totalItems, // Keep same property name for backward compatibility
+      hasContentOverflow,
+      menuMode: menuMode === MenuMode.BULK ? 'bulk' as const : 'prepackaged' as const,
+      showTerpenes: previewSettings.showTerpenes,
+      showInventoryStatus: previewSettings.showInventoryStatus,
+      showNetWeight: previewSettings.showNetWeight
     };
     
     // Use iterative auto-format with state tracking - pass the current state!
@@ -272,7 +445,6 @@ const App: React.FC = () => {
     
     if (result.success && result.settings) {
       setPreviewSettings(prev => ({ ...prev, ...result.settings }));
-      setAutoFormatMessage(result.message);
       
       // Update auto-format state if optimization should continue
       if (result.shouldContinue) {
@@ -288,22 +460,29 @@ const App: React.FC = () => {
         setAutoFormatState(newState);
         setShouldContinueOptimization(true);
         // Don't show intermediate messages during optimization
-        setAutoFormatMessage('');
       } else {
         // Optimization complete - show final message
         setAutoFormatState(null);
         setShouldContinueOptimization(false);
-        setAutoFormatMessage(result.message);
-        // Clear final message after 4 seconds
-        setTimeout(() => setAutoFormatMessage(''), 4000);
+        addToast({
+          type: 'info',
+          title: 'Auto-Format Complete',
+          message: result.message,
+          duration: 4000
+        });
       }
     } else {
-      setAutoFormatMessage(result.message);
       setAutoFormatState(null);
       setShouldContinueOptimization(false);
-      setTimeout(() => setAutoFormatMessage(''), 5000);
+      
+      addToast({
+        type: 'warning',
+        title: 'Auto-Format Issue',
+        message: result.message,
+        duration: 5000
+      });
     }
-  }, [previewSettings, shelves, hasContentOverflow, autoFormatState]);
+  }, [previewSettings, menuMode, bulkShelves, prePackagedShelves, hasContentOverflow, autoFormatState]);
 
   // Automatic continuation of optimization
   useEffect(() => {
@@ -441,8 +620,12 @@ const App: React.FC = () => {
 
   // Helper function to check if the menu has any content
   const hasMenuContent = useCallback((): boolean => {
-    return shelves.some(shelf => shelf.strains.length > 0);
-  }, [shelves]);
+    if (menuMode === MenuMode.BULK) {
+      return bulkShelves.some(shelf => shelf.strains.length > 0);
+    } else {
+      return prePackagedShelves.some(shelf => shelf.products.length > 0);
+    }
+  }, [menuMode, bulkShelves, prePackagedShelves]);
 
   // Helper function to show Electron confirmation dialog
   const showElectronConfirm = useCallback(async (message: string, detail: string = ''): Promise<boolean> => {
@@ -491,7 +674,13 @@ const App: React.FC = () => {
     setCurrentAppState(newState);
     // Save the selected state to localStorage
     localStorage.setItem('mango-selected-state', newState);
-  }, [currentAppState, hasMenuContent]);
+    
+    // Auto-switch to Bulk Flower mode for non-Oklahoma states if currently in Pre-Packaged mode
+    if (newState !== SupportedStates.OKLAHOMA && menuMode === MenuMode.PREPACKAGED) {
+      setMenuMode(MenuMode.BULK);
+      localStorage.setItem('mango-menu-mode', MenuMode.BULK);
+    }
+  }, [currentAppState, hasMenuContent, menuMode]);
 
   // Welcome modal handlers
   const handleWelcomeStateSelect = useCallback((selectedState: SupportedStates) => {
@@ -513,9 +702,14 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+    // Update shelves based on current mode when state or 50% off toggle changes
+    if (menuMode === MenuMode.BULK) {
+      setBulkShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+    } else {
+      setPrePackagedShelves(getDefaultPrePackagedShelves(currentAppState));
+    }
     setGlobalSortCriteria(null); // Reset global sort on state change
-  }, [currentAppState, fiftyPercentOffEnabled]);
+  }, [currentAppState, fiftyPercentOffEnabled, menuMode]);
 
   const recordChange = (updater: () => void) => {
     setGlobalSortCriteria(null);
@@ -528,6 +722,25 @@ const App: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [newlyAddedStrainId]);
+
+  // Show warning toast for skipped rows
+  useEffect(() => {
+    if (skippedRows.length > 0) {
+      addToast({
+        type: 'warning',
+        title: 'Some rows were skipped during import',
+        message: `${skippedRows.length} row${skippedRows.length > 1 ? 's' : ''} couldn't be imported`,
+        duration: 8000, // 8 seconds for warning
+        actions: [
+          {
+            label: 'View Details',
+            onClick: () => setShowSkippedModal(true),
+            variant: 'primary'
+          }
+        ]
+      });
+    }
+  }, [skippedRows.length, addToast]);
 
   // Set up update event listeners
   useEffect(() => {
@@ -606,137 +819,406 @@ const App: React.FC = () => {
   }, []);
 
 
-  const handleAddStrain = useCallback((shelfId: string) => {
-    const newStrainId = crypto.randomUUID();
+  // Generic item addition handler that works for both modes
+  const handleAddItem = useCallback((shelfId: string) => {
+    const newItemId = crypto.randomUUID();
     handleShelfInteraction(shelfId); // Track interaction
     recordChange(() => {
-      setShelves(prevShelves =>
+      if (menuMode === MenuMode.BULK) {
+        // Add strain to bulk shelf
+        setBulkShelves(prevShelves =>
+          prevShelves.map(shelf =>
+            shelf.id === shelfId
+              ? {
+                  ...shelf,
+                  strains: [
+                    ...shelf.strains,
+                    {
+                      id: newItemId,
+                      name: '',
+                      grower: '',
+                      thc: null,
+                      type: StrainType.HYBRID,
+                      isLastJar: false,
+                    },
+                  ],
+                  sortCriteria: null // Reset sort criteria when adding strain
+                }
+              : shelf
+          )
+        );
+      } else {
+        // Add product to pre-packaged shelf
+        setPrePackagedShelves(prevShelves =>
+          prevShelves.map(shelf =>
+            shelf.id === shelfId
+              ? {
+                  ...shelf,
+                  products: [
+                    ...shelf.products,
+                    {
+                      id: newItemId,
+                      name: '',
+                      brand: '',
+                      type: StrainType.HYBRID,
+                      thc: null,
+                      terpenes: null,
+                      // weight: removed - now handled at shelf level
+                      price: 0,
+                      isLowStock: false,
+                    },
+                  ],
+                  sortCriteria: null // Reset sort criteria when adding product
+                }
+              : shelf
+          )
+        );
+      }
+    });
+    setNewlyAddedStrainId(newItemId);
+  }, [handleShelfInteraction, menuMode]);
+
+  // Backward compatibility alias for existing code
+  const handleAddStrain = handleAddItem;
+
+  // Generic item update handler that works for both modes
+  const handleUpdateItem = useCallback((shelfId: string, itemId: string, updatedItem: Partial<Strain> | Partial<PrePackagedProduct>) => {
+    // Input changes should be immediate and not use recordChange to avoid disrupting input flow
+    if (menuMode === MenuMode.BULK) {
+      // Update strain in bulk shelf
+      setBulkShelves(prevShelves =>
         prevShelves.map(shelf =>
           shelf.id === shelfId
             ? {
                 ...shelf,
-                strains: [
-                  ...shelf.strains,
-                  {
-                    id: newStrainId,
-                    name: '',
-                    grower: '',
-                    thc: null,
-                    type: StrainType.HYBRID,
-                    isLastJar: false,
-                  },
-                ],
-                sortCriteria: null // Reset sort criteria when adding strain
+                strains: shelf.strains.map(strain =>
+                  strain.id === itemId ? { ...strain, ...updatedItem } : strain
+                ),
+                sortCriteria: null // Reset sort criteria when updating strain
               }
             : shelf
         )
       );
-    });
-    setNewlyAddedStrainId(newStrainId);
-  }, [handleShelfInteraction]);
-
-  const handleUpdateStrain = useCallback((shelfId: string, strainId: string, updatedStrain: Partial<Strain>) => {
-    // Input changes should be immediate and not use recordChange to avoid disrupting input flow
-    setShelves(prevShelves =>
-      prevShelves.map(shelf =>
-        shelf.id === shelfId
-          ? {
-              ...shelf,
-              strains: shelf.strains.map(strain =>
-                strain.id === strainId ? { ...strain, ...updatedStrain } : strain
-              ),
-              sortCriteria: null // Reset sort criteria when updating strain
-            }
-          : shelf
-      )
-    );
-  }, []);
-
-  const handleRemoveStrain = useCallback((shelfId: string, strainId: string) => {
-    recordChange(() => {
-      setShelves(prevShelves =>
+    } else {
+      // Update product in pre-packaged shelf
+      setPrePackagedShelves(prevShelves =>
         prevShelves.map(shelf =>
           shelf.id === shelfId
-            ? { 
-                ...shelf, 
-                strains: shelf.strains.filter(s => s.id !== strainId),
-                sortCriteria: null // Reset sort criteria when removing strain
+            ? {
+                ...shelf,
+                products: shelf.products.map(product =>
+                  product.id === itemId ? { ...product, ...updatedItem } : product
+                ),
+                sortCriteria: null // Reset sort criteria when updating product
               }
             : shelf
         )
       );
+    }
+  }, [menuMode]);
+
+  // Backward compatibility alias for existing code
+  const handleUpdateStrain = useCallback((shelfId: string, strainId: string, updatedStrain: Partial<Strain>) => {
+    handleUpdateItem(shelfId, strainId, updatedStrain);
+  }, [handleUpdateItem]);
+
+  // Generic item removal handler that works for both modes
+  const handleRemoveItem = useCallback((shelfId: string, itemId: string) => {
+    recordChange(() => {
+      if (menuMode === MenuMode.BULK) {
+        // Remove strain from bulk shelf
+        setBulkShelves(prevShelves =>
+          prevShelves.map(shelf =>
+            shelf.id === shelfId
+              ? { 
+                  ...shelf, 
+                  strains: shelf.strains.filter(s => s.id !== itemId),
+                  sortCriteria: null // Reset sort criteria when removing strain
+                }
+              : shelf
+          )
+        );
+      } else {
+        // Remove product from pre-packaged shelf
+        setPrePackagedShelves(prevShelves =>
+          prevShelves.map(shelf =>
+            shelf.id === shelfId
+              ? { 
+                  ...shelf, 
+                  products: shelf.products.filter(p => p.id !== itemId),
+                  sortCriteria: null // Reset sort criteria when removing product
+                }
+              : shelf
+          )
+        );
+      }
+    });
+  }, [menuMode]);
+
+  // Backward compatibility alias for existing code
+  const handleRemoveStrain = useCallback((shelfId: string, strainId: string) => {
+    handleRemoveItem(shelfId, strainId);
+  }, [handleRemoveItem]);
+
+  // Generic item copy handler that works for both modes
+  const handleCopyItem = useCallback((shelfId: string, itemId: string, direction: 'above' | 'below') => {
+    recordChange(() => {
+      if (menuMode === MenuMode.BULK) {
+        // Copy strain in bulk shelf
+        setBulkShelves(prevShelves => {
+          const shelfIndex = prevShelves.findIndex(s => s.id === shelfId);
+          if (shelfIndex === -1) return prevShelves;
+
+          const currentShelf = prevShelves[shelfIndex];
+          const strainIndex = currentShelf.strains.findIndex(s => s.id === itemId);
+          if (strainIndex === -1) return prevShelves;
+
+          const strainToCopy = { ...currentShelf.strains[strainIndex], id: crypto.randomUUID() };
+          const newStrains = [...currentShelf.strains];
+
+          if (direction === 'above') {
+            newStrains.splice(strainIndex, 0, strainToCopy);
+          } else {
+            newStrains.splice(strainIndex + 1, 0, strainToCopy);
+          }
+          
+          const updatedShelves = [...prevShelves];
+          updatedShelves[shelfIndex] = { 
+            ...currentShelf, 
+            strains: newStrains,
+            sortCriteria: null // Reset sort criteria when copying strain
+          };
+          return updatedShelves;
+        });
+      } else {
+        // Copy product in pre-packaged shelf
+        setPrePackagedShelves(prevShelves => {
+          const shelfIndex = prevShelves.findIndex(s => s.id === shelfId);
+          if (shelfIndex === -1) return prevShelves;
+
+          const currentShelf = prevShelves[shelfIndex];
+          const productIndex = currentShelf.products.findIndex(p => p.id === itemId);
+          if (productIndex === -1) return prevShelves;
+
+          const productToCopy = { ...currentShelf.products[productIndex], id: crypto.randomUUID() };
+          const newProducts = [...currentShelf.products];
+
+          if (direction === 'above') {
+            newProducts.splice(productIndex, 0, productToCopy);
+          } else {
+            newProducts.splice(productIndex + 1, 0, productToCopy);
+          }
+          
+          const updatedShelves = [...prevShelves];
+          updatedShelves[shelfIndex] = { 
+            ...currentShelf, 
+            products: newProducts,
+            sortCriteria: null // Reset sort criteria when copying product
+          };
+          return updatedShelves;
+        });
+      }
+    });
+  }, [menuMode]);
+
+  // Backward compatibility alias for existing code
+  const handleCopyStrain = useCallback((shelfId: string, strainId: string, direction: 'above' | 'below') => {
+    handleCopyItem(shelfId, strainId, direction);
+  }, [handleCopyItem]);
+
+  // Generic shelf clearing handler that works for both modes
+  const handleClearShelfItems = useCallback((shelfId: string) => {
+    recordChange(() => {
+      if (menuMode === MenuMode.BULK) {
+        // Clear strains from bulk shelf
+        setBulkShelves(prevShelves =>
+          prevShelves.map(shelf =>
+            shelf.id === shelfId 
+              ? { 
+                  ...shelf, 
+                  strains: [],
+                  sortCriteria: null // Reset sort criteria when clearing shelf
+                } 
+              : shelf
+          )
+        );
+      } else {
+        // Clear products from pre-packaged shelf
+        setPrePackagedShelves(prevShelves =>
+          prevShelves.map(shelf =>
+            shelf.id === shelfId 
+              ? { 
+                  ...shelf, 
+                  products: [],
+                  sortCriteria: null // Reset sort criteria when clearing shelf
+                } 
+              : shelf
+          )
+        );
+      }
+    });
+  }, [menuMode]);
+
+  // Backward compatibility alias for existing code
+  const handleClearShelfStrains = useCallback((shelfId: string) => {
+    handleClearShelfItems(shelfId);
+  }, [handleClearShelfItems]);
+
+  // PrePackaged Panel specific handler aliases
+  const handleAddProduct = handleAddItem;
+  const handleUpdateProduct = useCallback((shelfId: string, productId: string, updatedProduct: Partial<PrePackagedProduct>) => {
+    handleUpdateItem(shelfId, productId, updatedProduct);
+  }, [handleUpdateItem]);
+  const handleRemoveProduct = useCallback((shelfId: string, productId: string) => {
+    handleRemoveItem(shelfId, productId);
+  }, [handleRemoveItem]);
+  const handleCopyProduct = useCallback((shelfId: string, productId: string, direction: 'above' | 'below') => {
+    handleCopyItem(shelfId, productId, direction);
+  }, [handleCopyItem]);
+  const handleClearShelfProducts = useCallback((shelfId: string) => {
+    handleClearShelfItems(shelfId);
+  }, [handleClearShelfItems]);
+
+  // State for PrePackaged Panel (matching FlowerShelvesPanel pattern)
+  const [newlyAddedProductId, setNewlyAddedProductId] = useState<string | null>(null);
+  const [prePackagedDragState, setPrePackagedDragState] = useState<{ productId: string; shelfId: string; productIndex: number } | null>(null);
+
+  // PrePackaged sorting handler
+  const handleUpdatePrePackagedShelfSortCriteria = useCallback((shelfId: string, key: PrePackagedSortCriteria['key']) => {
+    recordChange(() => {
+      setPrePackagedShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (shelf.id === shelfId) {
+            const currentCriteria = shelf.sortCriteria;
+            let newDirection: 'asc' | 'desc' = 'asc';
+            
+            if (currentCriteria && currentCriteria.key === key) {
+              newDirection = currentCriteria.direction === 'asc' ? 'desc' : 'asc';
+            }
+            
+            return {
+              ...shelf,
+              sortCriteria: { key, direction: newDirection }
+            };
+          }
+          return shelf;
+        })
+      );
     });
   }, []);
 
-  const handleCopyStrain = useCallback((shelfId: string, strainId: string, direction: 'above' | 'below') => {
+  // PrePackaged drag and drop handlers
+  const handleMoveProduct = useCallback((fromShelfId: string, toShelfId: string, productIndex: number, targetIndex?: number) => {
     recordChange(() => {
-      setShelves(prevShelves => {
-        const shelfIndex = prevShelves.findIndex(s => s.id === shelfId);
-        if (shelfIndex === -1) return prevShelves;
-
-        const currentShelf = prevShelves[shelfIndex];
-        const strainIndex = currentShelf.strains.findIndex(s => s.id === strainId);
-        if (strainIndex === -1) return prevShelves;
-
-        const strainToCopy = { ...currentShelf.strains[strainIndex], id: crypto.randomUUID() };
-        const newStrains = [...currentShelf.strains];
-
-        if (direction === 'above') {
-          newStrains.splice(strainIndex, 0, strainToCopy);
-        } else {
-          newStrains.splice(strainIndex + 1, 0, strainToCopy);
-        }
+      setPrePackagedShelves(prevShelves => {
+        // Find source shelf and product
+        const sourceShelf = prevShelves.find(s => s.id === fromShelfId);
+        const targetShelf = prevShelves.find(s => s.id === toShelfId);
         
+        if (!sourceShelf || !targetShelf || productIndex >= sourceShelf.products.length) {
+          return prevShelves;
+        }
+
+        const productToMove = sourceShelf.products[productIndex];
         const updatedShelves = [...prevShelves];
-        updatedShelves[shelfIndex] = { 
-          ...currentShelf, 
-          strains: newStrains,
-          sortCriteria: null // Reset sort criteria when copying strain
+        
+        // Remove from source
+        const sourceIndex = updatedShelves.findIndex(s => s.id === fromShelfId);
+        updatedShelves[sourceIndex] = {
+          ...sourceShelf,
+          products: sourceShelf.products.filter((_, i) => i !== productIndex)
         };
+        
+        // Add to target
+        const targetIndex = updatedShelves.findIndex(s => s.id === toShelfId);
+        const insertIndex = targetIndex !== undefined ? targetIndex : targetShelf.products.length;
+        const newProducts = [...targetShelf.products];
+        newProducts.splice(insertIndex, 0, productToMove);
+        
+        updatedShelves[targetIndex] = {
+          ...targetShelf,
+          products: newProducts
+        };
+        
         return updatedShelves;
       });
     });
   }, []);
 
-  const handleClearShelfStrains = useCallback((shelfId: string) => {
+  const handleReorderProduct = useCallback((shelfId: string, fromIndex: number, toIndex: number) => {
     recordChange(() => {
-      setShelves(prevShelves =>
-        prevShelves.map(shelf =>
-          shelf.id === shelfId 
-            ? { 
-                ...shelf, 
-                strains: [],
-                sortCriteria: null // Reset sort criteria when clearing shelf
-              } 
-            : shelf
-        )
+      setPrePackagedShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (shelf.id === shelfId) {
+            const newProducts = [...shelf.products];
+            const [removed] = newProducts.splice(fromIndex, 1);
+            newProducts.splice(toIndex, 0, removed);
+            
+            return {
+              ...shelf,
+              products: newProducts,
+              sortCriteria: null
+            };
+          }
+          return shelf;
+        })
       );
     });
   }, []);
 
+  const handlePrePackagedDragStart = useCallback((productId: string, shelfId: string, productIndex: number) => {
+    setPrePackagedDragState({ productId, shelfId, productIndex });
+  }, []);
+
+  // Generic clear all shelves handler that works for both modes
   const handleClearAllShelves = useCallback(() => {
     recordChange(() => {
-      setShelves(prevShelves =>
-        prevShelves.map(shelf => ({ 
-          ...shelf, 
-          strains: [],
-          sortCriteria: null // Reset sort criteria when clearing all shelves
-        }))
-      );
+      if (menuMode === MenuMode.BULK) {
+        // Clear all strains from bulk shelves
+        setBulkShelves(prevShelves =>
+          prevShelves.map(shelf => ({ 
+            ...shelf, 
+            strains: [],
+            sortCriteria: null // Reset sort criteria when clearing all shelves
+          }))
+        );
+      } else {
+        // Clear all products from pre-packaged shelves
+        setPrePackagedShelves(prevShelves =>
+          prevShelves.map(shelf => ({ 
+            ...shelf, 
+            products: [],
+            sortCriteria: null // Reset sort criteria when clearing all shelves
+          }))
+        );
+      }
     });
-  }, []);
+  }, [menuMode]);
 
+  // Generic clear all last jars handler that works for both modes
   const handleClearAllLastJars = useCallback(() => {
     recordChange(() => {
-      setShelves(prevShelves =>
-        prevShelves.map(shelf => ({
-          ...shelf,
-          strains: shelf.strains.map(strain => ({ ...strain, isLastJar: false })),
-          sortCriteria: null // Reset sort criteria when clearing last jars
-        }))
-      );
+      if (menuMode === MenuMode.BULK) {
+        // Clear all last jar flags from bulk shelves
+        setBulkShelves(prevShelves =>
+          prevShelves.map(shelf => ({
+            ...shelf,
+            strains: shelf.strains.map(strain => ({ ...strain, isLastJar: false })),
+            sortCriteria: null // Reset sort criteria when clearing last jars
+          }))
+        );
+      } else {
+        // Clear all last jar flags from pre-packaged shelves
+        setPrePackagedShelves(prevShelves =>
+          prevShelves.map(shelf => ({
+            ...shelf,
+            products: shelf.products.map(product => ({ ...product, isLastJar: false })),
+            sortCriteria: null // Reset sort criteria when clearing last jars
+          }))
+        );
+      }
     });
-  }, []);
+  }, [menuMode]);
   
   const handleUpdatePreviewSettings = useCallback((newSettings: Partial<PreviewSettings>) => {
      // For preview settings, we don't want to reset sorts, so don't use recordChange
@@ -831,32 +1313,69 @@ const App: React.FC = () => {
   }, [isExporting, exportFilename, previewSettings.artboardSize]);
 
   const handleExportCSV = useCallback(() => {
-    const header = ["Category", "Strain Name", "Grow/Brand", "THC Percentage", "Class", "lastjar", "originalShelf"];
-    
-    const rows = shelves.flatMap(shelf => {
-      if (shelf.strains.length === 0) return [];
-      // Use sorted strains for CSV export based on current criteria
-      const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
-      const strainsToExport = sortStrains([...shelf.strains], activeSortCriteria, currentAppState);
+    setShowCsvExportModal(true);
+  }, []);
 
-      return strainsToExport.map(strain => {
-        const thcPercentageString = strain.thc === null ? "-" : `${strain.thc.toFixed(THC_DECIMAL_PLACES)}%`;
-        const classString = APP_STRAIN_TYPE_TO_CSV_SUFFIX[strain.type] || 'H';
-        
-        return [
-          shelf.name,
-          strain.name || "Unnamed Strain",
-          strain.grower || "",
-          thcPercentageString,
-          classString,
-          strain.isLastJar ? "lastjar" : "",
-          strain.originalShelf || ""
-        ].map(field => `"${String(field).replace(/"/g, '""')}"`);
+  const handleExportCSVLegacy = useCallback(() => {
+    let header: string[];
+    let rows: string[][];
+
+    if (menuMode === MenuMode.BULK) {
+      // Bulk flower CSV format
+      header = ["Category", "Strain Name", "Grow/Brand", "THC Percentage", "Class", "lastjar", "originalShelf"];
+      
+      rows = bulkShelves.flatMap(shelf => {
+        if (shelf.strains.length === 0) return [];
+        // Use sorted strains for CSV export based on current criteria
+        const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
+        const strainsToExport = sortStrains([...shelf.strains], activeSortCriteria, currentAppState);
+
+        return strainsToExport.map(strain => {
+          const thcPercentageString = strain.thc === null ? "-" : `${strain.thc.toFixed(THC_DECIMAL_PLACES)}%`;
+          const classString = APP_STRAIN_TYPE_TO_CSV_SUFFIX[strain.type] || 'H';
+          
+          return [
+            shelf.name,
+            strain.name || "Unnamed Strain",
+            strain.grower || "",
+            thcPercentageString,
+            classString,
+            strain.isLastJar ? "lastjar" : "",
+            strain.originalShelf || ""
+          ].map(field => `"${String(field).replace(/"/g, '""')}"`);
+        });
       });
-    });
+    } else {
+      // Pre-packaged CSV format
+      header = ["Category", "Product Name", "Brand", "Type", "THC Percentage", "Terpenes Percentage", "Price", "Net Weight", "Low Stock", "Notes", "Original Shelf"];
+      
+      rows = prePackagedShelves.flatMap(shelf => {
+        if (shelf.products.length === 0) return [];
+        
+        return shelf.products.map(product => {
+          const thcPercentageString = product.thc === null ? "-" : `${product.thc.toFixed(THC_DECIMAL_PLACES)}%`;
+          const terpenesPercentageString = (product.terpenes === null || product.terpenes === undefined) ? "-" : `${product.terpenes.toFixed(THC_DECIMAL_PLACES)}%`;
+          const classString = APP_STRAIN_TYPE_TO_CSV_SUFFIX[product.type] || 'H';
+          
+          return [
+            shelf.name,
+            product.name || "Unnamed Product",
+            product.brand || "",
+            classString,
+            thcPercentageString,
+            terpenesPercentageString,
+            `$${product.price.toFixed(2)}`,
+            product.netWeight || "",
+            product.isLowStock ? "TRUE" : "FALSE",
+            product.notes || "",
+            product.originalShelf || ""
+          ].map(field => `"${String(field).replace(/"/g, '""')}"`);
+        });
+      });
+    }
 
     if (rows.length === 0) {
-      alert("No strain data to export.");
+      alert(`No ${menuMode.toLowerCase()} data to export.`);
       return;
     }
 
@@ -865,7 +1384,8 @@ const App: React.FC = () => {
     const link = document.createElement("a");
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
-      const filenameToUse = (exportFilename || 'mango-menu-export') + '.csv';
+      const modePrefix = menuMode === MenuMode.BULK ? 'bulk-flower' : 'pre-packaged';
+      const filenameToUse = (exportFilename || `mango-${modePrefix}-export`) + '.csv';
       link.setAttribute("href", url);
       link.setAttribute("download", filenameToUse);
       link.style.visibility = 'hidden';
@@ -874,10 +1394,10 @@ const App: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }
-  }, [shelves, exportFilename, globalSortCriteria]);
+  }, [menuMode, bulkShelves, prePackagedShelves, exportFilename, globalSortCriteria, currentAppState]);
 
   const handleImportCSVRequest = useCallback(() => {
-    csvImportInputRef.current?.click();
+    setShowCsvImportModal(true);
   }, []);
   
   const processImportedCSVFile = useCallback((file: File) => {
@@ -895,106 +1415,269 @@ const App: React.FC = () => {
         return;
       }
 
-      const importedStrainsByShelf: Record<string, Strain[]> = {};
-      let importedCount = 0;
-      let skippedRowCount = 0;
+      // Detect CSV format by analyzing the header
+      const headerLine = lines[0];
+      const headerCells = headerLine.split(',').map(cell => cell.trim().replace(/^"|"$/g, '').toLowerCase());
+      
+      const isBulkFlowerFormat = headerCells.includes('strain name') || headerCells.includes('grow/brand');
+      const isPrePackagedFormat = headerCells.includes('product name') || headerCells.includes('size') || headerCells.includes('price');
+      
+      let detectedMode: MenuMode;
+      if (isBulkFlowerFormat && !isPrePackagedFormat) {
+        detectedMode = MenuMode.BULK;
+      } else if (isPrePackagedFormat && !isBulkFlowerFormat) {
+        detectedMode = MenuMode.PREPACKAGED;
+      } else {
+        // Ambiguous or unknown format - ask user or default to current mode
+        const userChoice = confirm(
+          `Could not automatically detect CSV format.\n\n` +
+          `Click OK to import as ${MenuMode.BULK} format, or Cancel to import as ${MenuMode.PREPACKAGED} format.`
+        );
+        detectedMode = userChoice ? MenuMode.BULK : MenuMode.PREPACKAGED;
+      }
 
-      // Create a temporary map for faster shelf lookup by name
-      const shelfNameMap = new Map(shelves.map(s => [s.name.toLowerCase(), s.id]));
-
-      for (let i = 1; i < lines.length; i++) {
-        const rawLine = lines[i];
-        const cells = rawLine.split(',').map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+      // Switch to detected mode if different from current mode
+      if (detectedMode !== menuMode) {
+        const switchConfirm = confirm(
+          `This CSV appears to be in ${detectedMode} format, but you're currently in ${menuMode} mode.\n\n` +
+          `Would you like to switch to ${detectedMode} mode to import this data?`
+        );
         
-        if (cells.length < 5) {
-            console.warn(`SKIPPING Row ${i + 1}: Not enough cells (found ${cells.length}, expected at least 5). Line: "${rawLine}"`);
+        if (switchConfirm) {
+          setMenuMode(detectedMode);
+          localStorage.setItem('mango-menu-mode', detectedMode);
+        } else {
+          detectedMode = menuMode; // Use current mode if user doesn't want to switch
+        }
+      }
+
+      if (detectedMode === MenuMode.BULK) {
+        // Process as bulk flower CSV
+        const importedStrainsByShelf: Record<string, Strain[]> = {};
+        let importedCount = 0;
+        let skippedRowCount = 0;
+
+        // Create a temporary map for faster shelf lookup by name
+        const shelfNameMap = new Map(bulkShelves.map(s => [s.name.toLowerCase(), s.id]));
+
+        for (let i = 1; i < lines.length; i++) {
+          const rawLine = lines[i];
+          const cells = rawLine.split(',').map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+          
+          if (cells.length < 5) {
+              console.warn(`SKIPPING Row ${i + 1}: Not enough cells (found ${cells.length}, expected at least 5). Line: "${rawLine}"`);
+              skippedRowCount++;
+              continue;
+          }
+
+          const csvCategory = cells[0].toLowerCase(); // Normalize category name for lookup
+          const csvStrainName = cells[1];
+          const csvGrower = cells[2];
+          const csvThcPercentString = cells[3];
+          const csvClassString = cells[4];
+          const csvLastJar = cells.length > 5 ? cells[5]?.toLowerCase() === 'lastjar' : false;
+          const csvOriginalShelf = cells.length > 6 ? cells[6] : '';
+          
+          const targetShelfId = shelfNameMap.get(csvCategory);
+          if (!targetShelfId) {
+            console.warn(`SKIPPING Row ${i + 1}: Strain "${csvStrainName}" for unknown category "${cells[0]}" in ${currentAppState}.`);
             skippedRowCount++;
             continue;
-        }
+          }
 
-        const csvCategory = cells[0].toLowerCase(); // Normalize category name for lookup
-        const csvStrainName = cells[1];
-        const csvGrower = cells[2];
-        const csvThcPercentString = cells[3];
-        const csvClassString = cells[4];
-        const csvLastJar = cells.length > 5 ? cells[5]?.toLowerCase() === 'lastjar' : false;
-        const csvOriginalShelf = cells.length > 6 ? cells[6] : '';
-        
-        const targetShelfId = shelfNameMap.get(csvCategory);
-        if (!targetShelfId) {
-          console.warn(`SKIPPING Row ${i + 1}: Strain "${csvStrainName}" for unknown category "${cells[0]}" in ${currentAppState}.`);
-          skippedRowCount++;
-          continue;
-        }
+          let thcValue: number | null = null;
+          if (csvThcPercentString && csvThcPercentString !== "-") {
+              const thcNumericMatch = csvThcPercentString.match(/(\d*\.?\d+)/);
+              if (thcNumericMatch && thcNumericMatch[1]) {
+                  thcValue = parseFloat(thcNumericMatch[1]);
+                  if (isNaN(thcValue)) thcValue = null;
+              }
+          }
 
-        let thcValue: number | null = null;
-        if (csvThcPercentString && csvThcPercentString !== "-") {
-            const thcNumericMatch = csvThcPercentString.match(/(\d*\.?\d+)/);
-            if (thcNumericMatch && thcNumericMatch[1]) {
-                thcValue = parseFloat(thcNumericMatch[1]);
-                if (isNaN(thcValue)) thcValue = null;
-            }
-        }
-
-        let strainType: StrainType = StrainType.HYBRID;
-        const rawClass = csvClassString ? csvClassString.trim() : "";
-        if (rawClass) {
-            const normalizedClass = rawClass.toUpperCase().replace(/[\s-./]/g, '');
-            const mappedType = CSV_STRAIN_TYPE_MAP[normalizedClass];
-            if (mappedType) {
-              strainType = mappedType;
-            }
-        }
-        
-        const newStrain: Strain = {
-          id: crypto.randomUUID(),
-          name: csvStrainName || 'Unnamed Strain',
-          grower: csvGrower || '',
-          thc: thcValue,
-          type: strainType,
-          isLastJar: csvLastJar,
-          ...(csvOriginalShelf && { originalShelf: csvOriginalShelf })
-        };
-
-        if (!importedStrainsByShelf[targetShelfId]) {
-          importedStrainsByShelf[targetShelfId] = [];
-        }
-        importedStrainsByShelf[targetShelfId].push(newStrain);
-        importedCount++;
-      }
-      
-      // Show loading overlay and update state directly (no reload needed)
-      setIsInitializing(true);
-      setInitMessage('Processing CSV import...');
-      
-      // Use setTimeout to allow the loading overlay to show
-      setTimeout(() => {
-        // Update state directly with imported data
-        const newShelvesData = shelves.map(shelf => ({
-          ...shelf,
-          strains: importedStrainsByShelf[shelf.id] || [], 
-          sortCriteria: null // Reset individual shelf sort criteria
-        }));
-        
-        console.log('Updating shelves with imported data:', newShelvesData.length, 'shelves');
-        console.log('Total strains imported:', newShelvesData.reduce((total, shelf) => total + shelf.strains.length, 0));
-        
-        // Update state directly
-        setGlobalSortCriteria(null);
-        setShelves(newShelvesData);
-        
-        // Show success message
-        setTimeout(() => {
-          setIsInitializing(false);
-          setInitMessage(`CSV Import Complete: ${importedCount} strains loaded.${skippedRowCount > 0 ? ` ${skippedRowCount} rows skipped.` : ''}`);
+          let strainType: StrainType = StrainType.HYBRID;
+          const rawClass = csvClassString ? csvClassString.trim() : "";
+          if (rawClass) {
+              const normalizedClass = rawClass.toUpperCase().replace(/[\s-./]/g, '');
+              const mappedType = CSV_STRAIN_TYPE_MAP[normalizedClass];
+              if (mappedType) {
+                strainType = mappedType;
+              }
+          }
           
-          // Clear success message after 3 seconds
-          setTimeout(() => {
-            setInitMessage('');
-          }, 3000);
-        }, 800);
+          const newStrain: Strain = {
+            id: crypto.randomUUID(),
+            name: csvStrainName || 'Unnamed Strain',
+            grower: csvGrower || '',
+            thc: thcValue,
+            type: strainType,
+            isLastJar: csvLastJar,
+            ...(csvOriginalShelf && { originalShelf: csvOriginalShelf })
+          };
+
+          if (!importedStrainsByShelf[targetShelfId]) {
+            importedStrainsByShelf[targetShelfId] = [];
+          }
+          importedStrainsByShelf[targetShelfId].push(newStrain);
+          importedCount++;
+        }
         
-      }, 300);
+        // Show loading overlay and update bulk shelves
+        setIsInitializing(true);
+        setInitMessage('Processing bulk flower CSV import...');
+        
+        setTimeout(() => {
+          const newShelvesData = bulkShelves.map(shelf => ({
+            ...shelf,
+            strains: importedStrainsByShelf[shelf.id] || [], 
+            sortCriteria: null
+          }));
+          
+          console.log('Updating bulk shelves with imported data:', newShelvesData.length, 'shelves');
+          console.log('Total strains imported:', newShelvesData.reduce((total, shelf) => total + shelf.strains.length, 0));
+          
+          setGlobalSortCriteria(null);
+          setBulkShelves(newShelvesData);
+          
+          setTimeout(() => {
+            setIsInitializing(false);
+            setInitMessage('');
+            
+            addToast({
+              type: 'success',
+              title: 'Bulk Flower CSV Import Complete',
+              message: `${importedCount} strains loaded.${skippedRowCount > 0 ? ` ${skippedRowCount} rows skipped.` : ''}`,
+              duration: 5000
+            });
+          }, 800);
+          
+        }, 300);
+
+      } else {
+        // Process as pre-packaged CSV
+        const importedProductsByShelf: Record<string, PrePackagedProduct[]> = {};
+        let importedCount = 0;
+        let skippedRowCount = 0;
+
+        // Create a temporary map for faster shelf lookup by name
+        const shelfNameMap = new Map(prePackagedShelves.map(s => [s.name.toLowerCase(), s.id]));
+
+        for (let i = 1; i < lines.length; i++) {
+          const rawLine = lines[i];
+          const cells = rawLine.split(',').map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+          
+          if (cells.length < 8) {
+              console.warn(`SKIPPING Row ${i + 1}: Not enough cells for pre-packaged format (found ${cells.length}, expected at least 8). Line: "${rawLine}"`);
+              skippedRowCount++;
+              continue;
+          }
+
+          const csvCategory = cells[0].toLowerCase();
+          const csvProductName = cells[1];
+          const csvBrand = cells[2];
+          const csvClassString = cells[3];
+          const csvThcPercentString = cells[4];
+          const csvCbdPercentString = cells[5];
+          const csvSize = cells[6];
+          const csvPriceString = cells[7];
+          const csvLastJar = cells.length > 8 ? cells[8]?.toLowerCase() === 'lastjar' : false;
+          
+          const targetShelfId = shelfNameMap.get(csvCategory);
+          if (!targetShelfId) {
+            console.warn(`SKIPPING Row ${i + 1}: Product "${csvProductName}" for unknown category "${cells[0]}" in ${currentAppState}.`);
+            skippedRowCount++;
+            continue;
+          }
+
+          let thcValue: number | null = null;
+          if (csvThcPercentString && csvThcPercentString !== "-") {
+              const thcNumericMatch = csvThcPercentString.match(/(\d*\.?\d+)/);
+              if (thcNumericMatch && thcNumericMatch[1]) {
+                  thcValue = parseFloat(thcNumericMatch[1]);
+                  if (isNaN(thcValue)) thcValue = null;
+              }
+          }
+
+          let cbdValue: number | null = null;
+          if (csvCbdPercentString && csvCbdPercentString !== "-") {
+              const cbdNumericMatch = csvCbdPercentString.match(/(\d*\.?\d+)/);
+              if (cbdNumericMatch && cbdNumericMatch[1]) {
+                  cbdValue = parseFloat(cbdNumericMatch[1]);
+                  if (isNaN(cbdValue)) cbdValue = null;
+              }
+          }
+
+          let priceValue: number = 0;
+          if (csvPriceString) {
+              const priceNumericMatch = csvPriceString.replace(/[$,]/g, '').match(/(\d*\.?\d+)/);
+              if (priceNumericMatch && priceNumericMatch[1]) {
+                  priceValue = parseFloat(priceNumericMatch[1]);
+                  if (isNaN(priceValue)) priceValue = 0;
+              }
+          }
+
+          let strainType: StrainType = StrainType.HYBRID;
+          const rawClass = csvClassString ? csvClassString.trim() : "";
+          if (rawClass) {
+              const normalizedClass = rawClass.toUpperCase().replace(/[\s-./]/g, '');
+              const mappedType = CSV_STRAIN_TYPE_MAP[normalizedClass];
+              if (mappedType) {
+                strainType = mappedType;
+              }
+          }
+          
+          const newProduct: PrePackagedProduct = {
+            id: crypto.randomUUID(),
+            name: csvProductName || 'Unnamed Product',
+            brand: csvBrand || '',
+            type: strainType,
+            thc: thcValue,
+            terpenes: null, // TODO: Parse from CSV if available
+            // weight: removed - now handled at shelf level
+            price: priceValue,
+            netWeight: '', // TODO: Parse from CSV if available
+            isLowStock: false, // Default to false, TODO: Parse from CSV if available
+            notes: '', // TODO: Parse from CSV if available
+            originalShelf: csvCategory
+          };
+
+          if (!importedProductsByShelf[targetShelfId]) {
+            importedProductsByShelf[targetShelfId] = [];
+          }
+          importedProductsByShelf[targetShelfId].push(newProduct);
+          importedCount++;
+        }
+        
+        // Show loading overlay and update pre-packaged shelves
+        setIsInitializing(true);
+        setInitMessage('Processing pre-packaged CSV import...');
+        
+        setTimeout(() => {
+          const newShelvesData = prePackagedShelves.map(shelf => ({
+            ...shelf,
+            products: importedProductsByShelf[shelf.id] || [], 
+            sortCriteria: null
+          }));
+          
+          console.log('Updating pre-packaged shelves with imported data:', newShelvesData.length, 'shelves');
+          console.log('Total products imported:', newShelvesData.reduce((total, shelf) => total + shelf.products.length, 0));
+          
+          setGlobalSortCriteria(null);
+          setPrePackagedShelves(newShelvesData);
+          
+          setTimeout(() => {
+            setIsInitializing(false);
+            setInitMessage('');
+            
+            addToast({
+              type: 'success',
+              title: 'Pre-packaged CSV Import Complete',
+              message: `${importedCount} products loaded.${skippedRowCount > 0 ? ` ${skippedRowCount} rows skipped.` : ''}`,
+              duration: 5000
+            });
+          }, 800);
+          
+        }, 300);
+      }
     };
     reader.onerror = () => {
       alert("Error reading CSV file.");
@@ -1003,7 +1686,7 @@ const App: React.FC = () => {
       }
     };
     reader.readAsText(file);
-  }, [shelves, recordChange, currentAppState]);
+  }, [menuMode, bulkShelves, prePackagedShelves, currentAppState]);
 
   // Function to load CSV from file path (for Electron native dialog)
   const loadCSVFromFilePath = useCallback(async (filePath: string) => {
@@ -1026,6 +1709,235 @@ const App: React.FC = () => {
     }
   }, [processImportedCSVFile]);
 
+  // New CSV modal handlers
+  const handleCsvImport = useCallback((data: any[], mapping: any) => {
+    // Invert the mapping to get field -> csvColumn mapping
+    const fieldToColumn: Record<string, string> = {};
+    Object.entries(mapping).forEach(([csvColumn, appField]) => {
+      fieldToColumn[appField as string] = csvColumn;
+    });
+    
+    // Convert the imported data using the column mapping
+    if (menuMode === MenuMode.BULK) {
+      const importedStrainsByShelf: Record<string, Strain[]> = {};
+      let importedCount = 0;
+      const skippedRowsData: {rowIndex: number, rowData: any, reason: string}[] = [];
+
+      // Get the shelf name map for quick lookup
+      const shelfNameMap = new Map(bulkShelves.map(s => [s.name.toLowerCase(), s.id]));
+
+      data.forEach((row, index) => {
+        try {
+          const shelfName = fieldToColumn.shelf ? row[fieldToColumn.shelf] : '';
+          const strainName = fieldToColumn.name ? row[fieldToColumn.name] : '';
+          
+          if (!shelfName || !strainName) {
+            const reason = `Missing required data: ${!shelfName ? 'shelf/category' : ''} ${!shelfName && !strainName ? 'and' : ''} ${!strainName ? 'strain name' : ''}`;
+            skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
+            console.warn(`Skipping row ${index + 2}: ${reason}`);
+            return;
+          }
+
+          const targetShelfId = shelfNameMap.get(shelfName.toLowerCase());
+          if (!targetShelfId) {
+            const reason = `Unknown shelf/category "${shelfName}"`;
+            skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
+            console.warn(`Skipping row ${index + 2}: ${reason}`);
+            return;
+          }
+
+          // Parse THC value
+          let thcValue: number | null = null;
+          const thcStr = fieldToColumn.thc ? row[fieldToColumn.thc] : '';
+          if (thcStr && thcStr !== '-') {
+            const thcMatch = thcStr.match(/(\d*\.?\d+)/);
+            if (thcMatch) {
+              thcValue = parseFloat(thcMatch[1]);
+            }
+          }
+
+          // Parse strain type
+          let strainType: StrainType = StrainType.HYBRID;
+          const typeStr = fieldToColumn.type ? row[fieldToColumn.type] : '';
+          if (typeStr) {
+            const normalizedType = typeStr.toUpperCase().replace(/[\s-./]/g, '');
+            strainType = CSV_STRAIN_TYPE_MAP[normalizedType] || StrainType.HYBRID;
+          }
+
+          const newStrain: Strain = {
+            id: crypto.randomUUID(),
+            name: strainName,
+            grower: fieldToColumn.grower ? row[fieldToColumn.grower] || '' : '',
+            thc: thcValue,
+            type: strainType,
+            isLastJar: fieldToColumn.lastJar ? (row[fieldToColumn.lastJar] || '').toLowerCase() === 'lastjar' : false,
+            originalShelf: fieldToColumn.originalShelf ? row[fieldToColumn.originalShelf] || '' : '',
+          };
+
+          if (!importedStrainsByShelf[targetShelfId]) {
+            importedStrainsByShelf[targetShelfId] = [];
+          }
+          importedStrainsByShelf[targetShelfId].push(newStrain);
+          importedCount++;
+        } catch (error) {
+          const reason = `Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
+          console.warn(`Error processing row ${index + 2}:`, error);
+        }
+      });
+
+      // Update shelves with imported data
+      setBulkShelves(prev => prev.map(shelf => ({
+        ...shelf,
+        strains: [...shelf.strains, ...(importedStrainsByShelf[shelf.id] || [])]
+      })));
+
+      // Set skipped rows data and messages
+      setSkippedRows(skippedRowsData);
+      addToast({
+        type: 'success',
+        title: 'Bulk Flower CSV Import Complete',
+        message: `${importedCount} strains loaded.`,
+        duration: 5000
+      });
+    } else {
+      // Pre-packaged import logic
+      const importedProductsByShelf: Record<string, PrePackagedProduct[]> = {};
+      let importedCount = 0;
+      const skippedRowsData: {rowIndex: number, rowData: any, reason: string}[] = [];
+
+      const shelfNameMap = new Map(prePackagedShelves.map(s => [s.name.toLowerCase(), s.id]));
+
+      data.forEach((row, index) => {
+        try {
+          const shelfName = fieldToColumn.shelf ? row[fieldToColumn.shelf] : '';
+          const productName = fieldToColumn.name ? row[fieldToColumn.name] : '';
+          
+          if (!shelfName || !productName) {
+            const reason = `Missing required data: ${!shelfName ? 'weight category' : ''} ${!shelfName && !productName ? 'and' : ''} ${!productName ? 'product name' : ''}`;
+            skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
+            console.warn(`Skipping row ${index + 2}: ${reason}`);
+            return;
+          }
+
+          const targetShelfId = shelfNameMap.get(shelfName.toLowerCase());
+          if (!targetShelfId) {
+            const reason = `Unknown weight category "${shelfName}"`;
+            skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
+            console.warn(`Skipping row ${index + 2}: ${reason}`);
+            return;
+          }
+
+          // Parse numeric values
+          let thcValue: number | null = null;
+          const thcStr = fieldToColumn.thc ? row[fieldToColumn.thc] : '';
+          if (thcStr && thcStr !== '-') {
+            const thcMatch = thcStr.match(/(\d*\.?\d+)/);
+            if (thcMatch) thcValue = parseFloat(thcMatch[1]);
+          }
+
+          let terpenesValue: number | null = null;
+          const terpenesStr = fieldToColumn.terpenes ? row[fieldToColumn.terpenes] : '';
+          if (terpenesStr && terpenesStr !== '-') {
+            const terpenesMatch = terpenesStr.match(/(\d*\.?\d+)/);
+            if (terpenesMatch) terpenesValue = parseFloat(terpenesMatch[1]);
+          }
+
+          let price = 0;
+          const priceStr = fieldToColumn.price ? row[fieldToColumn.price] : '';
+          if (priceStr) {
+            price = parseFloat(priceStr.replace(/[$,]/g, '')) || 0;
+          }
+
+          // Parse strain type
+          let strainType: StrainType = StrainType.HYBRID;
+          const typeStr = fieldToColumn.type ? row[fieldToColumn.type] : '';
+          if (typeStr) {
+            const normalizedType = typeStr.toUpperCase().replace(/[\s-./]/g, '');
+            strainType = CSV_STRAIN_TYPE_MAP[normalizedType] || StrainType.HYBRID;
+          }
+
+          const newProduct: PrePackagedProduct = {
+            id: crypto.randomUUID(),
+            name: productName,
+            brand: fieldToColumn.brand ? row[fieldToColumn.brand] || '' : '',
+            thc: thcValue,
+            terpenes: terpenesValue,
+            type: strainType,
+            price: price,
+            netWeight: fieldToColumn.netWeight ? row[fieldToColumn.netWeight] || '' : '',
+            isLowStock: fieldToColumn.isLowStock ? (row[fieldToColumn.isLowStock] || '').toUpperCase() === 'TRUE' : false,
+            notes: fieldToColumn.notes ? row[fieldToColumn.notes] || '' : '',
+          };
+
+          if (!importedProductsByShelf[targetShelfId]) {
+            importedProductsByShelf[targetShelfId] = [];
+          }
+          importedProductsByShelf[targetShelfId].push(newProduct);
+          importedCount++;
+        } catch (error) {
+          const reason = `Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
+          console.warn(`Error processing row ${index + 2}:`, error);
+        }
+      });
+
+      // Update shelves with imported data
+      setPrePackagedShelves(prev => prev.map(shelf => ({
+        ...shelf,
+        products: [...shelf.products, ...(importedProductsByShelf[shelf.id] || [])]
+      })));
+
+      // Set skipped rows data and messages
+      setSkippedRows(skippedRowsData);
+      addToast({
+        type: 'success',
+        title: 'Pre-packaged CSV Import Complete',
+        message: `${importedCount} products loaded.`,
+        duration: 5000
+      });
+    }
+
+    setShowCsvImportModal(false);
+    recordChange(() => {});
+  }, [menuMode, bulkShelves, prePackagedShelves, recordChange]);
+
+  const handleCsvExport = useCallback((csvContent: string, columns: string[]) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${exportFilename || 'mango-menu'}.csv`;
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setShowCsvExportModal(false);
+  }, [exportFilename]);
+
+  const handleMenuModeSwitch = useCallback((newMode: MenuMode) => {
+    const currentData = menuMode === MenuMode.BULK ? 
+      bulkShelves.some(shelf => shelf.strains.length > 0) :
+      prePackagedShelves.some(shelf => shelf.products.length > 0);
+
+    if (currentData) {
+      const confirmMessage = `You have items in your current ${menuMode} menu.\n\n` +
+        `⚠️ WARNING: Switching to ${newMode} WILL DELETE your current ${menuMode.toLowerCase()} menu data.\n\n` +
+        `Are you sure you want to continue?`;
+        
+      if (confirm(confirmMessage)) {
+        setMenuMode(newMode);
+        localStorage.setItem('mango-menu-mode', newMode);
+        recordChange(() => {});
+      }
+    } else {
+      setMenuMode(newMode);
+      localStorage.setItem('mango-menu-mode', newMode);
+    }
+  }, [menuMode, bulkShelves, prePackagedShelves, recordChange]);
+
   // Function to update dynamic menu items
   const updateDynamicMenus = useCallback(() => {
     if (window.electronAPI?.updateDynamicMenus) {
@@ -1041,14 +1953,26 @@ const App: React.FC = () => {
   }, [shelves, theme, fiftyPercentOffEnabled]);
 
   const processedShelves = useMemo(() => {
-    return shelves.map(shelf => {
-      const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
-      return {
-        ...shelf,
-        strains: sortStrains(shelf.strains, activeSortCriteria, currentAppState) 
-      };
-    });
-  }, [shelves, globalSortCriteria, currentAppState]);
+    if (menuMode === MenuMode.BULK) {
+      // Process bulk flower shelves with strain sorting
+      return bulkShelves.map(shelf => {
+        const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
+        return {
+          ...shelf,
+          strains: sortStrains(shelf.strains, activeSortCriteria, currentAppState) 
+        };
+      });
+    } else {
+      // Process pre-packaged shelves with product sorting
+      return prePackagedShelves.map(shelf => {
+        const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
+        return {
+          ...shelf,
+          products: sortPrePackagedProducts(shelf.products, activeSortCriteria, currentAppState) 
+        };
+      }) as unknown as Shelf[]; // Type assertion for backward compatibility
+    }
+  }, [menuMode, bulkShelves, prePackagedShelves, globalSortCriteria, currentAppState]);
 
   // Update dynamic menus when shelves or theme changes
   useEffect(() => {
@@ -1070,12 +1994,16 @@ const App: React.FC = () => {
           if (hasMenuContent()) {
             const confirmed = await showElectronConfirm(
               'Clear current menu?',
-              'You have strains in your menu. Creating a new menu will clear all current progress.'
+              `You have ${menuMode === MenuMode.BULK ? 'strains' : 'products'} in your menu. Creating a new menu will clear all current progress.`
             );
             if (!confirmed) return;
           }
           recordChange(() => {
-            setShelves(getDefaultShelves(currentAppState));
+            if (menuMode === MenuMode.BULK) {
+              setBulkShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+            } else {
+              setPrePackagedShelves(getDefaultPrePackagedShelves(currentAppState));
+            }
           });
           break;
 
@@ -1269,7 +2197,7 @@ const App: React.FC = () => {
           break;
 
         case 'show-about':
-          alert('🥭 Mango Cannabis Flower Menu Builder v1.0.3\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
+          alert('🥭 Mango Cannabis Flower Menu Builder v1.1.0\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
           break;
 
         case 'reset-welcome':
@@ -1345,7 +2273,11 @@ const App: React.FC = () => {
     previewSettings, 
     currentAppState, 
     recordChange,
-    handleManualCheckForUpdates
+    handleManualCheckForUpdates,
+    menuMode,
+    bulkShelves,
+    prePackagedShelves,
+    fiftyPercentOffEnabled
   ]);
 
       return (
@@ -1363,6 +2295,8 @@ const App: React.FC = () => {
         onShowInstructions={handleShowInstructions}
         onShowWhatsNew={handleShowWhatsNew}
         hasViewedWhatsNew={hasViewedWhatsNew}
+        menuMode={menuMode}
+        onMenuModeChange={handleMenuModeChange}
       />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}
@@ -1377,36 +2311,62 @@ const App: React.FC = () => {
         globalSortCriteria={globalSortCriteria}
         onUpdateGlobalSortCriteria={handleUpdateGlobalSortCriteria}
         theme={theme}
+        menuMode={menuMode}
       />
       <main ref={mainContainerRef} className={`flex flex-1 overflow-hidden pt-2 px-2 pb-2 ${
         theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
       }`}>
         <div className="flex flex-col" style={{ width: `${shelvesPanelWidth}px`, flexShrink: 0 }}>
-          <FiftyPercentOffToggle
-            enabled={fiftyPercentOffEnabled}
-            onToggle={handleFiftyPercentOffToggle}
-            theme={theme}
-          />
-          <FlowerShelvesPanel
-            ref={shelvesRef}
-            style={{ flex: 1 }}
-            shelves={processedShelves} // Use processed (sorted) shelves
-            onAddStrain={handleAddStrain}
-            onUpdateStrain={handleUpdateStrain}
-            onRemoveStrain={handleRemoveStrain}
-            onCopyStrain={handleCopyStrain}
-            onClearShelfStrains={handleClearShelfStrains}
-            newlyAddedStrainId={newlyAddedStrainId}
-            onUpdateShelfSortCriteria={handleUpdateShelfSortCriteria}
-            onScrollToShelf={handleScrollToShelf}
-            theme={theme}
-            onMoveStrain={handleMoveStrain}
-            onReorderStrain={handleReorderStrain}
-            dragState={dragState}
-            onDragStart={handleDragStart}
-            currentState={currentAppState}
-            isControlsDisabled={autoFormatState?.isOptimizing || false}
-          />
+          {menuMode === MenuMode.BULK && (
+            <FiftyPercentOffToggle
+              enabled={fiftyPercentOffEnabled}
+              onToggle={handleFiftyPercentOffToggle}
+              theme={theme}
+            />
+          )}
+          {menuMode === MenuMode.BULK ? (
+            <FlowerShelvesPanel
+              ref={shelvesRef}
+              style={{ flex: 1 }}
+              shelves={processedShelves as Shelf[]} // Use processed (sorted) bulk shelves
+              onAddStrain={handleAddStrain}
+              onUpdateStrain={handleUpdateStrain}
+              onRemoveStrain={handleRemoveStrain}
+              onCopyStrain={handleCopyStrain}
+              onClearShelfStrains={handleClearShelfStrains}
+              newlyAddedStrainId={newlyAddedStrainId}
+              onUpdateShelfSortCriteria={handleUpdateShelfSortCriteria}
+              onScrollToShelf={handleScrollToShelf}
+              theme={theme}
+              onMoveStrain={handleMoveStrain}
+              onReorderStrain={handleReorderStrain}
+              dragState={dragState}
+              onDragStart={handleDragStart}
+              currentState={currentAppState}
+              isControlsDisabled={autoFormatState?.isOptimizing || false}
+            />
+          ) : (
+            <PrePackagedPanel
+              ref={shelvesRef}
+              style={{ flex: 1 }}
+              shelves={processedShelves as PrePackagedShelf[]} // Use processed (sorted) pre-packaged shelves
+              onAddProduct={handleAddProduct}
+              onUpdateProduct={handleUpdateProduct}
+              onRemoveProduct={handleRemoveProduct}
+              onCopyProduct={handleCopyProduct}
+              onClearShelfProducts={handleClearShelfProducts}
+              newlyAddedProductId={newlyAddedProductId}
+              onUpdateShelfSortCriteria={handleUpdatePrePackagedShelfSortCriteria}
+              onScrollToShelf={handleScrollToShelf}
+              theme={theme}
+              onMoveProduct={handleMoveProduct}
+              onReorderProduct={handleReorderProduct}
+              dragState={prePackagedDragState}
+              onDragStart={handlePrePackagedDragStart}
+              currentState={currentAppState}
+              isControlsDisabled={autoFormatState?.isOptimizing || false}
+            />
+          )}
         </div>
         <div
           className={`panel-divider ${isResizing.current ? 'dragging' : ''}`}
@@ -1421,24 +2381,45 @@ const App: React.FC = () => {
         >
         </div>
         <div className="flex-1 min-w-0">
-          <MenuPreviewPanel
-            shelves={processedShelves} // Use processed (sorted) shelves
-            settings={previewSettings}
-            onSettingsChange={handleUpdatePreviewSettings}
-            exportAction={exportAction}
-            onExportComplete={() => {
-              setExportAction(null);
-              setIsExporting(false);
-              setShowExportOverlay(false); // Hide overlay
-            }}
-            currentState={currentAppState}
-            theme={theme}
-            onOverflowDetected={handleOverflowDetected}
-            onAutoFormat={handleAutoFormat}
-            hasContentOverflow={hasContentOverflow}
-            isOptimizing={autoFormatState?.isOptimizing || false}
-            isControlsDisabled={autoFormatState?.isOptimizing || false}
-          />
+          {menuMode === MenuMode.BULK ? (
+            <MenuPreviewPanel
+              shelves={processedShelves as Shelf[]} // Use processed (sorted) bulk shelves
+              settings={previewSettings}
+              onSettingsChange={handleUpdatePreviewSettings}
+              exportAction={exportAction}
+              onExportComplete={() => {
+                setExportAction(null);
+                setIsExporting(false);
+                setShowExportOverlay(false); // Hide overlay
+              }}
+              currentState={currentAppState}
+              theme={theme}
+              onOverflowDetected={handleOverflowDetected}
+              onAutoFormat={handleAutoFormat}
+              hasContentOverflow={hasContentOverflow}
+              isOptimizing={autoFormatState?.isOptimizing || false}
+              isControlsDisabled={autoFormatState?.isOptimizing || false}
+            />
+          ) : (
+            <PrePackagedCanvas
+              shelves={processedShelves as PrePackagedShelf[]} // Use processed (sorted) pre-packaged shelves
+              settings={previewSettings}
+              onSettingsChange={handleUpdatePreviewSettings}
+              exportAction={exportAction}
+              onExportComplete={() => {
+                setExportAction(null);
+                setIsExporting(false);
+                setShowExportOverlay(false); // Hide overlay
+              }}
+              currentState={currentAppState}
+              theme={theme}
+              onOverflowDetected={handleOverflowDetected}
+              onAutoFormat={handleAutoFormat}
+              hasContentOverflow={hasContentOverflow}
+              isOptimizing={autoFormatState?.isOptimizing || false}
+              isControlsDisabled={autoFormatState?.isOptimizing || false}
+            />
+          )}
         </div>
       </main>
       <input
@@ -1469,12 +2450,14 @@ const App: React.FC = () => {
           </div>
         </div>
               )}
-        <InstructionsModal
+        <InstructionsModalTabs
           isOpen={showInstructions}
           onClose={() => setShowInstructions(false)}
           theme={theme}
+          currentMode={menuMode}
+          currentState={currentAppState}
         />
-        <WhatsNewModal
+        <WhatsNewModalTabs
           isOpen={showWhatsNew}
           onClose={() => setShowWhatsNew(false)}
           theme={theme}
@@ -1484,6 +2467,120 @@ const App: React.FC = () => {
           onStateSelect={handleWelcomeStateSelect}
           onClose={handleWelcomeModalClose}
           theme={theme}
+        />
+        <CsvImportModal
+          isOpen={showCsvImportModal}
+          onClose={() => setShowCsvImportModal(false)}
+          theme={theme}
+          menuMode={menuMode}
+          onImport={handleCsvImport}
+          onModeSwitch={handleMenuModeSwitch}
+        />
+        
+        {/* Skipped Rows Modal */}
+        {showSkippedModal && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowSkippedModal(false)}
+          >
+            <div className={`max-w-4xl w-full max-h-[90vh] rounded-lg shadow-2xl overflow-hidden ${
+              theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'
+            }`}>
+              {/* Header */}
+              <div className={`px-6 py-4 border-b flex items-center justify-between ${
+                theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
+              }`}>
+                <h2 className="text-xl font-semibold flex items-center space-x-2">
+                  <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L1.732 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                  </svg>
+                  <span>Strains Not Imported ({skippedRows.length})</span>
+                </h2>
+                <button
+                  onClick={() => setShowSkippedModal(false)}
+                  className={`p-2 rounded-md transition-colors ${
+                    theme === 'dark'
+                      ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-200'
+                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className={`px-6 py-4 max-h-[calc(90vh-120px)] overflow-y-auto ${
+                theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+              }`}>
+                <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                  The following strains could not be imported. Review the data and reasons below:
+                </p>
+                
+                <div className="space-y-4">
+                  {skippedRows.map((skippedRow, index) => (
+                    <div 
+                      key={index}
+                      className={`p-4 rounded-lg border ${
+                        theme === 'dark' 
+                          ? 'border-gray-600 bg-gray-700/30' 
+                          : 'border-gray-300 bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-medium text-red-500">
+                          Row {skippedRow.rowIndex}
+                        </h3>
+                        <span className={`text-sm px-2 py-1 rounded ${
+                          theme === 'dark' ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {skippedRow.reason}
+                        </span>
+                      </div>
+                      
+                      <div className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        <strong>Row Data:</strong>
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {Object.entries(skippedRow.rowData).map(([key, value]) => (
+                            <div key={key} className="flex">
+                              <span className="font-medium mr-2">{key}:</span>
+                              <span className={`${!value ? 'text-red-500 italic' : ''}`}>
+                                {value || '(empty)'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className={`px-6 py-4 border-t flex justify-end ${
+                theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
+              }`}>
+                <button
+                  onClick={() => setShowSkippedModal(false)}
+                  className={`px-4 py-2 rounded-md transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                  }`}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <CsvExportModal
+          isOpen={showCsvExportModal}
+          onClose={() => setShowCsvExportModal(false)}
+          theme={theme}
+          menuMode={menuMode}
+          bulkShelves={processedShelves as Shelf[]}
+          prePackagedShelves={processedShelves as PrePackagedShelf[]}
+          onExport={handleCsvExport}
         />
         {!updateDismissed && (
           <UpdateNotification
@@ -1520,40 +2617,18 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-        
-        {/* Success Message Toast */}
-        {!isInitializing && initMessage && (
-          <div 
-            className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-40 max-w-md"
-            role="alert"
-            aria-live="polite"
-          >
-            <div className="flex items-center space-x-2">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <span className="font-medium">{initMessage}</span>
-            </div>
-          </div>
-        )}
-        
-        {/* Auto-Format Message Toast */}
-        {autoFormatMessage && (
-          <div 
-            className="fixed top-20 right-4 bg-orange-500 text-white p-4 rounded-lg shadow-lg z-40 max-w-md"
-            role="alert"
-            aria-live="polite"
-          >
-            <div className="flex items-center space-x-2">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-              </svg>
-              <span className="font-medium">{autoFormatMessage}</span>
-            </div>
-          </div>
-        )}
+
+        {/* Note: Old toasts have been replaced with unified ToastContainer system */}
       </div>
     );
   };
+
+const App: React.FC = () => {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  );
+};
 
 export default App;

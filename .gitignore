@@ -199,3 +199,41 @@ latest-linux.yml
 .cache/
 .temp/
 temp/
+
+# Claude Flow generated files
+.claude-flow/
+.claude/
+.mcp.json
+claude-flow.config.json
+.swarm/
+.hive-mind/
+memory/claude-flow-data.json
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+claude-flow
+claude-flow.bat
+claude-flow.ps1
+hive-mind-prompt-*.txt
+
+# Development documentation (temporary/working files)
+test-auto-format-integration.md
+WEIGHT_ORGANIZATION_SYSTEM.md
+components/examples/
+components/common/README-TabSystem.md
+components/InstructionsModalWithTabs.tsx
+components/WhatsNewModalWithTabs.tsx
+
+# Development notes and guides
+CLAUDE.md
+CLAUDE-FLOW.md

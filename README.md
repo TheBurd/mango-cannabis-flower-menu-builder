@@ -10,7 +10,7 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 ### **Step 1: Choose Your Platform**
 1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
-2. Find the latest version (v1.0.3)
+2. Find the latest version (v1.1.0)
 3. Choose your operating system below:
 
 ---
@@ -21,19 +21,19 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 - **`Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.2-x64.exe`** *(~81 MB)*
 - **Best choice for most users** - Creates Start menu shortcuts, handles updates automatically
 - Just double-click to install, then launch from Start menu
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.3-x64.exe)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.1.0-x64.exe)
 
 #### **⚡ Alternative: Portable App**
 - **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.exe`** *(~81 MB)*
 - **No installation required** - Just download and run directly
 - Good for testing or if you can't install software on your computer
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.3-x64.exe)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.0-x64.exe)
 
 #### **📦 ZIP Archive**
 - **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.zip`** *(~110 MB)*
 - Contains the portable app in a compressed archive
 - Extract and run the `.exe` file inside
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.3-x64.zip)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.0-x64.zip)
 
 **Installation Steps:**
 - **Installer**: Double-click the Setup file → Follow prompts → Launch from Start menu
@@ -50,21 +50,21 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 **For Intel Macs (2020 and earlier):**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-x64.dmg`** *(~105 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-x64.dmg)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.1.0-x64.dmg)
 
 **For Apple Silicon Macs (M1/M2/M3):**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-arm64.dmg`** *(~100 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-arm64.dmg)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.1.0-arm64.dmg)
 
 #### **⚡ Alternative: ZIP Archive**
 
 **For Intel Macs:**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-x64.zip`** *(~101 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-x64.zip)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.1.0-x64.zip)
 
 **For Apple Silicon Macs:**
 - **`Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.2-arm64.zip`** *(~96 MB)*
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.0.3/Mango-Cannabis-Flower-Menu-Builder-MAC-1.0.3-arm64.zip)
+- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-MAC-1.1.0-arm64.zip)
 
 **Installation Steps:**
 1. **DMG**: Double-click the `.dmg` file → Drag app to Applications folder → Launch from Applications
@@ -90,99 +90,137 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 ## ✨ **What This App Does**
 
 ### **🎯 Main Purpose**
-- **Create professional flower menus** for in-store displays
-- **Log strain inventory** for management tracking
-- **Ensure state compliance** with proper THC labeling
-- **Export high-quality images** for printing and digital use
+- Create flower menus for in-store displays
+- Log strain inventory for management tracking
+- Ensure state compliance with proper THC labeling
+- Export high-quality images for printing and digital use
 
 ### **🌟 Key Features**
 
 #### **📋 Strain Management**
-- **Add/edit strains instantly** - Name, grower, THC%, type, pricing
-- **Organize by shelves** - Top, Mid, Bottom (or custom categories)
-- **Mark "Last Jar"** - Visual indicator for low inventory
-- **Import from CSV** - Bulk upload strain data from spreadsheets
-- **Sort & organize** - By name, grower, THC%, type, or last jar status
+- Add/edit strains instantly - Name, grower, THC%, type, pricing
+- Organize by shelves - Top, Mid, Bottom (or custom categories)
+- Mark "Last Jar" - Visual indicator for low inventory
+- Import from CSV - Bulk upload strain data from spreadsheets
+- Sort & organize - By name, grower, THC%, type, or last jar status
 
-#### **🎨 Professional Menu Design**
-- **Multiple layouts** - 1-6 columns, portrait/landscape, 16:9 screen formats
-- **Mango branding** - Beautiful headers with logo
-- **State compliance** - Automatic THC icons per state regulations
-- **Custom typography** - Adjustable fonts and spacing
-- **Dark/light themes** - Matches your preference
-- **Sequential shelf filling** - Columns fill left-to-right for better organization
+#### **🎨 Menu Design**
+- Multiple layouts - 1-6 columns, portrait/landscape, 16:9 screen formats
+- Mango branding - Headers with logo
+- State compliance - Automatic THC icons per state regulations
+- Custom typography - Adjustable fonts and spacing
+- Dark/light themes - Matches your preference
+- Sequential shelf filling - Columns fill left-to-right for better organization
 
 #### **📤 Export Options**
-- **PNG images** - High-quality for printing (recommended)
-- **JPEG images** - Smaller files for digital displays
-- **CSV data** - Export strain data back to spreadsheets
+- PNG images - High-quality for printing (recommended)
+- JPEG images - Smaller files for digital displays
+- CSV data - Export strain data back to spreadsheets
 
-#### **🚀 Enhanced Feedback System (v1.0.1)**
-- **Report bugs** with image attachments
-- **Request features** for future updates
-- **Upload screenshots** of issues (up to 3 images, 5MB each)
-- **Drag & drop image support** for easy bug reporting
-- Access via **Help → Instructions → Leave Feedback**
+#### **🚀 Feedback System (v1.0.1)**
+- Report bugs with image attachments
+- Request features for future updates
+- Upload screenshots of issues (up to 3 images, 5MB each)
+- Drag & drop image support for easy bug reporting
+- Access via Help → Instructions → Leave Feedback
 
-#### **⚡ Advanced Features**
-- **Live preview** - See your menu as you build it
-- **Mouse-position zoom** - Scroll wheel zooms around cursor position
-- **Enhanced pan & zoom** - Navigate large menus with precision
-- **Overflow detection** - Warnings when content extends beyond artboard
-- **Keyboard shortcuts** - `Ctrl+F` (fit to window), `Ctrl +/-` (zoom)
-- **Auto-save** - Your work is preserved between sessions
-- **Smart notifications** - "What's New" alerts for version updates
+#### **⚡ Additional Features**
+- Live preview - See your menu as you build it
+- Mouse-position zoom - Scroll wheel zooms around cursor position
+- Pan & zoom - Navigate large menus with precision
+- Overflow detection - Warnings when content extends beyond artboard
+- Keyboard shortcuts - `Ctrl+F` (fit to window), `Ctrl +/-` (zoom)
+- Auto-save - Your work is preserved between sessions
+- Notifications - "What's New" alerts for version updates
 
 ---
 
-## 🆕 **What's New in v1.0.3**
+## 🆕 **What's New in v1.1.0** - MASSIVE FEATURE RELEASE!
 
-### **🚀 Major Feature - Auto-Format Menu**
+### **📦 Complete Pre-Packaged Menu System**
+Entire parallel menu system designed specifically for pre-packaged cannabis products
 
-**Introducing the revolutionary Auto-Format Menu feature!** This intelligent system automatically optimizes your menu layout for maximum readability and perfect artboard fit using real-time overflow detection and iterative adjustments.
+- Weight-Based Organization: Categorization by 3.5g (Eighths), 7g (Quarters), 14g (Half), 28g (Ounces)
+- Table Layout: Multi-column product tables with responsive design and visual hierarchy
+- Product Management: Brand emphasis, low stock indicators, terpene percentages, net weight specifications
+- Zoom & Pan Canvas: Identical navigation to Bulk mode with mouse controls and precision positioning
+- Auto-Format Integration: Full optimization support for tabular layouts with precision tolerance
 
-**✨ Intelligent Dual-Mode Operation:**
-- 📈 **Expansion Mode** (No Overflow): Maximizes readability by aggressively increasing font size up to 48px and optimizing line spacing up to 1.0
-- 📉 **Reduction Mode** (Overflow Detected): Preserves readability by reducing line spacing first (less impact), then font size only if necessary
+### **🏗️ Weight-Based Organization System**
+Menu organization engine with multiple modes and grouping options
 
-**⚡ Enhanced User Experience:**
-- 🎯 **Smart Visual Feedback**: Button changes color based on overflow status, "Optimizing..." state during process
-- 🔒 **Protected Optimization**: All controls disabled during optimization to prevent interference
-- ⚡ **Lightning Fast**: 25ms iteration delays for rapid optimization
-- 🎉 **Clean Completion**: Single success toast when optimization complete
+- Weight Categories: Automatic organization by standard cannabis weights with visual headers
+- Organization Modes: Weight-first, Brand-first, or Price-first organization strategies
+- Sorting & Filtering: Dual-level sorting with inventory priority and brand emphasis
+- Shake/Trim Detection: Separation of flower vs shake/trim products within categories
 
-**⚙️ Improved Defaults:**
-- 🔧 **Shelf Splitting OFF**: Changed default to keep shelves together for cleaner layouts
-- 📐 **Text-Only Optimization**: Respects your column choice, focuses on font size and line height optimization
+### **📋 Rebuilt CSV Import/Export System**
+Data management with guided workflows and mapping
 
-**🏷️ New Shelf Types & Features:**
-- 🌿 **Michigan Infused Flower Shelves**: Exotic Live Resin, Premium Distillate, and Value Distillate infused options with special pricing (per-gram and 5g) and unique visual styling
-- 🏷️ **50% OFF Strains Shelf**: Available for all locations with toggle control, top placement, original shelf tracking, and eye-catching red-to-orange gradient design
+- 4-Stage Import Wizard: Upload → Mapping → Validation → Import Complete
+- Auto-Detection: Recognizes Bulk vs Pre-Packaged formats with mode switching suggestions
+- Field Mapping: Fuzzy column matching with comprehensive alias support
+- Export Modal: All columns auto-selected, visual drag & drop reordering, template mode
+- Context-Aware Help: Integrated help tooltips with visual CSV examples and best practices
+
+### **🔔 Toast Notification System**
+Interactive notifications with animations and action buttons
+
+- Stacking Animations: Smooth stacking effects with slide transitions and progress indicators
+- Interactive Action Buttons: Quick action buttons within toasts for workflow efficiency
+- Color Coding: Success, Warning, Error, Info types with full theme integration
+- Controls: Custom duration, persistent notifications, and dismiss callbacks
+
+### **❓ Context-Aware Help System**
+Mode-sensitive help tooltips with rich content and positioning
+
+- Mode-Sensitive Content: Different help for Bulk vs Pre-Packaged modes with HTML formatting
+- Visual CSV Examples: Formatted table examples showing proper structure for each mode
+- Interactive Tooltips: Click ? buttons throughout the app for instant guidance
+- Positioning: Auto-position to avoid screen edges with keyboard navigation
+
+### **📑 Tab-Based Modal Navigation**
+Organized content discovery with tab navigation
+
+- Tab Organization: Instructions and What's New modals restructured with logical sections
+- Animations: Visual tab indicators with sliding animations and keyboard navigation
+- Structure: Quick Start, Product Management, Import/Export, Design Controls, Tips & Shortcuts
+- Cross-Modal Navigation: Seamless linking between highlights and detailed instructions
+
+### **⚡ UI/UX Enhancements**
+Interface improvements with theming and accessibility
+
+- Dual-Mode State Management: Seamless switching between Bulk and Pre-Packaged modes with data preservation
+- Preview Controls: Expanded control panels for both menu types with mode-specific options
+- Theming: Consistent dark/light theme support across all new components
+- Accessibility Features: Full keyboard navigation, ARIA compliance, and screen reader support
+- Performance Optimizations: Efficient rendering, minimal DOM updates, and smooth animations
+- Auto-Format Integration: Precision optimization for both Bulk and Pre-Packaged layouts
 
 ---
 
 ## 🔄 **Previous Updates - v1.0.1**
 
 ### **🎨 Layout Enhancements**
-- **6-column support** - Create ultra-wide menus for large displays
-- **Sequential shelf splitting** - Shelves fill columns left-to-right instead of balancing heights
-- **Optimized 16:9 dimensions** - Perfect for digital screens (3300x1856px landscape, 1872x3328px portrait)
+- 6-column support - Create ultra-wide menus for large displays
+- Sequential shelf splitting - Shelves fill columns left-to-right instead of balancing heights
+- Optimized 16:9 dimensions - Perfect for digital screens (3300x1856px landscape, 1872x3328px portrait)
 
 ### **🖥️ Artboard & Display**
-- **Smart overflow detection** - Visual warnings when content extends beyond boundaries
-- **Enhanced zoom controls** - Mouse-position-based scroll zooming for precision navigation
-- **Improved artboard positioning** - True center alignment with better visual feedback
+- Overflow detection - Visual warnings when content extends beyond boundaries
+- Zoom controls - Mouse-position-based scroll zooming for precision navigation
+- Artboard positioning - True center alignment with better visual feedback
 
 ### **👤 User Experience**
-- **"What's New" modal** - Comprehensive changelog and feature announcements
-- **Smart notification system** - Tracks viewed versions, glows for new updates
-- **Enhanced feedback system** - Image upload support for better bug reporting
-- **Modal blur effects** - Beautiful depth-of-field backgrounds for focused interactions
+- "What's New" modal - Comprehensive changelog and feature announcements
+- Notification system - Tracks viewed versions, glows for new updates
+- Feedback system - Image upload support for better bug reporting
+- Modal blur effects - Depth-of-field backgrounds for focused interactions
 
 ### **🔧 Technical Improvements**
-- **Performance optimizations** - Faster rendering and smoother interactions
-- **Bug fixes** - Resolved zoom scaling issues and overflow detection accuracy
-- **UI polish** - Consistent styling and improved visual hierarchy
+- Performance optimizations - Faster rendering and smoother interactions
+- Bug fixes - Resolved zoom scaling issues and overflow detection accuracy
+- UI polish - Consistent styling and improved visual hierarchy
 
 ---
 
@@ -264,7 +302,7 @@ Category,Strain Name,Grower/Brand,THC %,Class,Last Jar
 
 **Copyright**: © 2024 Mango Cannabis  
 **Developer**: TheBurd (Brad Forsythe) - [brad@mangocannabis.com](mailto:brad@mangocannabis.com)  
-**Version**: 1.0.3  
+**Version**: 1.1.0  
 **Built for**: Mango Cannabis Management Team
 
 This tool was created specifically for Mango Cannabis to streamline menu creation and inventory management across all locations. The software is owned by Mango Cannabis and developed by Brad Forsythe.
@@ -275,10 +313,10 @@ This tool was created specifically for Mango Cannabis to streamline menu creatio
 
 The app will notify you when updates are available. New versions are released to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)** with changelog information.
 
-**Current Version**: v1.0.3 *(Major Feature: Auto-Format Menu with intelligent optimization and enhanced UX)*
+**Current Version**: v1.1.0 *(Major Feature: Auto-Format Menu with intelligent optimization and enhanced UX)*
 
 ### **Version History**
-- **v1.0.3** - Introduced revolutionary Auto-Format Menu feature with intelligent optimization, dual-mode operation (expansion/reduction), and enhanced UX with protected controls during optimization
+- **v1.1.0** - Introduced revolutionary Auto-Format Menu feature with intelligent optimization, dual-mode operation (expansion/reduction), and enhanced UX with protected controls during optimization
 - **v1.0.2** - Fixed critical bug where all input fields became unresponsive after CSV import. Resolved React state synchronization conflicts in Electron production builds. Added loading overlays and success notifications for better UX.
 - **v1.0.1** - Enhanced user experience with 6-column support, image feedback system, smart notifications, and improved zoom controls
 - **v1.0.0** - Initial release with cross-platform support and feedback system
