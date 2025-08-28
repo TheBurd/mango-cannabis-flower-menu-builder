@@ -45,7 +45,7 @@ export const ModeToggle: React.FC<ModeToggleProps> = ({
           onClick={() => onModeChange(MenuMode.BULK)}
           onKeyDown={handleKeyDown}
           className={`
-            relative px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200
+            relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors transition-background-color duration-200
             focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
             ${mode === MenuMode.BULK
               ? 'bg-white text-[#f9541a] shadow-sm'
@@ -66,7 +66,7 @@ export const ModeToggle: React.FC<ModeToggleProps> = ({
           onClick={() => onModeChange(MenuMode.PREPACKAGED)}
           onKeyDown={handleKeyDown}
           className={`
-            relative px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200
+            relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors transition-background-color duration-200
             focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
             ${mode === MenuMode.PREPACKAGED
               ? 'bg-white text-[#f9541a] shadow-sm'

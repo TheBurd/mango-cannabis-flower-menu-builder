@@ -221,12 +221,12 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
             onDrop={(dragData) => handleDropAtEnd(dragData)}
             theme={theme}
             className="py-8 rounded-md"
-            isVisible={!!dragState}
+            isVisible={false}
           >
             <div className={`text-center text-sm ${
               theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              {dragState ? 'Drop strain here' : 'No strains on this shelf yet'}
+              {'No strains on this shelf yet'}
             </div>
           </DropZone>
         ) : (
@@ -236,7 +236,7 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
               onDrop={(dragData) => handleDropBetweenStrains(dragData, 0)}
               theme={theme}
               className="h-2 rounded"
-              isVisible={!!dragState}
+              isVisible={false}
             />
             
             {shelf.strains.map((strain, index) => (
@@ -265,7 +265,7 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
                   onDrop={(dragData) => handleDropBetweenStrains(dragData, index + 1)}
                   theme={theme}
                   className="h-2 rounded"
-                  isVisible={!!dragState}
+                  isVisible={false}
                                  />
                </div>
             ))}

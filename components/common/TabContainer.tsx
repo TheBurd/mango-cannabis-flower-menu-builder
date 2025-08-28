@@ -115,7 +115,7 @@ export const TabContainer: React.FC<TabContainerProps> = ({
               aria-controls={`tabpanel-${tab.id}`}
               tabIndex={activeTab === tab.id ? 0 : -1}
               className={`
-                flex items-center gap-2 px-4 py-3 font-medium text-sm transition-all duration-200
+                flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors transition-background-color duration-200
                 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${activeTab === tab.id
                   ? theme === 'dark'
@@ -148,7 +148,7 @@ export const TabContainer: React.FC<TabContainerProps> = ({
         {/* Active tab indicator */}
         <div
           ref={indicatorRef}
-          className={`absolute bottom-0 h-0.5 transition-all duration-200 ease-out ${
+          className={`absolute bottom-0 h-0.5 transition-transform transition-colors duration-200 ease-out ${
             theme === 'dark' ? 'bg-orange-400' : 'bg-orange-600'
           }`}
           style={{ width: '0px', transform: 'translateX(0px)' }}

@@ -28,7 +28,7 @@ interface StrainInputRowProps {
   isInfused?: boolean; // Whether this strain is in an infused flower shelf
 }
 
-export const StrainInputRow: React.FC<StrainInputRowProps> = ({
+export const StrainInputRow = React.memo<StrainInputRowProps>(({
   strain,
   onUpdate,
   onRemove,
@@ -107,6 +107,7 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
         <style dangerouslySetInnerHTML={{ __html: infusedPatternCSS }} />
       )}
       <div 
+      data-strain-id={strain.id}
       className={`p-3 rounded-md shadow grid grid-cols-12 gap-2 items-center transition-all duration-200 relative ${
         theme === 'dark' 
           ? `bg-gray-600 text-gray-200 ${strain.isLastJar ? 'bg-opacity-80 border-l-2 border-orange-400' : ''}` 
@@ -292,4 +293,4 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
     </div>
     </>
   );
-};
+});

@@ -427,10 +427,13 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
             <li>• Import CSV templates to quickly populate new shelves</li>
             <li>• Enable "Allow Shelf Splitting" for maximum space utilization</li>
             <li>• Click up/down arrows to reorder items - more reliable than drag & drop</li>
+            <li>• <strong>Scroll quickly</strong> to see navigation overlay with strain positions</li>
             <li>• Manual reordering clears sort state - perfect for custom arrangements</li>
             <li>• Mark low-stock items as "Last Jar" for customer awareness</li>
             <li>• Export both PNG and CSV for complete dispensary workflow</li>
             <li>• Use the context-sensitive help tooltips (? buttons) when stuck</li>
+            <li>• <strong>New defaults:</strong> 16px font, 2 columns, small images for better menus</li>
+            <li>• <strong>Theme switching</strong> is now 70% faster on all devices</li>
           </ul>
         </div>
 

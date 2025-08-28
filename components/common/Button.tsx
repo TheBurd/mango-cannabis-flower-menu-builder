@@ -14,7 +14,7 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const baseStyle = 'font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed shadow';
+  const baseStyle = 'font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors transition-opacity duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed shadow';
 
   const variantStyles = {
     primary: `bg-gradient-to-r from-[${MANGO_MAIN_ORANGE}] to-[${MANGO_SUPPORT_ORANGE}] text-white hover:opacity-90 focus:ring-[${MANGO_MAIN_ORANGE}]`,

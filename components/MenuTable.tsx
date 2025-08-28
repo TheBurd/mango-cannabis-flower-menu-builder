@@ -397,7 +397,7 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
   );
 };
 
-export const MenuTable: React.FC<MenuTableProps> = ({
+export const MenuTable = React.memo<MenuTableProps>(({
   shelf,
   strainsToRender,
   baseFontSizePx,
@@ -789,7 +789,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
       )}
     </div>
   );
-};
+});
 
 // Export the renderAsFlowingRows function for backwards compatibility
 export { renderAsFlowingRows };

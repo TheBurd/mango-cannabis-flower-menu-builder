@@ -5,98 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mango Cannabis Menu Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* Custom scrollbar for webkit browsers */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #fe9426; /* Mango Orange */
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #f9541a; /* Mango Support Orange */
-      }
-      body {
-        font-family: 'Inter', sans-serif; /* A clean, modern font */
-        user-select: none; /* Prevent text selection during drag for divider */
-      }
-      
-      /* Theme CSS Custom Properties */
-      :root {
-        --divider-color: #4a5568; /* gray-600 for dark theme */
-      }
-      
-      [data-theme="light"] {
-        --divider-color: #d1d5db; /* gray-300 for light theme */
-      }
-      /* Basic styles for print preview if needed, though primary focus is screen */
-      @media print {
-        body {
-          -webkit-print-color-adjust: exact; /* Ensures colors print correctly in Chrome */
-          print-color-adjust: exact;
-        }
-        .no-print {
-          display: none !important;
-        }
-      }
-      /* For aspect ratio styling, if pure Tailwind aspect ratio isn't enough or for older browser support */
-      .aspect-ratio-box {
-        position: relative;
-        width: 100%;
-      }
-      .aspect-ratio-box-inside {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-      }
-      
-      /* Draggable divider style */
-      .panel-divider {
-        flex-shrink: 0; /* Prevent divider from shrinking */
-        width: 8px; /* Wider for easier grabbing, includes 2px visual + hit area */
-        cursor: col-resize;
-        background-color: transparent; /* Make it mostly transparent, visual part inside */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative; /* For pseudo-element */
-      }
-      .panel-divider:hover::before,
-      .panel-divider.dragging::before {
-        background-color: #fe9426; /* Mango Orange on hover/drag */
-      }
-      .panel-divider::before { /* Visual line */
-        content: "";
-        width: 2px;
-        height: 100%;
-        background-color: var(--divider-color);
-        transition: background-color 0.15s ease-in-out;
-        position: absolute;
-      }
-
-      /* Custom Mango gradient for premium shelves */
-      .bg-mango-gradient {
-        background: linear-gradient(135deg, #fe9426, #f9541a);
-      }
-
-      /* Hide scrollbar but keep functionality */
-      .scrollbar-hide {
-        -ms-overflow-style: none;  /* Internet Explorer 10+ */
-        scrollbar-width: none;  /* Firefox */
-      }
-      .scrollbar-hide::-webkit-scrollbar {
-        display: none;  /* Safari and Chrome */
-      }
-
-    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
@@ -112,7 +20,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-slate-100">
+  <body class="transition-theme">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

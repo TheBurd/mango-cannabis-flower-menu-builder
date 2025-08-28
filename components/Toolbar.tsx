@@ -8,11 +8,7 @@ interface ToolbarProps {
   onClearAllLastJars: () => void;
   onClearAllSoldOut: () => void;
   hasSoldOutItems: boolean;
-  exportFilename: string;
-  onExportFilenameChange: (name: string) => void;
-  onExportPNG: () => void;
-  onExportJPEG: () => void;
-  onExportCSV: () => void;
+  onOpenExportModal: () => void; // Single export handler
   onImportCSVRequest: () => void;
   isExporting: boolean;
   globalSortCriteria: SortCriteria | null;
@@ -54,11 +50,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onClearAllLastJars,
   onClearAllSoldOut,
   hasSoldOutItems,
-  exportFilename,
-  onExportFilenameChange,
-  onExportPNG,
-  onExportJPEG,
-  onExportCSV,
+  onOpenExportModal,
   onImportCSVRequest,
   isExporting,
   globalSortCriteria,
@@ -212,56 +204,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <span>{menuMode === MenuMode.BULK ? 'Import Bulk Flower CSV' : 'Import Pre-Pack CSV'}</span>
           </Button>
 
-                      <div className="flex items-center space-x-2">
-              <label htmlFor="exportFilename" className={`text-xs font-medium whitespace-nowrap ${
-                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-              }`}>Export As:</label>
-              <input
-                type="text"
-                id="exportFilename"
-                value={exportFilename}
-                onChange={(e) => onExportFilenameChange(e.target.value)}
-                placeholder="mango-menu"
-                className={`px-2 py-1 rounded-md text-xs border focus:ring-orange-500 focus:border-orange-500 w-32 ${
-                  theme === 'dark'
-                    ? 'bg-gray-600 text-gray-100 placeholder-gray-400 border-gray-500'
-                    : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'
-                }`}
-                disabled={isExporting}
-              />
-            </div>
           <Button
-            onClick={onExportPNG}
+            onClick={onOpenExportModal}
             variant="custom"
             size="sm"
-            className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-500 text-white"
+            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white"
             disabled={isExporting}
-            title="Export as PNG image"
+            title="Export menu in various formats"
           >
             <DownloadIcon className="w-4 h-4" />
-            <span>{isExporting ? '...' : 'PNG'}</span>
-          </Button>
-          <Button
-            onClick={onExportJPEG}
-            variant="custom"
-            size="sm"
-            className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-500 text-white"
-            disabled={isExporting}
-            title="Export as JPEG image"
-          >
-            <DownloadIcon className="w-4 h-4" />
-            <span>{isExporting ? '...' : 'JPEG'}</span>
-          </Button>
-          <Button
-            onClick={onExportCSV}
-            variant="custom"
-            size="sm"
-            className="flex items-center space-x-2 bg-lime-600 hover:bg-lime-500 text-white"
-            disabled={isExporting}
-            title="Export strains as CSV file"
-          >
-            <DownloadIcon className="w-4 h-4" />
-            <span>{isExporting ? '...' : 'CSV'}</span>
+            <span>{isExporting ? 'Exporting...' : 'Export'}</span>
           </Button>
         </div>
       </div>

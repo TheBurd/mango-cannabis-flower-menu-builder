@@ -335,12 +335,12 @@ export const ARTBOARD_DIMENSIONS_MAP: Record<ArtboardSize, ArtboardDimensions> =
 
 export const INITIAL_PREVIEW_SETTINGS: PreviewSettings = {
   artboardSize: ArtboardSize.LETTER_PORTRAIT,
-  baseFontSizePx: 10,
-  columns: 1,
+  baseFontSizePx: 16,
+  columns: 2,
   zoomLevel: 0.25, 
   forceShelfFit: false, // Allow Shelf Splitting is ON by default (false = splitting enabled, shelves can split across columns)
-  headerImageSize: HeaderImageSize.NONE, // Default header image size
-  linePaddingMultiplier: 0.3, // Default padding multiplier (corresponds to current tightened padding)
+  headerImageSize: HeaderImageSize.SMALL, // Default header image size
+  linePaddingMultiplier: 0.5, // Default padding multiplier (corresponds to current tightened padding)
   showThcIcon: true, // Default to showing THC icon
   showSoldOutProducts: false, // Default to hiding sold out products
   menuMode: MenuMode.BULK, // Default to bulk flower mode
@@ -396,18 +396,26 @@ export const STRAIN_TYPES_ORDERED: StrainType[] = [
 ];
 
 export const STRAIN_TYPE_VISUALS: Record<StrainType, { acronym: string; primaryColor: string; gradient?: string; textColorClass: string }> = {
-  [StrainType.SATIVA]: { acronym: 'S', primaryColor: '#fe9426', textColorClass: 'text-white' }, // Mango Orange
-  [StrainType.SATIVA_HYBRID]: { acronym: 'SH', primaryColor: '', gradient: 'linear-gradient(to right, #fe9426, #73ad3b)', textColorClass: 'text-white' }, // Orange to Green
-  [StrainType.HYBRID]: { acronym: 'H', primaryColor: '#73ad3b', textColorClass: 'text-white' }, // Mango Green
-  [StrainType.INDICA_HYBRID]: { acronym: 'IH', primaryColor: '', gradient: 'linear-gradient(to right, #73ad3b, #a855f7)', textColorClass: 'text-white' }, // Green to Purple (Tailwind purple-500: #a855f7)
-  [StrainType.INDICA]: { acronym: 'I', primaryColor: '#a855f7', textColorClass: 'text-white' }, // Tailwind purple-500: #a855f7
+  [StrainType.SATIVA]: { acronym: 'S', primaryColor: 'var(--strain-sativa, #fe9426)', textColorClass: 'text-white' }, // Mango Orange
+  [StrainType.SATIVA_HYBRID]: { acronym: 'SH', primaryColor: '', gradient: 'var(--strain-sativa-hybrid, linear-gradient(to right, #fe9426, #73ad3b))', textColorClass: 'text-white' }, // Orange to Green
+  [StrainType.HYBRID]: { acronym: 'H', primaryColor: 'var(--strain-hybrid, #73ad3b)', textColorClass: 'text-white' }, // Mango Green
+  [StrainType.INDICA_HYBRID]: { acronym: 'IH', primaryColor: '', gradient: 'var(--strain-indica-hybrid, linear-gradient(to right, #73ad3b, #a855f7))', textColorClass: 'text-white' }, // Green to Purple
+  [StrainType.INDICA]: { acronym: 'I', primaryColor: 'var(--strain-indica, #a855f7)', textColorClass: 'text-white' }, // Purple
 };
 
 
-export const MANGO_MAIN_ORANGE = '#fe9426';
-export const MANGO_SUPPORT_ORANGE = '#f9541a';
-export const MANGO_MAIN_GREEN = '#73ad3b';
-export const MANGO_SUPPORT_GREEN = '#A9ED65';
+// CSS Custom Properties for theme-aware colors
+// These map to variables defined in styles/theme-variables.css
+export const MANGO_MAIN_ORANGE = 'var(--mango-main-orange, #fe9426)';
+export const MANGO_SUPPORT_ORANGE = 'var(--mango-support-orange, #f9541a)';
+export const MANGO_MAIN_GREEN = 'var(--mango-main-green, #73ad3b)';
+export const MANGO_SUPPORT_GREEN = 'var(--mango-support-green, #A9ED65)';
+
+// Legacy color values for backward compatibility
+export const MANGO_MAIN_ORANGE_VALUE = '#fe9426';
+export const MANGO_SUPPORT_ORANGE_VALUE = '#f9541a';
+export const MANGO_MAIN_GREEN_VALUE = '#73ad3b';
+export const MANGO_SUPPORT_GREEN_VALUE = '#A9ED65';
 
 export const THC_DECIMAL_PLACES = 1;
 

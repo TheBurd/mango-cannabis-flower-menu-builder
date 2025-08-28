@@ -28,7 +28,7 @@ const getHeaderImageDetails = (artboardSize: ArtboardSize, headerSize: HeaderIma
 };
 
 
-export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>((
+export const PreviewArtboard = React.memo(forwardRef<HTMLDivElement, PreviewArtboardProps>((
   { shelves, settings, currentState, onOverflowDetected }, ref
 ) => {
   const { artboardSize, baseFontSizePx, columns, forceShelfFit, headerImageSize, linePaddingMultiplier, showThcIcon, showSoldOutProducts, showMenuDate, menuDateText, menuDatePosition } = settings;
@@ -292,6 +292,6 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
       )}
     </div>
   );
-});
+}));
 
 PreviewArtboard.displayName = 'PreviewArtboard';

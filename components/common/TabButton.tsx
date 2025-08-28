@@ -22,7 +22,7 @@ export const TabButton = forwardRef<HTMLButtonElement, TabButtonProps>(({
   ...props
 }, ref) => {
   const baseStyles = `
-    inline-flex items-center gap-2 font-medium transition-all duration-150 ease-in-out
+    inline-flex items-center gap-2 font-medium transition-colors transition-background-color transition-border-color duration-150 ease-in-out
     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
     disabled:opacity-50 disabled:cursor-not-allowed
   `;

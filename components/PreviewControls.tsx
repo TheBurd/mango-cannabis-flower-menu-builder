@@ -374,7 +374,7 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
           {/* Auto-Format Button */}
           {onAutoFormat && (
             <button
-              onClick={isOptimizing ? undefined : onAutoFormat}
+              onClick={isOptimizing ? undefined : () => { console.log('Auto-format clicked with SparkleOutlineIcon'); onAutoFormat(); }}
               disabled={isOptimizing}
               className={`flex items-center space-x-2 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                 isOptimizing
@@ -389,12 +389,10 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
                       ? 'bg-gray-600 hover:bg-gray-500 text-gray-200'
                       : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
               }`}
-              title={isOptimizing ? "Fast automatic optimization in progress - testing adjustments using real overflow detection" : "Smart auto-format: aggressively increases font size (up to 48px) and line height (up to 1.0) until optimal fit using real overflow feedback"}
+              title={isOptimizing ? "Fast optimization in progress using binary search" : "Smart auto-format: Optimizes font size and line height for perfect fit using binary search"}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-              </svg>
-              <span>{isOptimizing ? 'Optimizing...' : 'Auto-Format Menu'}</span>
+              <span className="text-xl">✨</span>
+              <span>{isOptimizing ? 'Optimizing...' : '✨ Auto-Format Menu'}</span>
             </button>
           )}
         </div>

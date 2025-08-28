@@ -59,7 +59,7 @@ export const DropZone: React.FC<DropZoneProps> = ({
               theme === 'dark' ? 'bg-orange-900/20' : 'bg-orange-50'
             }` 
           : 'border-2 border-dashed border-transparent'
-      } transition-all duration-150 ease-in-out`}
+      } transition-colors transition-border-color transition-background-color duration-150 ease-in-out`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}

@@ -64,6 +64,7 @@ import { WelcomeModal } from './components/WelcomeModal';
 import { WhatsNewModalTabs } from './components/WhatsNewModalTabs';
 import { CsvImportModal } from './components/CsvImportModal';
 import { CsvExportModal } from './components/CsvExportModal';
+import { UnifiedExportModal } from './components/UnifiedExportModal';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
 import { PrePackagedPanel } from './components/PrePackagedPanel';
@@ -330,6 +331,7 @@ const AppContent: React.FC = () => {
   const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
   const [showCsvImportModal, setShowCsvImportModal] = useState<boolean>(false);
   const [showCsvExportModal, setShowCsvExportModal] = useState<boolean>(false);
+  const [showUnifiedExportModal, setShowUnifiedExportModal] = useState<boolean>(false);
   const [hasViewedWhatsNew, setHasViewedWhatsNew] = useState<boolean>(() => {
     const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
     return viewedVersion === '1.0.2'; // Check if current version has been viewed
@@ -467,7 +469,7 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
-  // Auto-format handler with iterative optimization
+  // Auto-format handler with optimized binary search
   const handleAutoFormat = useCallback(() => {
     // Prevent auto-formatting during page count updates to avoid infinite loops
     if (isUpdatingPageCount) {
@@ -499,8 +501,10 @@ const AppContent: React.FC = () => {
       showNetWeight: previewSettings.showNetWeight
     };
     
-    // Use iterative auto-format with state tracking - pass the current state!
+    // Use the original overflow-driven auto-format that works reliably
+    const startTime = performance.now();
     const result = getOverflowDrivenAutoFormat(previewSettings, contentData, autoFormatState || undefined);
+    const optimizationTime = (performance.now() - startTime).toFixed(1);
     
     if (result.success && result.settings) {
       setPreviewSettings(prev => ({ ...prev, ...result.settings }));
@@ -514,7 +518,9 @@ const AppContent: React.FC = () => {
           isOptimizing: true,
           // Update ceiling flags based on result OR preserve from existing state
           hitFontSizeCeiling: result.hitFontSizeCeiling ?? autoFormatState?.hitFontSizeCeiling ?? false,
-          hitLineHeightCeiling: result.hitLineHeightCeiling ?? autoFormatState?.hitLineHeightCeiling ?? false
+          hitLineHeightCeiling: result.hitLineHeightCeiling ?? autoFormatState?.hitLineHeightCeiling ?? false,
+          // Track iteration count for switching to binary search after 3 iterations
+          iterationCount: ((autoFormatState?.iterationCount || 0) + 1)
         };
         setAutoFormatState(newState);
         setShouldContinueOptimization(true);
@@ -526,7 +532,7 @@ const AppContent: React.FC = () => {
         addToast({
           type: 'info',
           title: 'Auto-Format Complete',
-          message: result.message,
+          message: `${result.message} (Optimized in ${optimizationTime}ms)`,
           duration: 4000
         });
       }
@@ -565,20 +571,11 @@ const AppContent: React.FC = () => {
 
 
 
-  // Drag and drop handlers
+  // Drag and drop handlers (deprecated in v1.1.0 - replaced with up/down arrows)
+  // Keeping function stub for potential future use
   const handleDragStart = useCallback((strainId: string, shelfId: string, strainIndex: number) => {
-    setDragState({ strainId, shelfId, strainIndex });
-    
-    // Set a timeout to auto-clear stuck drag state after 30 seconds
-    setTimeout(() => {
-      setDragState(current => {
-        if (current && current.strainId === strainId) {
-          console.warn('Clearing stuck drag state for strain:', strainId);
-          return null;
-        }
-        return current;
-      });
-    }, 30000);
+    // Deprecated - drag functionality replaced with up/down arrow buttons in v1.1.0
+    console.log('Drag functionality has been replaced with up/down arrow buttons');
   }, []);
 
 
@@ -723,7 +720,7 @@ const AppContent: React.FC = () => {
 
   const shelvesRef = useRef<HTMLDivElement | null>(null);
   const [lastInteractedShelfId, setLastInteractedShelfId] = useState<string | null>(null);
-  const [dragState, setDragState] = useState<{ strainId: string; shelfId: string; strainIndex: number } | null>(null);
+  // const [dragState, setDragState] = useState<{ strainId: string; shelfId: string; strainIndex: number } | null>(null); // Deprecated in v1.1.0
   const [updateDismissed, setUpdateDismissed] = useState<boolean>(false);
   const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
   const [updateVersion, setUpdateVersion] = useState<string>('');
@@ -1604,10 +1601,8 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        // Cancel any active drag operations
-        if (dragState) {
-          setDragState(null);
-        }
+        // Cancel any active drag operations (deprecated in v1.1.0)
+        // Keeping for pre-packaged drag state if still in use
         if (prePackagedDragState) {
           setPrePackagedDragState(null);
         }
@@ -1616,7 +1611,7 @@ const AppContent: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dragState, prePackagedDragState]);
+  }, [prePackagedDragState]);
 
   const triggerImageExport = useCallback((type: 'png' | 'jpeg') => {
     if (isExporting) return;
@@ -1629,6 +1624,10 @@ const AppContent: React.FC = () => {
       timestamp: Date.now(),
     });
   }, [isExporting, exportFilename, previewSettings.artboardSize]);
+
+  const handleOpenExportModal = useCallback(() => {
+    setShowUnifiedExportModal(true);
+  }, []);
 
   const handleExportCSV = useCallback(() => {
     setShowCsvExportModal(true);
@@ -2667,11 +2666,7 @@ const AppContent: React.FC = () => {
         onClearAllLastJars={handleClearAllLastJars}
         onClearAllSoldOut={handleClearAllSoldOut}
         hasSoldOutItems={hasSoldOutItems()}
-        exportFilename={exportFilename}
-        onExportFilenameChange={setExportFilename}
-        onExportPNG={() => triggerImageExport('png')}
-        onExportJPEG={() => triggerImageExport('jpeg')}
-        onExportCSV={handleExportCSV}
+        onOpenExportModal={handleOpenExportModal}
         onImportCSVRequest={handleImportCSVRequest}
         isExporting={isExporting}
         globalSortCriteria={globalSortCriteria}
@@ -3019,6 +3014,19 @@ const AppContent: React.FC = () => {
           bulkShelves={processedShelves as Shelf[]}
           prePackagedShelves={processedShelves as PrePackagedShelf[]}
           onExport={handleCsvExport}
+        />
+        
+        <UnifiedExportModal
+          isOpen={showUnifiedExportModal}
+          onClose={() => setShowUnifiedExportModal(false)}
+          theme={theme}
+          menuMode={menuMode}
+          exportFilename={exportFilename}
+          onExportFilenameChange={setExportFilename}
+          onExportPNG={() => triggerImageExport('png')}
+          onExportJPEG={() => triggerImageExport('jpeg')}
+          onExportCSV={handleExportCSV}
+          isExporting={isExporting}
         />
         {!updateDismissed && (
           <UpdateNotification

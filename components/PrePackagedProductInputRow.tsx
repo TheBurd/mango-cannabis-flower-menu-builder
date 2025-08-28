@@ -91,7 +91,7 @@ export const PrePackagedProductInputRow: React.FC<PrePackagedProductInputRowProp
     <div
       ref={rowRef}
       data-product-id={product.id}
-      className={`p-5 rounded-xl shadow-sm border transition-all duration-300 relative overflow-hidden ${
+      className={`p-5 rounded-xl shadow-sm border transition-all duration-300 relative ${
         theme === 'dark' 
           ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-700/95' 
           : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50/50'
@@ -353,7 +353,7 @@ export const PrePackagedProductInputRow: React.FC<PrePackagedProductInputRowProp
             <button
               onClick={() => setShowNotesInput(!showNotesInput)}
               disabled={isControlsDisabled}
-              className={`w-full p-2 rounded-lg text-sm border transition-all duration-150 flex items-center justify-center ${
+              className={`w-full p-2 rounded-lg text-sm border transition-colors transition-background-color transition-border-color duration-150 flex items-center justify-center ${
                 showNotesInput || (product.notes && product.notes.trim() !== '')
                   ? theme === 'dark'
                     ? 'text-blue-400 bg-blue-900/20 border-blue-500/50 hover:bg-blue-900/30'
@@ -418,7 +418,7 @@ export const PrePackagedProductInputRow: React.FC<PrePackagedProductInputRowProp
               </button>
               
               {showMoveOptions && (
-                <div className={`absolute top-full right-0 mt-1 z-10 min-w-32 rounded-lg shadow-lg border ${
+                <div className={`absolute top-full right-0 mt-1 z-[100] min-w-32 rounded-lg shadow-lg border ${
                   theme === 'dark' ? 'bg-gray-700 border border-gray-600' : 'bg-white border border-gray-200'
                 }`}>
                   {moveOptions.map(option => (

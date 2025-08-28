@@ -149,7 +149,7 @@ export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
 
       {isOpen && (
         <div 
-          className={`absolute z-50 mt-1 w-full rounded-md shadow-lg border overflow-hidden ${
+          className={`absolute z-[100] mt-1 w-full rounded-md shadow-lg border overflow-hidden ${
             theme === 'dark'
               ? 'bg-gray-600 border-gray-500'
               : 'bg-white border-gray-300'

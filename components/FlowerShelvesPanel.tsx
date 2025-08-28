@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Shelf, Strain, SortCriteria, Theme, SupportedStates } from '../types';
 import { ShelfComponent } from './ShelfComponent';
 import { ShelfTabs } from './ShelfTabs';
+import { ScrollNavigationOverlay } from './common/ScrollNavigationOverlay';
+import { useScrollVelocity } from '../hooks/useScrollVelocity';
+import { useVisibleStrains } from '../hooks/useVisibleStrains';
 
 interface FlowerShelvesPanelProps {
   shelves: Shelf[]; // Will receive processed (sorted) shelves
@@ -17,10 +20,10 @@ interface FlowerShelvesPanelProps {
   theme: Theme;
   onMoveStrain?: (fromShelfId: string, toShelfId: string, strainIndex: number, targetIndex?: number) => void;
   onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
-  dragState?: { strainId: string; shelfId: string; strainIndex: number } | null;
-  onDragStart?: (strainId: string, shelfId: string, strainIndex: number) => void;
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isControlsDisabled?: boolean;
+  onMoveStrainUp?: (shelfId: string, strainIndex: number) => void;
+  onMoveStrainDown?: (shelfId: string, strainIndex: number) => void;
 }
 
 export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelvesPanelProps>(({
@@ -41,20 +44,64 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
   currentState,
   isControlsDisabled,
 }, ref) => {
+  const [containerElement, setContainerElement] = useState<HTMLElement | null>(null);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const showOverlayRef = useRef(false);
+  const internalRef = React.useRef<HTMLDivElement>(null);
+  
+  // Combine refs
+  const divRef = React.useCallback((node: HTMLDivElement) => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(node);
+      } else {
+        ref.current = node;
+      }
+    }
+    internalRef.current = node;
+    setContainerElement(node);
+  }, [ref]);
+  
+  // Track scroll velocity and detect fast scrolling
+  const { isScrolling, isScrollbarDragging } = useScrollVelocity({
+    element: containerElement,
+    threshold: 15, // Very low threshold - show on light scrolling
+    hideDelay: 2500 // Stay visible much longer (2.5 seconds)
+  });
+  
+  // Track visible strains
+  const { allStrains, centerStrainIndex } = useVisibleStrains({
+    shelves,
+    containerElement,
+    rootMargin: '-20% 0px -20% 0px'
+  });
+  
+  // Show overlay immediately when scrolling
+  useEffect(() => {
+    const shouldShow = isScrolling || isScrollbarDragging;
+    // Only update state if actually changed
+    if (shouldShow !== showOverlayRef.current) {
+      showOverlayRef.current = shouldShow;
+      setShowOverlay(shouldShow);
+    }
+  }, [isScrolling, isScrollbarDragging]);
+  
+  
   return (
-    <div 
-      ref={ref}
-      id="flower-shelves-panel" // Added ID for aria-controls
-      className={`no-print flex-shrink-0 rounded-lg shadow-lg overflow-y-auto ${
-        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-      } ${isControlsDisabled ? 'opacity-50 pointer-events-none' : ''}`}
-      style={style} // Apply dynamic width for resizable panel
-    >
+    <>
+      <div 
+        ref={divRef}
+        id="flower-shelves-panel" // Added ID for aria-controls
+        className={`no-print flex-shrink-0 rounded-lg shadow-lg overflow-y-auto relative ${
+          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+        } ${isControlsDisabled ? 'opacity-50 pointer-events-none' : ''}`}
+        style={style} // Apply dynamic width for resizable panel
+      >
       <ShelfTabs 
         shelves={shelves}
         onScrollToShelf={onScrollToShelf}
         theme={theme}
-        isDragging={!!dragState}
+        isDragging={false}
       />
       <div className="space-y-3 p-1"> {/* Added padding inside scrollable area */}
         {shelves.map(shelf => (
@@ -80,5 +127,15 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
         ))}
       </div>
     </div>
+    
+    {/* Scroll Navigation Overlay */}
+    <ScrollNavigationOverlay
+      isVisible={showOverlay}
+      strains={allStrains}
+      centerStrainIndex={centerStrainIndex}
+      containerElement={containerElement}
+      theme={theme}
+    />
+  </>
   );
 });
