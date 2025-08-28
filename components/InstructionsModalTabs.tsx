@@ -137,7 +137,8 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
             <li>• Click the <strong>+ Add</strong> button to add individual items</li>
             <li>• Fill in required fields: {currentMode === MenuMode.BULK ? 'name, grower, THC%' : 'name, brand, price'}</li>
             <li>• Select strain type: Indica (I), Sativa (S), or Hybrid (H)</li>
-            <li>• Mark items as "Last Jar" for special highlighting</li>
+            <li>• Mark items as "Last Jar" or "Sold Out" for special highlighting</li>
+            <li>• Use up/down arrows to reorder items as needed</li>
           </ul>
         </div>
 
@@ -166,12 +167,23 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
         <div className={`p-4 rounded-lg ${
           theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
         }`}>
-          <h3 className="font-semibold mb-3">Bulk Operations:</h3>
+          <h3 className="font-semibold mb-3">🔄 Reordering {currentMode === MenuMode.BULK ? 'Strains' : 'Products'}:</h3>
           <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            <li>• <strong>Drag & Drop:</strong> Reorder items within shelves</li>
-            <li>• <strong>Bulk Delete:</strong> Select multiple items and delete together</li>
-            <li>• <strong>Copy/Duplicate:</strong> Quickly create similar entries</li>
+            <li>• <strong>Up/Down Arrows:</strong> Click arrows on the left of each row to move items</li>
+            <li>• <strong>Smart Boundaries:</strong> Arrows disappear when items can't move further</li>
+            <li>• <strong>Reliable Operation:</strong> No more duplication issues from drag & drop</li>
+            <li>• <strong>Sort Reset:</strong> Manual reordering clears any active sorting</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
+        }`}>
+          <h3 className="font-semibold mb-3">Other Operations:</h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• <strong>Copy/Duplicate:</strong> Use arrow buttons to copy items above or below</li>
             <li>• <strong>Sort Options:</strong> Alphabetical, THC%, or custom order</li>
+            <li>• <strong>Clear Shelves:</strong> Remove all items from a shelf with the trash button</li>
           </ul>
         </div>
       </div>
@@ -414,7 +426,8 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
             <li>• Use <strong>Auto-Format</strong> as your final step for perfect sizing</li>
             <li>• Import CSV templates to quickly populate new shelves</li>
             <li>• Enable "Allow Shelf Splitting" for maximum space utilization</li>
-            <li>• Use drag & drop to reorder strains within shelves</li>
+            <li>• Click up/down arrows to reorder items - more reliable than drag & drop</li>
+            <li>• Manual reordering clears sort state - perfect for custom arrangements</li>
             <li>• Mark low-stock items as "Last Jar" for customer awareness</li>
             <li>• Export both PNG and CSV for complete dispensary workflow</li>
             <li>• Use the context-sensitive help tooltips (? buttons) when stuck</li>

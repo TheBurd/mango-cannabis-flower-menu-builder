@@ -130,6 +130,10 @@ const sortStrains = (strains: Strain[], criteria: SortCriteria | null, currentSt
         valA = a.isLastJar;
         valB = b.isLastJar;
         break;
+      case 'isSoldOut':
+        valA = a.isSoldOut;
+        valB = b.isSoldOut;
+        break;
       case 'originalShelf':
         if (currentState) {
           const hierarchy = getShelfHierarchy(currentState);
@@ -195,6 +199,15 @@ const sortPrePackagedProducts = (products: PrePackagedProduct[], criteria: PrePa
         // Sort low stock items first when sorting asc, last when sorting desc
         valA = a.isLowStock ? '1' : '0';
         valB = b.isLowStock ? '1' : '0';
+        break;
+      case 'isLastJar':
+        // Map isLastJar key to isLowStock field for pre-packaged products (UI consistency)
+        valA = a.isLowStock ? '1' : '0';
+        valB = b.isLowStock ? '1' : '0';
+        break;
+      case 'isSoldOut':
+        valA = a.isSoldOut;
+        valB = b.isSoldOut;
         break;
       default:
         return 0;
@@ -309,6 +322,8 @@ const AppContent: React.FC = () => {
   const [initMessage, setInitMessage] = useState<string>('');
   const [skippedRows, setSkippedRows] = useState<{rowIndex: number, rowData: any, reason: string}[]>([]);
   const [showSkippedModal, setShowSkippedModal] = useState<boolean>(false);
+  const [showImportDetailsModal, setShowImportDetailsModal] = useState<boolean>(false);
+  const [importClassificationData, setImportClassificationData] = useState<{shakeCount: number, flowerCount: number, totalCount: number} | null>(null);
   
   // Modal states
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
@@ -322,6 +337,39 @@ const AppContent: React.FC = () => {
   const [hasContentOverflow, setHasContentOverflow] = useState<boolean>(false);
   const [autoFormatState, setAutoFormatState] = useState<AutoFormatState | null>(null);
   const [shouldContinueOptimization, setShouldContinueOptimization] = useState<boolean>(false);
+  const [isUpdatingPageCount, setIsUpdatingPageCount] = useState<boolean>(false);
+
+  // Global sort criteria state - moved here to prevent initialization order issues
+  const [globalSortCriteria, setGlobalSortCriteria] = useState<SortCriteria | null>(null);
+
+  // DEPRECATED: Multi-page auto creation logic - disabled but preserved for future development
+  useEffect(() => {
+    // DISABLED: Multi-page functionality completely disabled
+    return;
+    
+    /* PRESERVED FOR FUTURE DEVELOPMENT:
+    const handlePageCountNeeded = (event: any) => {
+      const { pagesNeeded, currentPages, hasOverflow, naturalWidth, availableWidth } = event.detail;
+      
+      const isReasonableChange = Math.abs(pagesNeeded - currentPages) <= 2;
+      const isGenuineOverflow = naturalWidth > availableWidth * 1.2;
+      
+      if (!isUpdatingPageCount && previewSettings.autoPageBreaks && pagesNeeded !== currentPages && isReasonableChange && isGenuineOverflow) {
+        setIsUpdatingPageCount(true);
+        setPreviewSettings(prev => ({
+          ...prev,
+          pageCount: Math.min(pagesNeeded, 5),
+          currentPage: Math.min(prev.currentPage, Math.min(pagesNeeded, 5))
+        }));
+        
+        setTimeout(() => setIsUpdatingPageCount(false), 750);
+      }
+    };
+
+    window.addEventListener('pageCountNeeded', handlePageCountNeeded);
+    return () => window.removeEventListener('pageCountNeeded', handlePageCountNeeded);
+    */
+  }, []);
 
   // Theme toggle handler
   const handleThemeChange = useCallback((newTheme: Theme) => {
@@ -421,6 +469,17 @@ const AppContent: React.FC = () => {
 
   // Auto-format handler with iterative optimization
   const handleAutoFormat = useCallback(() => {
+    // Prevent auto-formatting during page count updates to avoid infinite loops
+    if (isUpdatingPageCount) {
+      addToast({
+        type: 'warning',
+        title: 'Auto-Format Paused',
+        message: 'Auto-formatting is paused during page updates. Try again in a moment.',
+        duration: 3000
+      });
+      return;
+    }
+
     // Calculate content data for intelligent auto-formatting based on current mode
     const shelfCount = menuMode === MenuMode.BULK
       ? bulkShelves.filter(shelf => shelf.strains.length > 0).length
@@ -436,7 +495,7 @@ const AppContent: React.FC = () => {
       hasContentOverflow,
       menuMode: menuMode === MenuMode.BULK ? 'bulk' as const : 'prepackaged' as const,
       showTerpenes: previewSettings.showTerpenes,
-      showInventoryStatus: previewSettings.showInventoryStatus,
+      showLowStock: previewSettings.showLowStock,
       showNetWeight: previewSettings.showNetWeight
     };
     
@@ -482,7 +541,7 @@ const AppContent: React.FC = () => {
         duration: 5000
       });
     }
-  }, [previewSettings, menuMode, bulkShelves, prePackagedShelves, hasContentOverflow, autoFormatState]);
+  }, [previewSettings, menuMode, bulkShelves, prePackagedShelves, hasContentOverflow, autoFormatState, isUpdatingPageCount, addToast]);
 
   // Automatic continuation of optimization
   useEffect(() => {
@@ -509,6 +568,17 @@ const AppContent: React.FC = () => {
   // Drag and drop handlers
   const handleDragStart = useCallback((strainId: string, shelfId: string, strainIndex: number) => {
     setDragState({ strainId, shelfId, strainIndex });
+    
+    // Set a timeout to auto-clear stuck drag state after 30 seconds
+    setTimeout(() => {
+      setDragState(current => {
+        if (current && current.strainId === strainId) {
+          console.warn('Clearing stuck drag state for strain:', strainId);
+          return null;
+        }
+        return current;
+      });
+    }, 30000);
   }, []);
 
 
@@ -555,36 +625,86 @@ const AppContent: React.FC = () => {
     setDragState(null);
   }, []);
 
+  // Add a ref to prevent multiple concurrent strain reorder operations
+  const isStrainReorderingRef = useRef(false);
+  
   const handleReorderStrain = useCallback((shelfId: string, fromIndex: number, toIndex: number) => {
+    // Prevent multiple concurrent reorder operations
+    if (isStrainReorderingRef.current) {
+      console.log('Strain reorder already in progress, ignoring');
+      return;
+    }
+    
+    // Clear drag state immediately
+    setDragState(null);
+    
+    if (fromIndex === toIndex) {
+      console.log('No strain reorder needed: same position');
+      return;
+    }
+    
+    console.log(`Starting strain reorder in shelf ${shelfId}: ${fromIndex} → ${toIndex}`);
+    isStrainReorderingRef.current = true;
+    
     recordChange(() => {
       setShelves(prevShelves => {
         const newShelves = [...prevShelves];
         const shelfIndex = newShelves.findIndex(s => s.id === shelfId);
         
-        if (shelfIndex === -1) return prevShelves;
+        if (shelfIndex === -1) {
+          console.error('Shelf not found:', shelfId);
+          isStrainReorderingRef.current = false;
+          return prevShelves;
+        }
         
         const shelf = newShelves[shelfIndex];
-        const newStrains = [...shelf.strains];
+        const currentStrains = [...shelf.strains];
         
-        // Adjust toIndex if moving within the same array
-        const adjustedToIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+        console.log('Before strain reorder - count:', currentStrains.length);
+        console.log('Before strain reorder - names:', currentStrains.map(s => s.name));
         
-        // Remove strain from original position
-        const [strainToMove] = newStrains.splice(fromIndex, 1);
+        // Validate indices
+        if (fromIndex < 0 || fromIndex >= currentStrains.length || toIndex < 0 || toIndex > currentStrains.length) {
+          console.error(`Invalid strain indices: fromIndex=${fromIndex}, toIndex=${toIndex}, length=${currentStrains.length}`);
+          isStrainReorderingRef.current = false;
+          return prevShelves;
+        }
         
-        // Insert strain at new position
-        newStrains.splice(adjustedToIndex, 0, strainToMove);
+        // Perform simple reorder - remove from source and insert at target
+        const [removed] = currentStrains.splice(fromIndex, 1);
+        currentStrains.splice(toIndex, 0, removed);
+        
+        console.log('After strain reorder - count:', currentStrains.length);
+        console.log('After strain reorder - names:', currentStrains.map(s => s.name));
         
         newShelves[shelfIndex] = { 
           ...shelf, 
-          strains: newStrains,
+          strains: currentStrains,
           sortCriteria: null // Reset sort criteria when reordering strain
         };
+        
+        // Clear the reordering flag after state update
+        setTimeout(() => {
+          isStrainReorderingRef.current = false;
+          console.log('Strain reorder operation completed');
+        }, 100);
+        
         return newShelves;
       });
     });
-    setDragState(null);
-  }, []);
+  }, []); // Remove dependencies to prevent recreation
+
+  // Simple up/down move handlers for strains (replaces drag & drop)
+  const handleMoveStrainUp = useCallback((shelfId: string, strainIndex: number) => {
+    if (strainIndex <= 0) return; // Can't move up if already at top
+    handleReorderStrain(shelfId, strainIndex, strainIndex - 1);
+  }, [handleReorderStrain]);
+
+  const handleMoveStrainDown = useCallback((shelfId: string, strainIndex: number) => {
+    const shelf = shelves.find(s => s.id === shelfId);
+    if (!shelf || strainIndex >= shelf.strains.length - 1) return; // Can't move down if already at bottom
+    handleReorderStrain(shelfId, strainIndex, strainIndex + 1);
+  }, [handleReorderStrain, shelves]);
 
   // Update document theme attribute
   useEffect(() => {
@@ -601,7 +721,6 @@ const AppContent: React.FC = () => {
   const csvImportInputRef = useRef<HTMLInputElement | null>(null);
   const [showExportOverlay, setShowExportOverlay] = useState<boolean>(false);
 
-  const [globalSortCriteria, setGlobalSortCriteria] = useState<SortCriteria | null>(null);
   const shelvesRef = useRef<HTMLDivElement | null>(null);
   const [lastInteractedShelfId, setLastInteractedShelfId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<{ strainId: string; shelfId: string; strainIndex: number } | null>(null);
@@ -624,6 +743,15 @@ const AppContent: React.FC = () => {
       return bulkShelves.some(shelf => shelf.strains.length > 0);
     } else {
       return prePackagedShelves.some(shelf => shelf.products.length > 0);
+    }
+  }, [menuMode, bulkShelves, prePackagedShelves]);
+
+  // Helper function to check if there are any sold out items
+  const hasSoldOutItems = useCallback((): boolean => {
+    if (menuMode === MenuMode.BULK) {
+      return bulkShelves.some(shelf => shelf.strains.some(strain => strain.isSoldOut));
+    } else {
+      return prePackagedShelves.some(shelf => shelf.products.some(product => product.isSoldOut));
     }
   }, [menuMode, bulkShelves, prePackagedShelves]);
 
@@ -840,6 +968,7 @@ const AppContent: React.FC = () => {
                       thc: null,
                       type: StrainType.HYBRID,
                       isLastJar: false,
+                      isSoldOut: false,
                     },
                   ],
                   sortCriteria: null // Reset sort criteria when adding strain
@@ -866,6 +995,7 @@ const AppContent: React.FC = () => {
                       // weight: removed - now handled at shelf level
                       price: 0,
                       isLowStock: false,
+                      isSoldOut: false,
                     },
                   ],
                   sortCriteria: null // Reset sort criteria when adding product
@@ -1109,6 +1239,9 @@ const AppContent: React.FC = () => {
 
   // PrePackaged drag and drop handlers
   const handleMoveProduct = useCallback((fromShelfId: string, toShelfId: string, productIndex: number, targetIndex?: number) => {
+    // Clear drag state immediately to prevent stuck states
+    setPrePackagedDragState(null);
+    
     recordChange(() => {
       setPrePackagedShelves(prevShelves => {
         // Find source shelf and product
@@ -1145,29 +1278,132 @@ const AppContent: React.FC = () => {
     });
   }, []);
 
+  // Add a ref to prevent multiple concurrent reorder operations
+  const isReorderingRef = useRef(false);
+  
   const handleReorderProduct = useCallback((shelfId: string, fromIndex: number, toIndex: number) => {
-    recordChange(() => {
-      setPrePackagedShelves(prevShelves =>
-        prevShelves.map(shelf => {
-          if (shelf.id === shelfId) {
-            const newProducts = [...shelf.products];
-            const [removed] = newProducts.splice(fromIndex, 1);
-            newProducts.splice(toIndex, 0, removed);
-            
-            return {
-              ...shelf,
-              products: newProducts,
-              sortCriteria: null
-            };
-          }
-          return shelf;
-        })
-      );
+    // Prevent multiple concurrent reorder operations
+    if (isReorderingRef.current) {
+      console.log('Reorder already in progress, ignoring');
+      return;
+    }
+    
+    // Clear drag state immediately to prevent stuck states
+    setPrePackagedDragState(null);
+    
+    if (fromIndex === toIndex) {
+      console.log('No reorder needed: same position');
+      return; // No change needed
+    }
+    
+    console.log(`Starting reorder in shelf ${shelfId}: ${fromIndex} → ${toIndex}`);
+    isReorderingRef.current = true;
+    
+    // Use a more direct state update approach to prevent duplicate calls
+    setPrePackagedShelves(prevShelves => {
+      console.log('=== REORDER STATE UPDATE START ===');
+      console.log('Prev shelves count:', prevShelves.length);
+      
+      const targetShelf = prevShelves.find(s => s.id === shelfId);
+      if (!targetShelf) {
+        console.error('Target shelf not found:', shelfId);
+        isReorderingRef.current = false;
+        return prevShelves;
+      }
+      
+      console.log('Target shelf product count:', targetShelf.products.length);
+      console.log('Target shelf products:', targetShelf.products.map(p => ({ id: p.id, name: p.name })));
+      
+      // Check for duplicate IDs in the current shelf
+      const productIds = targetShelf.products.map(p => p.id);
+      const uniqueIds = new Set(productIds);
+      if (productIds.length !== uniqueIds.size) {
+        console.error('DUPLICATE IDs DETECTED BEFORE REORDER:', productIds);
+      }
+      
+      // Validate indices
+      if (fromIndex < 0 || fromIndex >= targetShelf.products.length || toIndex < 0 || toIndex > targetShelf.products.length) {
+        console.error(`Invalid indices: fromIndex=${fromIndex}, toIndex=${toIndex}, length=${targetShelf.products.length}`);
+        isReorderingRef.current = false;
+        return prevShelves;
+      }
+      
+      // Create new array with reordered products
+      const newProducts = [...targetShelf.products];
+      const [removed] = newProducts.splice(fromIndex, 1);
+      newProducts.splice(toIndex, 0, removed);
+      
+      console.log('After reorder - products count:', newProducts.length);
+      console.log('After reorder - products:', newProducts.map(p => ({ id: p.id, name: p.name })));
+      
+      // Check for duplicate IDs after reorder
+      const newProductIds = newProducts.map(p => p.id);
+      const newUniqueIds = new Set(newProductIds);
+      if (newProductIds.length !== newUniqueIds.size) {
+        console.error('DUPLICATE IDs DETECTED AFTER REORDER:', newProductIds);
+      }
+      
+      // Create the result with updated shelf
+      const result = prevShelves.map(shelf => {
+        if (shelf.id === shelfId) {
+          return {
+            ...shelf,
+            products: newProducts,
+            sortCriteria: null // Clear sort criteria since user manually reordered
+          };
+        }
+        return shelf;
+      });
+      
+      console.log('=== REORDER STATE UPDATE END ===');
+      
+      // Clear the reordering flag
+      setTimeout(() => {
+        isReorderingRef.current = false;
+      }, 50);
+      
+      return result;
     });
-  }, []);
+    
+    // Use recordChange to track this as a user action
+    recordChange(() => {});
+  }, []); // Remove dependencies to prevent recreation
+
+  // Simple up/down move handlers for products (replaces drag & drop)
+  const handleMoveProductUp = useCallback((shelfId: string, productIndex: number) => {
+    if (productIndex <= 0) return; // Can't move up if already at top
+    handleReorderProduct(shelfId, productIndex, productIndex - 1);
+  }, [handleReorderProduct]);
+
+  const handleMoveProductDown = useCallback((shelfId: string, productIndex: number) => {
+    const shelf = prePackagedShelves.find(s => s.id === shelfId);
+    if (!shelf || productIndex >= shelf.products.length - 1) return; // Can't move down if already at bottom
+    handleReorderProduct(shelfId, productIndex, productIndex + 1);
+  }, [handleReorderProduct, prePackagedShelves]);
 
   const handlePrePackagedDragStart = useCallback((productId: string, shelfId: string, productIndex: number) => {
     setPrePackagedDragState({ productId, shelfId, productIndex });
+    
+    // Set a timeout to auto-clear stuck drag state after 30 seconds
+    setTimeout(() => {
+      setPrePackagedDragState(current => {
+        if (current && current.productId === productId) {
+          console.warn('Clearing stuck drag state for product:', productId);
+          return null;
+        }
+        return current;
+      });
+    }, 30000);
+  }, []);
+
+  const handlePrePackagedDragEnd = useCallback((productId: string) => {
+    // Clear drag state when drag ends for the specific product
+    setPrePackagedDragState(current => {
+      if (current && current.productId === productId) {
+        return null;
+      }
+      return current;
+    });
   }, []);
 
   // Generic clear all shelves handler that works for both modes
@@ -1219,10 +1455,74 @@ const AppContent: React.FC = () => {
       }
     });
   }, [menuMode]);
+
+  // Generic clear all sold out handler that works for both modes
+  const handleClearAllSoldOut = useCallback(() => {
+    recordChange(() => {
+      if (menuMode === MenuMode.BULK) {
+        // Clear all sold out flags from bulk shelves
+        setBulkShelves(prevShelves =>
+          prevShelves.map(shelf => ({
+            ...shelf,
+            strains: shelf.strains.map(strain => ({ ...strain, isSoldOut: false })),
+            sortCriteria: null // Reset sort criteria when clearing sold out
+          }))
+        );
+      } else {
+        // Clear all sold out flags from pre-packaged shelves
+        setPrePackagedShelves(prevShelves =>
+          prevShelves.map(shelf => ({
+            ...shelf,
+            products: shelf.products.map(product => ({ ...product, isSoldOut: false })),
+            sortCriteria: null // Reset sort criteria when clearing sold out
+          }))
+        );
+      }
+    });
+  }, [menuMode]);
   
   const handleUpdatePreviewSettings = useCallback((newSettings: Partial<PreviewSettings>) => {
      // For preview settings, we don't want to reset sorts, so don't use recordChange
      setPreviewSettings(prev => ({ ...prev, ...newSettings }));
+  }, []);
+
+  // Multi-page management helpers
+  const handleAddPage = useCallback(() => {
+    setIsUpdatingPageCount(true);
+    setPreviewSettings(prev => ({
+      ...prev,
+      pageCount: prev.pageCount + 1
+    }));
+    // Clear the flag after a short delay to allow UI to stabilize
+    setTimeout(() => setIsUpdatingPageCount(false), 500);
+  }, []);
+
+  const handleRemovePage = useCallback((pageNumber: number) => {
+    setIsUpdatingPageCount(true);
+    setPreviewSettings(prev => ({
+      ...prev,
+      pageCount: Math.max(1, prev.pageCount - 1),
+      currentPage: prev.currentPage > prev.pageCount - 1 ? prev.pageCount - 1 : prev.currentPage
+    }));
+    // Clear the flag after a short delay to allow UI to stabilize
+    setTimeout(() => setIsUpdatingPageCount(false), 500);
+  }, []);
+
+  const handleGoToPage = useCallback((pageNumber: number) => {
+    setPreviewSettings(prev => ({
+      ...prev,
+      currentPage: Math.max(1, Math.min(pageNumber, prev.pageCount))
+    }));
+  }, []);
+
+  const handleToggleAutoPageBreaks = useCallback(() => {
+    setIsUpdatingPageCount(true);
+    setPreviewSettings(prev => ({
+      ...prev,
+      autoPageBreaks: !prev.autoPageBreaks
+    }));
+    // Clear the flag after a short delay to allow UI to stabilize
+    setTimeout(() => setIsUpdatingPageCount(false), 500);
   }, []);
 
   const handleUpdateGlobalSortCriteria = useCallback((key: SortCriteria['key']) => {
@@ -1299,6 +1599,24 @@ const AppContent: React.FC = () => {
     window.addEventListener('mouseup', handleGlobalMouseUp);
 
   }, []);
+
+  // Global ESC key handler for canceling drag operations
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Cancel any active drag operations
+        if (dragState) {
+          setDragState(null);
+        }
+        if (prePackagedDragState) {
+          setPrePackagedDragState(null);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [dragState, prePackagedDragState]);
 
   const triggerImageExport = useCallback((type: 'png' | 'jpeg') => {
     if (isExporting) return;
@@ -1771,6 +2089,7 @@ const AppContent: React.FC = () => {
             thc: thcValue,
             type: strainType,
             isLastJar: fieldToColumn.lastJar ? (row[fieldToColumn.lastJar] || '').toLowerCase() === 'lastjar' : false,
+            isSoldOut: fieldToColumn.soldOut ? ['soldout', 'true', '1', 'yes', 'out of stock', 'unavailable', 'empty', 'oos', 'out'].includes((row[fieldToColumn.soldOut] || '').toLowerCase().trim()) : false,
             originalShelf: fieldToColumn.originalShelf ? row[fieldToColumn.originalShelf] || '' : '',
           };
 
@@ -1804,6 +2123,8 @@ const AppContent: React.FC = () => {
       // Pre-packaged import logic
       const importedProductsByShelf: Record<string, PrePackagedProduct[]> = {};
       let importedCount = 0;
+      let shakeCount = 0;
+      let flowerCount = 0;
       const skippedRowsData: {rowIndex: number, rowData: any, reason: string}[] = [];
 
       const shelfNameMap = new Map(prePackagedShelves.map(s => [s.name.toLowerCase(), s.id]));
@@ -1820,11 +2141,34 @@ const AppContent: React.FC = () => {
             return;
           }
 
-          const targetShelfId = shelfNameMap.get(shelfName.toLowerCase());
+          // Intelligent shake detection: Check if product name contains "shake"
+          const isShake = productName.toLowerCase().includes('shake');
+          
+          // Smart shelf name generation with weight format handling
+          let smartShelfName = shelfName;
+          if (isShake) {
+            // For shake products, try variations: "28g Shake", "28 Shake"
+            smartShelfName = shelfName.includes('g') ? `${shelfName} Shake` : `${shelfName}g Shake`;
+          } else {
+            // For flower products, try variations: "3.5g Flower", "3.5 Flower"  
+            smartShelfName = shelfName.includes('g') ? `${shelfName} Flower` : `${shelfName}g Flower`;
+          }
+
+          // Try multiple fallback strategies for finding the correct shelf
+          let targetShelfId = 
+            // 1. Try smart classified name
+            shelfNameMap.get(smartShelfName.toLowerCase()) ||
+            // 2. Try original name
+            shelfNameMap.get(shelfName.toLowerCase()) ||
+            // 3. Try with 'g' suffix if not present  
+            (!shelfName.includes('g') ? shelfNameMap.get(`${shelfName}g`.toLowerCase()) : null) ||
+            // 4. Try without 'g' suffix if present
+            (shelfName.includes('g') ? shelfNameMap.get(shelfName.replace('g', '').toLowerCase()) : null);
+          
           if (!targetShelfId) {
-            const reason = `Unknown weight category "${shelfName}"`;
+            const reason = `Unknown weight category "${shelfName}" (tried "${smartShelfName}")`;
             skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
-            console.warn(`Skipping row ${index + 2}: ${reason}`);
+            console.warn(`Skipping row ${index + 2}: ${reason}. Available shelves: ${Array.from(shelfNameMap.keys()).join(', ')}`);
             return;
           }
 
@@ -1866,7 +2210,8 @@ const AppContent: React.FC = () => {
             type: strainType,
             price: price,
             netWeight: fieldToColumn.netWeight ? row[fieldToColumn.netWeight] || '' : '',
-            isLowStock: fieldToColumn.isLowStock ? (row[fieldToColumn.isLowStock] || '').toUpperCase() === 'TRUE' : false,
+            isLowStock: fieldToColumn.isLowStock ? ['true', '1', 'yes', 'last 5 units', 'last5units', 'last 5', 'last5', 'final units', 'remaining units', 'low inventory', 'last few', 'limited stock', 'low stock'].includes((row[fieldToColumn.isLowStock] || '').toLowerCase().trim()) : false,
+            isSoldOut: fieldToColumn.soldOut ? ['soldout', 'true', '1', 'yes', 'out of stock', 'unavailable', 'empty', 'oos', 'out'].includes((row[fieldToColumn.soldOut] || '').toLowerCase().trim()) : false,
             notes: fieldToColumn.notes ? row[fieldToColumn.notes] || '' : '',
           };
 
@@ -1875,6 +2220,13 @@ const AppContent: React.FC = () => {
           }
           importedProductsByShelf[targetShelfId].push(newProduct);
           importedCount++;
+          
+          // Track shake vs flower classification
+          if (isShake) {
+            shakeCount++;
+          } else {
+            flowerCount++;
+          }
         } catch (error) {
           const reason = `Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`;
           skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
@@ -1894,8 +2246,18 @@ const AppContent: React.FC = () => {
         type: 'success',
         title: 'Pre-packaged CSV Import Complete',
         message: `${importedCount} products loaded.`,
-        duration: 5000
+        duration: 5000,
+        actions: shakeCount > 0 || flowerCount > 0 ? [
+          {
+            label: 'View Classification Details',
+            onClick: () => setShowImportDetailsModal(true),
+            variant: 'secondary' as const
+          }
+        ] : undefined
       });
+      
+      // Store classification data for details modal
+      setImportClassificationData({ shakeCount, flowerCount, totalCount: importedCount });
     }
 
     setShowCsvImportModal(false);
@@ -1956,7 +2318,8 @@ const AppContent: React.FC = () => {
     if (menuMode === MenuMode.BULK) {
       // Process bulk flower shelves with strain sorting
       return bulkShelves.map(shelf => {
-        const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
+        // If sortCriteria is explicitly null (from manual reordering), don't sort
+        const activeSortCriteria = shelf.sortCriteria === null ? null : (shelf.sortCriteria || globalSortCriteria);
         return {
           ...shelf,
           strains: sortStrains(shelf.strains, activeSortCriteria, currentAppState) 
@@ -1965,7 +2328,8 @@ const AppContent: React.FC = () => {
     } else {
       // Process pre-packaged shelves with product sorting
       return prePackagedShelves.map(shelf => {
-        const activeSortCriteria = shelf.sortCriteria || globalSortCriteria;
+        // If sortCriteria is explicitly null (from manual reordering), don't sort
+        const activeSortCriteria = shelf.sortCriteria === null ? null : (shelf.sortCriteria || globalSortCriteria);
         return {
           ...shelf,
           products: sortPrePackagedProducts(shelf.products, activeSortCriteria, currentAppState) 
@@ -2301,6 +2665,8 @@ const AppContent: React.FC = () => {
       <Toolbar
         onClearAllShelves={handleClearAllShelves}
         onClearAllLastJars={handleClearAllLastJars}
+        onClearAllSoldOut={handleClearAllSoldOut}
+        hasSoldOutItems={hasSoldOutItems()}
         exportFilename={exportFilename}
         onExportFilenameChange={setExportFilename}
         onExportPNG={() => triggerImageExport('png')}
@@ -2339,9 +2705,8 @@ const AppContent: React.FC = () => {
               onScrollToShelf={handleScrollToShelf}
               theme={theme}
               onMoveStrain={handleMoveStrain}
-              onReorderStrain={handleReorderStrain}
-              dragState={dragState}
-              onDragStart={handleDragStart}
+              onMoveStrainUp={handleMoveStrainUp}
+              onMoveStrainDown={handleMoveStrainDown}
               currentState={currentAppState}
               isControlsDisabled={autoFormatState?.isOptimizing || false}
             />
@@ -2360,9 +2725,8 @@ const AppContent: React.FC = () => {
               onScrollToShelf={handleScrollToShelf}
               theme={theme}
               onMoveProduct={handleMoveProduct}
-              onReorderProduct={handleReorderProduct}
-              dragState={prePackagedDragState}
-              onDragStart={handlePrePackagedDragStart}
+              onMoveProductUp={handleMoveProductUp}
+              onMoveProductDown={handleMoveProductDown}
               currentState={currentAppState}
               isControlsDisabled={autoFormatState?.isOptimizing || false}
             />
@@ -2381,45 +2745,28 @@ const AppContent: React.FC = () => {
         >
         </div>
         <div className="flex-1 min-w-0">
-          {menuMode === MenuMode.BULK ? (
-            <MenuPreviewPanel
-              shelves={processedShelves as Shelf[]} // Use processed (sorted) bulk shelves
-              settings={previewSettings}
-              onSettingsChange={handleUpdatePreviewSettings}
-              exportAction={exportAction}
-              onExportComplete={() => {
-                setExportAction(null);
-                setIsExporting(false);
-                setShowExportOverlay(false); // Hide overlay
-              }}
-              currentState={currentAppState}
-              theme={theme}
-              onOverflowDetected={handleOverflowDetected}
-              onAutoFormat={handleAutoFormat}
-              hasContentOverflow={hasContentOverflow}
-              isOptimizing={autoFormatState?.isOptimizing || false}
-              isControlsDisabled={autoFormatState?.isOptimizing || false}
-            />
-          ) : (
-            <PrePackagedCanvas
-              shelves={processedShelves as PrePackagedShelf[]} // Use processed (sorted) pre-packaged shelves
-              settings={previewSettings}
-              onSettingsChange={handleUpdatePreviewSettings}
-              exportAction={exportAction}
-              onExportComplete={() => {
-                setExportAction(null);
-                setIsExporting(false);
-                setShowExportOverlay(false); // Hide overlay
-              }}
-              currentState={currentAppState}
-              theme={theme}
-              onOverflowDetected={handleOverflowDetected}
-              onAutoFormat={handleAutoFormat}
-              hasContentOverflow={hasContentOverflow}
-              isOptimizing={autoFormatState?.isOptimizing || false}
-              isControlsDisabled={autoFormatState?.isOptimizing || false}
-            />
-          )}
+          <MenuPreviewPanel
+            shelves={processedShelves} // Use processed shelves for both modes
+            settings={previewSettings}
+            onSettingsChange={handleUpdatePreviewSettings}
+            exportAction={exportAction}
+            onExportComplete={() => {
+              setExportAction(null);
+              setIsExporting(false);
+              setShowExportOverlay(false); // Hide overlay
+            }}
+            currentState={currentAppState}
+            theme={theme}
+            onOverflowDetected={handleOverflowDetected}
+            onAutoFormat={handleAutoFormat}
+            hasContentOverflow={hasContentOverflow}
+            isOptimizing={autoFormatState?.isOptimizing || false}
+            onAddPage={handleAddPage}
+            onRemovePage={handleRemovePage}
+            onGoToPage={handleGoToPage}
+            onToggleAutoPageBreaks={handleToggleAutoPageBreaks}
+            isControlsDisabled={autoFormatState?.isOptimizing || false}
+          />
         </div>
       </main>
       <input
@@ -2573,6 +2920,97 @@ const AppContent: React.FC = () => {
             </div>
           </div>
         )}
+        
+        {/* Import Classification Details Modal */}
+        {showImportDetailsModal && importClassificationData && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowImportDetailsModal(false)}
+          >
+            <div className={`max-w-2xl w-full rounded-lg shadow-2xl overflow-hidden ${
+              theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'
+            }`}>
+              {/* Header */}
+              <div className={`px-6 py-4 border-b flex items-center justify-between ${
+                theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
+              }`}>
+                <h2 className="text-xl font-semibold flex items-center space-x-2">
+                  <svg className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>Smart Classification Results</span>
+                </h2>
+                <button
+                  onClick={() => setShowImportDetailsModal(false)}
+                  className={`p-2 rounded-md transition-colors ${
+                    theme === 'dark'
+                      ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-200'
+                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className={`px-6 py-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">Import Summary</h3>
+                    <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold text-green-500">{importClassificationData.totalCount}</div>
+                          <div className="text-sm text-gray-500">Total Products</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-500">{importClassificationData.flowerCount}</div>
+                          <div className="text-sm text-gray-500">Flower Products</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-orange-500">{importClassificationData.shakeCount}</div>
+                          <div className="text-sm text-gray-500">Shake Products</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">How Smart Classification Works</h3>
+                    <div className="space-y-3 text-sm">
+                      <div className={`p-3 rounded-lg border-l-4 border-purple-500 ${theme === 'dark' ? 'bg-purple-900/20' : 'bg-purple-50'}`}>
+                        <div className="font-medium">🧠 Automatic Detection</div>
+                        <div className="mt-1">Products with "shake" in the name are automatically categorized under Shake shelves (e.g., "28g Shake")</div>
+                      </div>
+                      <div className={`p-3 rounded-lg border-l-4 border-green-500 ${theme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'}`}>
+                        <div className="font-medium">🌸 Default to Flower</div>
+                        <div className="mt-1">All other products are categorized under Flower shelves (e.g., "28g Flower", "3.5g Flower")</div>
+                      </div>
+                      <div className={`p-3 rounded-lg border-l-4 border-blue-500 ${theme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                        <div className="font-medium">⚙️ Manual Override</div>
+                        <div className="mt-1">You can override by using "3.5g Shake" or "28g Flower" directly in your weight/category column</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setShowImportDetailsModal(false)}
+                      className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                      }`}
+                    >
+                      Got it!
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <CsvExportModal
           isOpen={showCsvExportModal}
           onClose={() => setShowCsvExportModal(false)}

@@ -1,6 +1,7 @@
 import React, { forwardRef, useMemo, useEffect, useRef } from 'react';
 import { PrePackagedShelf, PreviewSettings, ArtboardSize, HeaderImageSize, SupportedStates } from '../types';
 import { ARTBOARD_DIMENSIONS_MAP, HEADER_IMAGE_CONFIGS, STATE_THC_ICONS } from '../constants';
+import { ContentDistributor } from '../utils/ContentDistributor';
 import { PrePackagedTable } from './PrePackagedTable';
 
 interface PrePackagedArtboardProps {
@@ -37,12 +38,19 @@ export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboar
     headerImageSize, 
     linePaddingMultiplier, 
     showThcIcon,
+    showSoldOutProducts,
     showTerpenes = true,
     showLowStock = true, // Renamed from showInventoryStatus
-    showNetWeight = false
+    showNetWeight = false,
+    showMenuDate,
+    menuDateText,
+    menuDatePosition
   } = settings;
   
   const artboardSpecs = ARTBOARD_DIMENSIONS_MAP[artboardSize];
+
+  // Create content distributor for multi-page transforms
+  const contentDistributor = useMemo(() => new ContentDistributor(settings), [settings]);
 
   const headerImageDetails = useMemo(() => 
     getHeaderImageDetails(artboardSize, headerImageSize), 
@@ -55,44 +63,86 @@ export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboar
     height: `${artboardSpecs.naturalHeight}px`,
     backgroundColor: 'white',
     boxShadow: '0 0 15px rgba(0,0,0,0.3)',
-    overflow: 'hidden',
+    overflow: 'hidden', // Clip content at artboard boundaries
     display: 'flex',
     flexDirection: 'column',
   };
 
-  const contentPadding = useMemo(() => getScaledValue(baseFontSizePx, 2, 10), [baseFontSizePx]);
-  const columnGap = useMemo(() => getScaledValue(baseFontSizePx, 1.5, 8), [baseFontSizePx]);
+  // Fixed padding and gap to prevent content width from shrinking as font size increases  
+  const contentPadding = useMemo(() => Math.max(30, baseFontSizePx * 1.4), [baseFontSizePx]); // Increased base padding
+  const columnGap = useMemo(() => Math.max(12, baseFontSizePx * 0.8), [baseFontSizePx]); // Reduced scaling
   const rowGap = useMemo(() => getScaledValue(baseFontSizePx, 1.5, 8), [baseFontSizePx]);
   const rowGapPx = `${rowGap}px`;
 
+  // Get column transform for current page
+  const pageTransform = useMemo(() => {
+    return contentDistributor.getColumnTransformForPage(settings.currentPage);
+  }, [contentDistributor, settings.currentPage]);
+
+  // REVERTED: Back to single-page layout (multi-page temporarily disabled)
+  const totalContentWidth = useMemo(() => {
+    const artboardWidth = artboardSpecs.naturalWidth;
+    // Calculate correct width based on artboard size
+    // For 8.5x11 Portrait (2550px artboard): should be 2550px content width
+    // Use proportional padding that maintains correct ratios for all sizes
+    const paddingRatio = 0; // No padding reduction from artboard width for now
+    const availableWidth = artboardWidth - (artboardWidth * paddingRatio);
+    // Simple single artboard width for standard layout
+    return availableWidth;
+  }, [artboardSpecs.naturalWidth]);
+
+  // Standard column count (no page multiplication)
+  const effectiveColumnCount = columns;
+  
+  // Footer height calculation - only when showing footer content
+  const footerHeight = (showThcIcon || (showMenuDate && menuDateText)) ? 100 : 0;
+
+  // Calculate exact column width to ensure perfect alignment
+  const exactColumnWidth = useMemo(() => {
+    const availableWidth = artboardSpecs.naturalWidth - (contentPadding * 2);
+    const totalGapWidth = (columns - 1) * columnGap;
+    return (availableWidth - totalGapWidth) / columns;
+  }, [artboardSpecs.naturalWidth, contentPadding, columnGap, columns]);
+
   const contentAreaStyle: React.CSSProperties = {
     padding: `${contentPadding}px`,
-    width: '100%',
-    height: `calc(100% - ${headerImageDetails.height}px)`, // Adjust height for header
+    width: `${totalContentWidth}px`, // Single artboard width
+    height: `calc(100% - ${headerImageDetails.height}px - ${footerHeight}px)`, // Adjust height for header and footer
     boxSizing: 'border-box',
-    columnCount: columns,
+    columnCount: effectiveColumnCount, // User's selected column count
     columnGap: `${columnGap}px`,
+    // Remove columnWidth to prevent CSS from overriding columnCount
+    // columnWidth: `${exactColumnWidth}px`, // REMOVED: Conflicts with columnCount
     columnFill: 'auto', // Fill columns sequentially instead of balancing heights
-    overflow: 'hidden', // Prevent content from overflowing its designated area
+    // REVERTED: Standard overflow behavior for single-page layout
+    overflow: 'hidden', // Prevent content from overflowing artboard boundaries
+    // transform: pageTransform.transform, // DISABLED: No multi-page transforms
+    // transition: 'transform 0.3s ease-in-out', // DISABLED: No page transitions
+    position: 'relative',
   };
 
   const shelvesWithProducts = useMemo(() => shelves.filter(shelf => shelf.products.length > 0), [shelves]);
 
   const renderableShelves = useMemo(() => {
     return shelvesWithProducts.map(shelf => {
+      // Filter products based on sold out status
+      const filteredProducts = showSoldOutProducts 
+        ? shelf.products 
+        : shelf.products.filter(product => !product.isSoldOut);
+      
       // When forceShelfFit is true, prevent tables from breaking across columns (keep shelves together)
       // When forceShelfFit is false, allow shelves to split across columns (shelf splitting enabled)
       const applyAvoidBreak = forceShelfFit;
       
       // Calculate if shelf might overflow for subtle warning overlay
       let showOverflowWarning = false;
-      if (applyAvoidBreak && shelf.products.length > 0) {
+      if (applyAvoidBreak && filteredProducts.length > 0) {
         // Only show warning when shelf splitting is disabled AND shelf is genuinely too long
         // More accurate calculation of shelf height for pre-packaged products
         const estimatedRowHeight = baseFontSizePx * 2.2 * (1 + linePaddingMultiplier * 0.8);
         const estimatedHeaderHeight = baseFontSizePx * 2.5; // Shelf name + styling
         const estimatedTableHeaderHeight = baseFontSizePx * 1.6; // Column headers
-        const estimatedShelfHeight = estimatedHeaderHeight + estimatedTableHeaderHeight + (shelf.products.length * estimatedRowHeight);
+        const estimatedShelfHeight = estimatedHeaderHeight + estimatedTableHeaderHeight + (filteredProducts.length * estimatedRowHeight);
         
         // More accurate calculation of available column height
         const totalContentHeight = artboardSpecs.naturalHeight - headerImageDetails.height - (contentPadding * 2);
@@ -101,7 +151,7 @@ export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboar
         // Only show warning if shelf is significantly too tall for a single column
         // Use a higher threshold (90%) and require a minimum number of products to avoid false positives
         const isSignificantlyTooTall = estimatedShelfHeight > availableColumnHeight * 0.9;
-        const hasEnoughProducts = shelf.products.length >= 8; // Only warn for shelves with many products
+        const hasEnoughProducts = filteredProducts.length >= 8; // Only warn for shelves with many products
         
         showOverflowWarning = isSignificantlyTooTall && hasEnoughProducts;
       }
@@ -110,7 +160,7 @@ export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboar
         <PrePackagedTable
           key={shelf.id}
           shelf={shelf}
-          productsToRender={shelf.products}
+          productsToRender={filteredProducts}
           baseFontSizePx={baseFontSizePx}
           linePaddingMultiplier={linePaddingMultiplier}
           marginBottomStyle={rowGapPx}
@@ -123,7 +173,7 @@ export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboar
         />
       );
     });
-  }, [shelvesWithProducts, forceShelfFit, baseFontSizePx, linePaddingMultiplier, rowGapPx, artboardSpecs.naturalHeight, headerImageDetails.height, contentPadding, currentState, showTerpenes, showLowStock, showNetWeight]);
+  }, [shelvesWithProducts, forceShelfFit, baseFontSizePx, linePaddingMultiplier, rowGapPx, artboardSpecs.naturalHeight, headerImageDetails.height, contentPadding, currentState, showTerpenes, showLowStock, showNetWeight, showSoldOutProducts]);
 
   const overflowRef = useRef<HTMLDivElement>(null);
 
@@ -131,12 +181,17 @@ export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboar
     const checkOverflow = () => {
       const overflowElement = overflowRef.current;
       if (overflowElement && onOverflowDetected) {
-        // Check if content is overflowing the container
+        // REVERTED: Simple single-page overflow detection
         const hasVerticalOverflow = overflowElement.scrollHeight > overflowElement.clientHeight;
         const hasHorizontalOverflow = overflowElement.scrollWidth > overflowElement.clientWidth;
         const hasOverflow = hasVerticalOverflow || hasHorizontalOverflow;
         
         onOverflowDetected(hasOverflow);
+        
+        // DISABLED: Multi-page auto creation logic
+        // if (settings.autoPageBreaks && hasOverflow) {
+        //   // Multi-page functionality disabled
+        // }
       }
     };
 
@@ -189,7 +244,7 @@ export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboar
             display: 'flex', 
             justifyContent: 'center', 
             alignItems: 'center', 
-            height: `calc(100% - ${headerImageDetails.height}px)`, // Also adjust placeholder height
+            height: `calc(100% - ${headerImageDetails.height}px - ${footerHeight}px)`, // Also adjust placeholder height for footer
             color: '#aaa', 
             fontSize: getScaledValue(baseFontSizePx, 2.5)
         }}>
@@ -197,23 +252,61 @@ export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboar
         </div>
       )}
       
-      {showThcIcon && (
-        <img 
-          src={STATE_THC_ICONS[currentState]}
-          alt={`${currentState} THC Regulatory Icon`}
-          draggable={false}
+      {/* Footer area - contains THC icon and optional menu date */}
+      {(showThcIcon || (showMenuDate && menuDateText)) && (
+        <div
+          className="artboard-footer"
           style={{
             position: 'absolute',
-            bottom: '15px',
-            right: '15px',
-            width: '80px',
-            height: 'auto',
-            opacity: 1,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: `${footerHeight}px`,
+            backgroundColor: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingLeft: `${contentPadding}px`,
+            paddingRight: `${contentPadding}px`,
+            borderTop: showMenuDate ? '1px solid #e5e7eb' : 'none', // Subtle border when showing date
             zIndex: 10,
-            userSelect: 'none', // Prevents selection
-            pointerEvents: 'none', // Allows clicks to pass through to the artboard
           }}
-        />
+        >
+          {/* Left side - Menu Date */}
+          <div className="footer-left" style={{ flex: menuDatePosition === 'center' ? 1 : 'none' }}>
+            {showMenuDate && menuDateText && (
+              <span
+                style={{
+                  fontSize: getScaledValue(baseFontSizePx, 1.2, 10),
+                  color: '#6b7280',
+                  fontWeight: 500,
+                  userSelect: 'none',
+                  textAlign: menuDatePosition === 'center' ? 'center' : 'left',
+                }}
+              >
+                {menuDateText}
+              </span>
+            )}
+          </div>
+          
+          {/* Right side - THC Icon */}
+          <div className="footer-right">
+            {showThcIcon && (
+              <img 
+                src={STATE_THC_ICONS[currentState]}
+                alt={`${currentState} THC Regulatory Icon`}
+                draggable={false}
+                style={{
+                  width: '80px',
+                  height: 'auto',
+                  opacity: 1,
+                  userSelect: 'none',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

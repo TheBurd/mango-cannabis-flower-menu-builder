@@ -25,7 +25,8 @@ const BULK_COLUMNS: ColumnConfig[] = [
   { key: 'grower', label: 'Grower/Brand', required: false, description: 'Producer or brand name' },
   { key: 'thc', label: 'THC %', required: false, description: 'THC percentage' },
   { key: 'class', label: 'Class', required: false, description: 'Strain type (S/I/H)' },
-  { key: 'lastJar', label: 'Last Jar', required: false, description: 'Last jar indicator' },
+  { key: 'lastJar', label: 'Last Jar', required: false, description: 'Last jar indicator (Yes/No)' },
+  { key: 'soldOut', label: 'Sold Out', required: false, description: 'Sold out status (Yes/No)' },
   { key: 'originalShelf', label: 'Original Shelf', required: false, description: 'Original shelf name' },
 ];
 
@@ -37,8 +38,8 @@ const PREPACKAGED_COLUMNS: ColumnConfig[] = [
   { key: 'terpenes', label: 'Terpenes %', required: false, description: 'Terpenes percentage' },
   { key: 'class', label: 'Class', required: false, description: 'Strain type (S/I/H)' },
   { key: 'price', label: 'Price', required: true, description: 'Product price' },
-  { key: 'netWeight', label: 'Net Weight', required: false, description: 'Net weight specification' },
-  { key: 'lowStock', label: 'Low Stock', required: false, description: 'Low stock indicator' },
+  { key: 'lowStock', label: 'Low Stock', required: false, description: 'Low stock status (Yes/No)' },
+  { key: 'soldOut', label: 'Sold Out', required: false, description: 'Sold out status (Yes/No)' },
   { key: 'notes', label: 'Notes', required: false, description: 'Additional notes' },
 ];
 
@@ -154,7 +155,8 @@ export const CsvExportModal: React.FC<CsvExportModalProps> = ({
               case 'grower': return strain.grower || '';
               case 'thc': return strain.thc !== null ? strain.thc.toString() : '';
               case 'class': return APP_STRAIN_TYPE_TO_CSV_SUFFIX[strain.type] || 'H';
-              case 'lastJar': return strain.isLastJar ? 'LastJar' : '';
+              case 'lastJar': return strain.isLastJar ? 'Yes' : 'No';
+              case 'soldOut': return strain.isSoldOut ? 'Yes' : 'No';
               case 'originalShelf': return strain.originalShelf || '';
               default: return '';
             }
@@ -174,8 +176,8 @@ export const CsvExportModal: React.FC<CsvExportModalProps> = ({
               case 'terpenes': return product.terpenes !== null ? product.terpenes.toString() : '';
               case 'class': return APP_STRAIN_TYPE_TO_CSV_SUFFIX[product.type] || 'H';
               case 'price': return product.price.toString();
-              case 'netWeight': return product.netWeight || '';
-              case 'lowStock': return product.isLowStock ? 'TRUE' : 'FALSE';
+              case 'lowStock': return product.isLowStock ? 'Yes' : 'No';
+              case 'soldOut': return product.isSoldOut ? 'Yes' : 'No';
               case 'notes': return product.notes || '';
               default: return '';
             }

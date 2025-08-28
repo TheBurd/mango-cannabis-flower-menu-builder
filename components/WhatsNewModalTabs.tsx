@@ -106,6 +106,18 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
               Complete modal overhaul with tab-based organization, smooth animations, and keyboard navigation.
             </p>
           </div>
+
+          <div className={`p-4 rounded-lg ${
+            theme === 'dark' ? 'bg-teal-900/20 border border-teal-700' : 'bg-teal-50 border border-teal-300'
+          }`}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">🔄</span>
+              <h3 className="font-semibold text-teal-600">Smart Reordering</h3>
+            </div>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+              Simple up/down arrows replace drag & drop. No more duplication bugs - just click to move items up or down in both Bulk and Pre-Packaged modes.
+            </p>
+          </div>
         </div>
 
         <div className={`p-4 rounded-lg ${
@@ -271,6 +283,36 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
           theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
         }`}>
           <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <span>🔄</span> Improved Item Reordering:
+          </h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• Replaced drag & drop with reliable up/down arrow controls</li>
+            <li>• Fixed item duplication issues completely</li>
+            <li>• Clear visual indicators show when items can't move further</li>
+            <li>• Maintains data integrity while reordering</li>
+            <li>• Works seamlessly across all shelves and modes</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
+        }`}>
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <span>🎨</span> Interface Enhancements:
+          </h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• New dropdown components for strain types</li>
+            <li>• Improved inventory status badges</li>
+            <li>• Better input field layouts and spacing</li>
+            <li>• Enhanced visual feedback throughout</li>
+            <li>• Foundation laid for future multi-page support</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
+        }`}>
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
             <span>📑</span> Modal Organization:
           </h3>
           <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -406,7 +448,7 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             <div className={`text-sm ${
               theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
             }`}>
-              Major release: 8 new systems, 30+ components, 3000+ lines of code
+              Major release: Complete Pre-Packaged system, Smart reordering, Enhanced CSV, 35+ components
             </div>
             <button
               onClick={onClose}

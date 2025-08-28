@@ -200,9 +200,21 @@ latest-linux.yml
 .temp/
 temp/
 
+
+# Development documentation (temporary/working files)
+test-auto-format-integration.md
+WEIGHT_ORGANIZATION_SYSTEM.md
+components/examples/
+components/common/README-TabSystem.md
+components/InstructionsModalWithTabs.tsx
+components/WhatsNewModalWithTabs.tsx
+
+# Development notes and guides
+CLAUDE.md
+CLAUDE-FLOW.md
+
 # Claude Flow generated files
-.claude-flow/
-.claude/
+.claude/settings.local.json
 .mcp.json
 claude-flow.config.json
 .swarm/
@@ -225,15 +237,3 @@ claude-flow
 claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
-
-# Development documentation (temporary/working files)
-test-auto-format-integration.md
-WEIGHT_ORGANIZATION_SYSTEM.md
-components/examples/
-components/common/README-TabSystem.md
-components/InstructionsModalWithTabs.tsx
-components/WhatsNewModalWithTabs.tsx
-
-# Development notes and guides
-CLAUDE.md
-CLAUDE-FLOW.md

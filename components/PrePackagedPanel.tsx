@@ -16,9 +16,8 @@ interface PrePackagedPanelProps {
   onScrollToShelf: (shelfId: string) => void;
   theme: Theme;
   onMoveProduct?: (fromShelfId: string, toShelfId: string, productIndex: number, targetIndex?: number) => void;
-  onReorderProduct?: (shelfId: string, fromIndex: number, toIndex: number) => void;
-  dragState?: { productId: string; shelfId: string; productIndex: number } | null;
-  onDragStart?: (productId: string, shelfId: string, productIndex: number) => void;
+  onMoveProductUp?: (shelfId: string, productIndex: number) => void;
+  onMoveProductDown?: (shelfId: string, productIndex: number) => void;
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isControlsDisabled?: boolean;
 }
@@ -36,9 +35,8 @@ export const PrePackagedPanel = React.forwardRef<HTMLDivElement, PrePackagedPane
   onScrollToShelf,
   theme,
   onMoveProduct,
-  onReorderProduct,
-  dragState,
-  onDragStart,
+  onMoveProductUp,
+  onMoveProductDown,
   currentState,
   isControlsDisabled,
 }, ref) => {
@@ -55,7 +53,6 @@ export const PrePackagedPanel = React.forwardRef<HTMLDivElement, PrePackagedPane
         shelves={shelves}
         onScrollToShelf={onScrollToShelf}
         theme={theme}
-        isDragging={!!dragState}
       />
       <div className="space-y-3 p-1"> {/* Added padding inside scrollable area */}
         {shelves.map(shelf => (
@@ -71,9 +68,8 @@ export const PrePackagedPanel = React.forwardRef<HTMLDivElement, PrePackagedPane
               onUpdateShelfSortCriteria={(key) => onUpdateShelfSortCriteria(shelf.id, key)}
               theme={theme}
               onMoveProduct={onMoveProduct}
-              onReorderProduct={onReorderProduct}
-              dragState={dragState}
-              onDragStart={onDragStart}
+              onMoveProductUp={onMoveProductUp}
+              onMoveProductDown={onMoveProductDown}
               availableShelves={shelves}
               currentState={currentState}
               isControlsDisabled={isControlsDisabled}

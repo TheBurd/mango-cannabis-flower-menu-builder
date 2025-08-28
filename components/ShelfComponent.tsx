@@ -17,9 +17,8 @@ interface ShelfComponentProps {
   onUpdateShelfSortCriteria: (key: SortCriteria['key']) => void;
   theme: Theme;
   onMoveStrain?: (fromShelfId: string, toShelfId: string, strainIndex: number, targetIndex?: number) => void;
-  onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
-  dragState?: { strainId: string; shelfId: string; strainIndex: number } | null;
-  onDragStart?: (strainId: string, shelfId: string, strainIndex: number) => void;
+  onMoveStrainUp?: (shelfId: string, strainIndex: number) => void;
+  onMoveStrainDown?: (shelfId: string, strainIndex: number) => void;
   availableShelves?: Shelf[]; // For 50% OFF shelf original shelf selection
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isControlsDisabled?: boolean;
@@ -67,9 +66,8 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   onUpdateShelfSortCriteria,
   theme,
   onMoveStrain,
-  onReorderStrain,
-  dragState,
-  onDragStart,
+  onMoveStrainUp,
+  onMoveStrainDown,
   availableShelves = [],
   currentState,
   isControlsDisabled,
@@ -135,6 +133,7 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
     { label: "Class", key: "type" },
     { label: "THC%", key: "thc" },
     { label: "Last Jar", key: "isLastJar" },
+    { label: "Sold Out", key: "isSoldOut" },
     ...(isFiftyPercentOff ? [{ label: "Original Shelf", key: "originalShelf" as SortCriteria['key'] }] : []),
   ];
 
@@ -247,14 +246,14 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
                   onUpdate={(updatedStrain) => onUpdateStrain(strain.id, updatedStrain)}
                   onRemove={() => onRemoveStrain(strain.id)} 
                   onCopy={(direction) => onCopyStrain(strain.id, direction)}
-                  isFirst={index === 0 && shelf.strains.length === 1} 
-                  isLast={index === shelf.strains.length - 1 && shelf.strains.length === 1} 
+                  onMoveUp={onMoveStrainUp ? () => onMoveStrainUp(shelf.id, index) : undefined}
+                  onMoveDown={onMoveStrainDown ? () => onMoveStrainDown(shelf.id, index) : undefined}
+                  isFirst={index === 0} 
+                  isLast={index === shelf.strains.length - 1} 
                   isNewlyAdded={newlyAddedStrainId === strain.id}
                   theme={theme}
                   shelfId={shelf.id}
                   strainIndex={index}
-                  isDragging={dragState?.strainId === strain.id}
-                  onDragStart={onDragStart}
                   isFiftyPercentOff={isFiftyPercentOff}
                   availableShelves={availableShelves}
                   currentState={currentState}

@@ -431,6 +431,63 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
                 theme={theme}
               />
           </div>
+
+          <div className="flex items-center space-x-1" title="Show menu date in footer">
+              <span className="w-5 h-5 flex items-center justify-center text-gray-500 text-sm">📅</span>
+              <ToggleSwitch
+                id="showMenuDateToggle"
+                checked={settings.showMenuDate}
+                onChange={(checked) => {
+                  if (checked && !settings.menuDateText.trim()) {
+                    // Auto-populate with today's date when enabling and no text exists
+                    const today = new Date();
+                    const month = today.toLocaleDateString('en-US', { month: 'long' });
+                    const day = today.getDate();
+                    const year = today.getFullYear();
+                    const currentDate = `${month} ${day}, ${year}`;
+                    onSettingsChange({ 
+                      showMenuDate: checked,
+                      menuDateText: `Updated: ${currentDate}`
+                    });
+                  } else {
+                    onSettingsChange({ showMenuDate: checked });
+                  }
+                }}
+                label="Show Menu Date"
+                theme={theme}
+              />
+          </div>
+
+          {settings.showMenuDate && (
+            <div className="flex items-center space-x-1" title="Menu date text to display in footer">
+                <span className="w-5 h-5 flex items-center justify-center text-gray-500 text-sm">✏️</span>
+                <input
+                  type="text"
+                  value={settings.menuDateText}
+                  onChange={(e) => onSettingsChange({ menuDateText: e.target.value })}
+                  className={`
+                    px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1
+                    ${theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600 text-gray-200 focus:ring-blue-500' 
+                      : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
+                    }
+                  `}
+                  placeholder="Enter date text..."
+                  style={{ minWidth: '150px' }}
+                />
+            </div>
+          )}
+
+          <div className="flex items-center space-x-1" title="Show sold out products in menu">
+              <span className="w-5 h-5 flex items-center justify-center text-red-500 text-sm">❌</span>
+              <ToggleSwitch
+                id="showSoldOutToggle"
+                checked={settings.showSoldOutProducts}
+                onChange={(checked) => onSettingsChange({ showSoldOutProducts: checked })}
+                label="Show Sold Out"
+                theme={theme}
+              />
+          </div>
         </div>
         
         {/* Pre-packaged Mode Specific Controls */}

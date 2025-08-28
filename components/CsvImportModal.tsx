@@ -35,6 +35,7 @@ const BULK_FIELDS: MappingField[] = [
   { key: 'thc', label: 'THC %', required: false, description: 'THC percentage', aliases: ['thc', 'thc%', 'thc percent', 'thc percentage', 'thc %'] },
   { key: 'type', label: 'Strain Type', required: false, description: 'Strain classification', aliases: ['class', 'type', 'strain type', 'classification'] },
   { key: 'lastJar', label: 'Last Jar', required: false, description: 'Last jar indicator', aliases: ['last jar', 'lastjar', 'final', 'remaining', 'last'] },
+  { key: 'soldOut', label: 'Sold Out', required: false, description: 'Sold out indicator', aliases: ['sold out', 'soldout', 'out of stock', 'unavailable', 'empty', 'stock status', 'availability', 'in stock', 'available', 'status', 'stock', 'out', 'oos'] },
   { key: 'originalShelf', label: 'Original Shelf', required: false, description: 'Original shelf reference', aliases: ['original shelf', 'original', 'source shelf', 'source'] },
 ];
 
@@ -46,8 +47,8 @@ const PREPACKAGED_FIELDS: MappingField[] = [
   { key: 'terpenes', label: 'Terpenes %', required: false, description: 'Terpenes percentage', aliases: ['terpenes', 'terp', 'terp%', 'terpene'] },
   { key: 'type', label: 'Strain Type', required: false, description: 'Strain classification', aliases: ['class', 'type', 'strain type'] },
   { key: 'price', label: 'Price', required: true, description: 'Product price', aliases: ['price', 'cost', 'amount'] },
-  { key: 'netWeight', label: 'Net Weight', required: false, description: 'Net weight specification', aliases: ['net weight', 'weight', 'net wt', 'netweight'] },
-  { key: 'isLowStock', label: 'Low Stock', required: false, description: 'Low stock status', aliases: ['low stock', 'lowstock', 'stock status', 'inventory'] },
+  { key: 'isLowStock', label: 'Low Stock', required: false, description: 'Low stock status', aliases: ['low stock', 'lowstock', 'stock status', 'inventory', 'last 5 units', 'last5units', 'last 5', 'last5', 'final units', 'remaining units', 'low inventory', 'last few', 'limited stock'] },
+  { key: 'soldOut', label: 'Sold Out', required: false, description: 'Sold out indicator', aliases: ['sold out', 'soldout', 'out of stock', 'unavailable', 'empty', 'stock status', 'availability', 'in stock', 'available', 'status', 'stock', 'out', 'oos'] },
   { key: 'notes', label: 'Notes', required: false, description: 'Additional notes', aliases: ['notes', 'comments', 'remarks', 'description'] },
 ];
 
@@ -68,7 +69,8 @@ const getBulkFlowerHelpContent = () => (
         <li>• <strong>Grower/Brand:</strong> Producer name</li>
         <li>• <strong>THC %:</strong> THC percentage (numbers only, e.g., "24.5")</li>
         <li>• <strong>Class:</strong> Strain type (S/Sativa, I/Indica, H/Hybrid)</li>
-        <li>• <strong>Last Jar:</strong> Any value indicates last jar (e.g., "LastJar", "Yes")</li>
+        <li>• <strong>Last Jar:</strong> Last jar status (e.g., "Yes", "No", "LastJar")</li>
+        <li>• <strong>Sold Out:</strong> Stock status (e.g., "Yes", "No", "Out of Stock", "Available")</li>
         <li>• <strong>Original Shelf:</strong> Previous shelf reference</li>
       </ul>
     </div>
@@ -97,6 +99,8 @@ const getBulkFlowerHelpContent = () => (
               <th className="px-2 py-1 text-left font-medium">Grower/Brand</th>
               <th className="px-2 py-1 text-left font-medium">THC %</th>
               <th className="px-2 py-1 text-left font-medium">Class</th>
+              <th className="px-2 py-1 text-left font-medium">Last Jar</th>
+              <th className="px-2 py-1 text-left font-medium">Sold Out</th>
             </tr>
           </thead>
           <tbody className="font-mono">
@@ -106,6 +110,8 @@ const getBulkFlowerHelpContent = () => (
               <td className="px-2 py-1">Acme Farms</td>
               <td className="px-2 py-1">22.5</td>
               <td className="px-2 py-1">H</td>
+              <td className="px-2 py-1">No</td>
+              <td className="px-2 py-1">No</td>
             </tr>
             <tr>
               <td className="px-2 py-1">Value Flower</td>
@@ -113,6 +119,8 @@ const getBulkFlowerHelpContent = () => (
               <td className="px-2 py-1">Green Valley</td>
               <td className="px-2 py-1">18.0</td>
               <td className="px-2 py-1">I</td>
+              <td className="px-2 py-1">Yes</td>
+              <td className="px-2 py-1">Yes</td>
             </tr>
           </tbody>
         </table>
@@ -139,8 +147,8 @@ const getPrePackagedHelpContent = () => (
         <li>• <strong>THC %:</strong> THC percentage (numbers only)</li>
         <li>• <strong>Terpenes %:</strong> Terpene percentage</li>
         <li>• <strong>Class:</strong> Strain type (S/Sativa, I/Indica, H/Hybrid)</li>
-        <li>• <strong>Net Weight:</strong> Actual weight specification</li>
-        <li>• <strong>Low Stock:</strong> Stock status (TRUE/FALSE or Yes/No)</li>
+        <li>• <strong>Low Stock:</strong> Stock status (e.g., "Yes", "No", "Last 5 Units", "TRUE", "FALSE")</li>
+        <li>• <strong>Sold Out:</strong> Stock status (e.g., "Yes", "No", "Out of Stock", "Available")</li>
         <li>• <strong>Notes:</strong> Additional product information</li>
       </ul>
     </div>
@@ -151,10 +159,21 @@ const getPrePackagedHelpContent = () => (
         <li>• Group products by weight categories</li>
         <li>• Use consistent weight naming (1g, 3.5g, 7g, etc.)</li>
         <li>• Price as numbers only (no $ symbol)</li>
-        <li>• Boolean values: TRUE/FALSE or Yes/No</li>
+        <li>• Boolean values: Yes/No or TRUE/FALSE</li>
         <li>• Include brand for better organization</li>
         <li>• Remove empty rows before importing</li>
         <li>• Auto-mapping works best with standard header names</li>
+      </ul>
+    </div>
+    
+    <div>
+      <h4 className="font-medium text-purple-600 dark:text-purple-400 mb-2">🧠 Smart Shake Detection</h4>
+      <ul className="space-y-1 text-sm">
+        <li>• Products with "shake" in the name automatically go to Shake categories</li>
+        <li>• Products without "shake" automatically go to Flower categories</li>
+        <li>• Example: "28g Blue Dream Shake" → "28g Shake" category</li>
+        <li>• Example: "28g Blue Dream" → "28g Flower" category</li>
+        <li>• Manual override: Use "3.5g Shake", "28g Flower" in weight column</li>
       </ul>
     </div>
     
@@ -170,6 +189,8 @@ const getPrePackagedHelpContent = () => (
               <th className="px-2 py-1 text-left font-medium">Price</th>
               <th className="px-2 py-1 text-left font-medium">THC %</th>
               <th className="px-2 py-1 text-left font-medium">Class</th>
+              <th className="px-2 py-1 text-left font-medium">Low Stock</th>
+              <th className="px-2 py-1 text-left font-medium">Sold Out</th>
             </tr>
           </thead>
           <tbody className="font-mono">
@@ -180,6 +201,8 @@ const getPrePackagedHelpContent = () => (
               <td className="px-2 py-1">12.00</td>
               <td className="px-2 py-1">26.8</td>
               <td className="px-2 py-1">I</td>
+              <td className="px-2 py-1">No</td>
+              <td className="px-2 py-1">No</td>
             </tr>
             <tr>
               <td className="px-2 py-1">3.5g Flower</td>
@@ -188,6 +211,8 @@ const getPrePackagedHelpContent = () => (
               <td className="px-2 py-1">45.00</td>
               <td className="px-2 py-1">24.2</td>
               <td className="px-2 py-1">H</td>
+              <td className="px-2 py-1">Yes</td>
+              <td className="px-2 py-1">Yes</td>
             </tr>
           </tbody>
         </table>
@@ -418,6 +443,20 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
           const normalizedType = value.toUpperCase().replace(/[\s-./]/g, '');
           if (!CSV_STRAIN_TYPE_MAP[normalizedType]) {
             errors.push(`Row ${index + 2}: Unknown strain type: "${value}"`);
+          }
+        }
+        
+        // Validate boolean fields for better user feedback
+        if ((appField === 'soldOut' || appField === 'lastJar' || appField === 'isLowStock') && value && value !== '-') {
+          const normalizedValue = value.toLowerCase().trim();
+          const validBooleanValues = [
+            'true', 'false', 'yes', 'no', '1', '0', 
+            'soldout', 'lastjar', 'available', 'unavailable',
+            'in stock', 'out of stock', 'empty', 'full'
+          ];
+          
+          if (!validBooleanValues.includes(normalizedValue) && normalizedValue !== '') {
+            errors.push(`Row ${index + 2}: Invalid ${appField} format: "${value}". Use values like: true/false, yes/no, 1/0, soldout, available, etc.`);
           }
         }
       });

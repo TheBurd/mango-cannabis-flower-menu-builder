@@ -175,6 +175,13 @@ export const ChevronDownIcon: React.FC<IconSVGProps> = ({ title, ...props }) => 
   </svg>
   );
 
+export const ChevronUpIcon: React.FC<IconSVGProps> = ({ title, ...props }) => ( // Heroicon: chevron-up
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    {title && <title>{title}</title>}
+    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+  </svg>
+  );
+
 export const PackageIcon: React.FC<IconSVGProps> = ({ title, ...props }) => ( // Heroicon: archive-box
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
     {title && <title>{title}</title>}
@@ -283,6 +290,13 @@ export const QuestionMarkCircleIcon: React.FC<IconSVGProps> = ({ title, ...props
   </svg>
 );
 
+export const ExclamationTriangleIcon: React.FC<IconSVGProps> = ({ title, ...props }) => ( // Heroicon: exclamation-triangle
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    {title && <title>{title}</title>}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+  </svg>
+);
+
 // Arrow Right Icon
 export const ArrowRightIcon: React.FC<IconSVGProps> = ({ title, ...props }) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -331,10 +345,12 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
     'photo': PhotoIcon,
     'spacing': SpacingIcon,
     'chevron-down': ChevronDownIcon,
+    'chevron-up': ChevronUpIcon,
     'package': PackageIcon,
     'sun': SunIcon,
     'moon': MoonIcon,
     'question': QuestionMarkCircleIcon,
+    'warning': ExclamationTriangleIcon,
   };
 
   const IconComponent = iconMap[name as keyof typeof iconMap];

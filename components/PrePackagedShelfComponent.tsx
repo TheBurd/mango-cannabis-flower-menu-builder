@@ -15,9 +15,8 @@ interface PrePackagedShelfComponentProps {
   onUpdateShelfSortCriteria: (key: PrePackagedSortCriteria['key']) => void;
   theme: Theme;
   onMoveProduct?: (fromShelfId: string, toShelfId: string, productIndex: number, targetIndex?: number) => void;
-  onReorderProduct?: (shelfId: string, fromIndex: number, toIndex: number) => void;
-  dragState?: { productId: string; shelfId: string; productIndex: number } | null;
-  onDragStart?: (productId: string, shelfId: string, productIndex: number) => void;
+  onMoveProductUp?: (shelfId: string, productIndex: number) => void;
+  onMoveProductDown?: (shelfId: string, productIndex: number) => void;
   availableShelves: PrePackagedShelf[];
   currentState?: SupportedStates;
   isControlsDisabled?: boolean;
@@ -34,15 +33,13 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
   onUpdateShelfSortCriteria,
   theme,
   onMoveProduct,
-  onReorderProduct,
-  dragState,
-  onDragStart,
+  onMoveProductUp,
+  onMoveProductDown,
   availableShelves,
   currentState,
   isControlsDisabled,
 }) => {
   const shelfRef = useRef<HTMLDivElement>(null);
-  const [showDropZone, setShowDropZone] = useState(false);
 
   // Auto-scroll to newly added product
   useEffect(() => {
@@ -56,27 +53,6 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
     }
   }, [newlyAddedProductId, shelf.products]);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (dragState && dragState.shelfId !== shelf.id) {
-      setShowDropZone(true);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setShowDropZone(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setShowDropZone(false);
-    
-    if (dragState && onMoveProduct) {
-      onMoveProduct(dragState.shelfId, shelf.id, dragState.productIndex);
-    }
-  };
 
   const sortOptions: Array<{ value: PrePackagedSortCriteria['key']; label: string }> = [
     { value: 'name', label: 'Name' },
@@ -84,9 +60,9 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
     { value: 'type', label: 'Type' },
     { value: 'thc', label: 'THC%' },
     { value: 'terpenes', label: 'Terpenes%' },
-    { value: 'weight', label: 'Weight' },
     { value: 'price', label: 'Price' },
-    { value: 'inventoryStatus', label: 'Inventory' },
+    { value: 'isLowStock', label: 'Low Stock' },
+    { value: 'isSoldOut', label: 'Sold Out' },
   ];
 
   return (
@@ -94,10 +70,7 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
       ref={shelfRef}
       className={`rounded-lg border-2 p-4 transition-all duration-200 ${
         theme === 'dark' ? 'border-gray-600' : 'border-gray-200'
-      } ${showDropZone ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      }`}
       id={`shelf-${shelf.id}`}
     >
       {/* Shelf Header */}
@@ -136,13 +109,6 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
         </div>
       </div>
 
-      {/* Drop Zone Indicator */}
-      {showDropZone && (
-        <div className="border-2 border-dashed border-blue-400 rounded-lg p-8 mb-4 text-center">
-          <Icon name="plus" className="w-8 h-8 mx-auto mb-2 text-blue-400" />
-          <p className="text-blue-600 dark:text-blue-400">Drop product here</p>
-        </div>
-      )}
 
       {/* Products List */}
       <div className="space-y-2">
@@ -154,14 +120,15 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
             onRemove={() => onRemoveProduct(product.id)}
             onCopy={(direction) => onCopyProduct(product.id, direction)}
             onMove={onMoveProduct}
-            onReorder={onReorderProduct}
-            onDragStart={onDragStart}
+            onMoveUp={onMoveProductUp ? () => onMoveProductUp(shelf.id, index) : undefined}
+            onMoveDown={onMoveProductDown ? () => onMoveProductDown(shelf.id, index) : undefined}
             theme={theme}
             isNewlyAdded={product.id === newlyAddedProductId}
             shelfId={shelf.id}
             productIndex={index}
             availableShelves={availableShelves}
-            isDragging={dragState?.productId === product.id}
+            isFirst={index === 0}
+            isLast={index === shelf.products.length - 1}
             isControlsDisabled={isControlsDisabled}
             shelfColor={shelf.color}
           />

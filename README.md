@@ -187,9 +187,22 @@ Organized content discovery with tab navigation
 - Structure: Quick Start, Product Management, Import/Export, Design Controls, Tips & Shortcuts
 - Cross-Modal Navigation: Seamless linking between highlights and detailed instructions
 
-### **⚡ UI/UX Enhancements**
-Interface improvements with theming and accessibility
+### **🔄 Reliable Row Reordering**
+Replaced drag & drop with up/down arrow buttons
 
+- Up/Down Arrow Controls: Simple click-to-move interface replacing problematic drag & drop
+- Eliminated Duplication Bugs: No more items accidentally copying during reorder operations
+- Clear Visual Feedback: Arrows automatically disable/hide at list boundaries
+- Consistent Operation: Works seamlessly in both Bulk and Pre-Packaged modes
+- Data Integrity: Maintains sort state and prevents corruption during reordering
+
+### **🎨 UI/UX Refinements**
+Interface improvements with enhanced components
+
+- Enhanced Input Components: New StrainTypeDropdown and InventoryStatusBadge for better visual clarity
+- Improved Layouts: Better spacing, positioning, and visual hierarchy across all input forms
+- Visual Polish: Smoother interactions, consistent styling, and enhanced visual feedback
+- Foundation for Future: Groundwork laid for upcoming multi-page printing support
 - Dual-Mode State Management: Seamless switching between Bulk and Pre-Packaged modes with data preservation
 - Preview Controls: Expanded control panels for both menu types with mode-specific options
 - Theming: Consistent dark/light theme support across all new components

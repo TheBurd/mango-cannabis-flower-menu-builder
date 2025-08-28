@@ -155,7 +155,7 @@ export const WeightBasedShelfRenderer: React.FC<WeightBasedShelfRendererProps> =
   const containerStyle: React.CSSProperties = useMemo(() => ({
     marginBottom: marginBottomStyle,
     ...(applyAvoidBreakStyle && {
-      breakInside: 'avoid' as const,
+      breakInside: 'avoid-column' as const,
     }),
   }), [marginBottomStyle, applyAvoidBreakStyle]);
 

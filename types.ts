@@ -25,6 +25,7 @@ export interface Strain {
   thc: number | null;
   type: StrainType;
   isLastJar: boolean;
+  isSoldOut: boolean;
   originalShelf?: string; // For 50% OFF shelf - tracks which shelf this strain originally came from
 }
 
@@ -39,6 +40,7 @@ export interface PrePackagedProduct {
   price: number; // Fixed price per package
   netWeight?: string; // Net weight field (e.g., "3.52g")
   isLowStock: boolean; // Low stock flag - replaces inventoryStatus
+  isSoldOut: boolean; // Sold out flag
   notes?: string; // Additional notes (e.g., "Has Display", batch info)
   originalShelf?: string; // For tracking shelf moves
 }
@@ -53,12 +55,12 @@ export interface PriceTiers {
 }
 
 export interface SortCriteria {
-  key: 'name' | 'grower' | 'type' | 'thc' | 'isLastJar' | 'originalShelf';
+  key: 'name' | 'grower' | 'type' | 'thc' | 'isLastJar' | 'isSoldOut' | 'originalShelf';
   direction: 'asc' | 'desc';
 }
 
 export interface PrePackagedSortCriteria {
-  key: 'name' | 'brand' | 'type' | 'thc' | 'terpenes' | 'price' | 'isLowStock' | 'originalShelf';
+  key: 'name' | 'brand' | 'type' | 'thc' | 'terpenes' | 'price' | 'isLowStock' | 'isSoldOut' | 'originalShelf';
   direction: 'asc' | 'desc';
 }
 
@@ -115,6 +117,7 @@ export interface PreviewSettings {
   headerImageSize: HeaderImageSize; // Added for selectable header images
   linePaddingMultiplier: number; // Multiplier for line item top/bottom padding (e.g., 0.3 = smaller padding, 0.5 = larger padding)
   showThcIcon: boolean; // Show THC regulatory icon on menu preview/export
+  showSoldOutProducts: boolean; // Show sold out products in menu preview/export
   fitToWindowTrigger?: number; // Timestamp trigger for fit-to-window action
   menuMode: MenuMode; // Support for bulk vs pre-packaged mode
   showTerpenes?: boolean; // Show terpene percentages in pre-packaged mode
@@ -124,6 +127,28 @@ export interface PreviewSettings {
   inventoryHighlightLowStock?: boolean; // Highlight low stock items in distinct color
   showNetWeight?: boolean; // Show net weight in pre-packaged mode
   netWeightPrecision?: 1 | 2 | 3; // Decimal places for net weight display
+  // Multi-page support
+  pageCount: number; // Total number of pages (default: 1)
+  currentPage: number; // Currently viewed page (1-based, default: 1)
+  autoPageBreaks: boolean; // Automatically create pages when content overflows (default: true)
+  // Footer settings
+  showMenuDate: boolean; // Show menu date in footer
+  menuDateText: string; // The date text to display
+  menuDatePosition?: 'left' | 'center'; // Position of date text in footer
+}
+
+// Multi-page content distribution types
+export interface PagedContent {
+  pageNumber: number; // 1-based page number
+  shelves: AnyShelf[]; // Shelves assigned to this page
+  estimatedHeight: number; // Estimated content height in pixels
+  actualHeight?: number; // Measured height after rendering
+}
+
+export interface ContentDistribution {
+  pages: PagedContent[];
+  totalPages: number;
+  hasOverflow: boolean; // Whether content would overflow without pages
 }
 
 export enum SupportedStates {
@@ -156,6 +181,7 @@ export interface PrePackagedCSVRow {
   Price: string;
   'Net Weight'?: string;
   'Low Stock': string; // Changed from 'Inventory Status'
+  'Sold Out': string; // Sold out status
   Notes?: string;
   'Original Shelf'?: string;
 }
@@ -179,7 +205,7 @@ export const isBulkShelf = (shelf: AnyShelf): shelf is Shelf => {
 
 export const isPrePackagedSortCriteria = (criteria: AnySortCriteria): criteria is PrePackagedSortCriteria => {
   const prePackagedKeys: Array<PrePackagedSortCriteria['key']> = [
-    'name', 'brand', 'type', 'thc', 'terpenes', 'price', 'isLowStock', 'originalShelf'
+    'name', 'brand', 'type', 'thc', 'terpenes', 'price', 'isLowStock', 'isSoldOut', 'originalShelf'
   ];
   return prePackagedKeys.includes(criteria.key as PrePackagedSortCriteria['key']);
 };

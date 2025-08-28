@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import domtoimage from 'dom-to-image';
 import { PrePackagedShelf, PreviewSettings, SupportedStates, Theme } from '../types';
-import { PreviewControls } from './PreviewControls';
+import { PreviewControlsTop } from './PreviewControlsTop';
+import { PreviewControlsBottom } from './PreviewControlsBottom';
 import { PrePackagedArtboard } from './PrePackagedArtboard';
 import { ARTBOARD_DIMENSIONS_MAP, INITIAL_PREVIEW_SETTINGS } from '../constants';
 import { ExportAction } from '../App';
@@ -426,21 +427,14 @@ export const PrePackagedCanvas: React.FC<PrePackagedCanvasProps> = ({
     <div className={`flex flex-col h-full ${
       theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
     }`}>
-      <PreviewControls
+      <PreviewControlsTop
         settings={settings}
         onSettingsChange={onSettingsChange}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onFitToWindow={() => onSettingsChange({ fitToWindowTrigger: Date.now() })}
-        onResetZoom={resetZoomAndPan}
-        currentZoom={settings.zoomLevel}
-        onDirectZoomChange={handleZoomChangeFromControls}
-        currentState={currentState}
         theme={theme}
-        onAutoFormat={onAutoFormat}
-        hasContentOverflow={hasOverflow}
-        isOptimizing={isOptimizing}
         isControlsDisabled={isControlsDisabled}
+        onAutoFormat={onAutoFormat}
+        isOptimizing={isOptimizing}
+        hasContentOverflow={hasOverflow}
       />
       
       <div className="flex-1 relative overflow-hidden">
@@ -505,6 +499,19 @@ export const PrePackagedCanvas: React.FC<PrePackagedCanvasProps> = ({
           </div>
         </div>
       </div>
+
+      <PreviewControlsBottom
+        settings={settings}
+        onSettingsChange={onSettingsChange}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onFitToWindow={() => onSettingsChange({ fitToWindowTrigger: Date.now() })}
+        onResetZoom={resetZoomAndPan}
+        currentZoom={settings.zoomLevel}
+        theme={theme}
+        currentState={currentState}
+        isControlsDisabled={isControlsDisabled}
+      />
     </div>
   );
 };

@@ -338,10 +338,11 @@ export const INITIAL_PREVIEW_SETTINGS: PreviewSettings = {
   baseFontSizePx: 10,
   columns: 1,
   zoomLevel: 0.25, 
-  forceShelfFit: true, // Allow Shelf Splitting is OFF by default (true = no splitting, shelves stay together)
+  forceShelfFit: false, // Allow Shelf Splitting is ON by default (false = splitting enabled, shelves can split across columns)
   headerImageSize: HeaderImageSize.NONE, // Default header image size
   linePaddingMultiplier: 0.3, // Default padding multiplier (corresponds to current tightened padding)
   showThcIcon: true, // Default to showing THC icon
+  showSoldOutProducts: false, // Default to hiding sold out products
   menuMode: MenuMode.BULK, // Default to bulk flower mode
   showTerpenes: true, // Default to showing terpenes in pre-packaged mode
   terpeneHighlightThreshold: 2.0, // Highlight terpenes above 2.0%
@@ -350,6 +351,20 @@ export const INITIAL_PREVIEW_SETTINGS: PreviewSettings = {
   inventoryHighlightLowStock: true, // Highlight low stock items by default
   showNetWeight: false, // Default to hiding net weight in pre-packaged mode
   netWeightPrecision: 2, // Default to 2 decimal places for net weight
+  // Multi-page defaults - DEPRECATED but preserved for future development
+  pageCount: 1, // Always single page for now
+  currentPage: 1, // Always first page
+  autoPageBreaks: false, // Multi-page disabled
+  // Footer defaults
+  showMenuDate: false, // Default to hiding menu date
+  menuDateText: (() => {
+    const today = new Date();
+    const month = today.toLocaleDateString('en-US', { month: 'long' });
+    const day = today.getDate();
+    const year = today.getFullYear();
+    return `Updated: ${month} ${day}, ${year}`;
+  })(), // Default date text with full date
+  menuDatePosition: 'left', // Default position for date text
 };
 
 export const HEADER_IMAGE_CONFIGS: Record<ArtboardSize, Partial<Record<Exclude<HeaderImageSize, HeaderImageSize.NONE>, { src: string; naturalHeight: number; naturalWidth: number }>>> = {

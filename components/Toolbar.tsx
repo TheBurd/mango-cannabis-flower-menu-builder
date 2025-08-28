@@ -6,6 +6,8 @@ import { SortCriteria, Theme, MenuMode } from '../types';
 interface ToolbarProps {
   onClearAllShelves: () => void;
   onClearAllLastJars: () => void;
+  onClearAllSoldOut: () => void;
+  hasSoldOutItems: boolean;
   exportFilename: string;
   onExportFilenameChange: (name: string) => void;
   onExportPNG: () => void;
@@ -50,6 +52,8 @@ const SortButton: React.FC<{
 export const Toolbar: React.FC<ToolbarProps> = ({
   onClearAllShelves,
   onClearAllLastJars,
+  onClearAllSoldOut,
+  hasSoldOutItems,
   exportFilename,
   onExportFilenameChange,
   onExportPNG,
@@ -64,6 +68,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 }) => {
   const [confirmClearShelves, setConfirmClearShelves] = useState(false);
   const [confirmClearLastJars, setConfirmClearLastJars] = useState(false);
+  const [confirmClearSoldOut, setConfirmClearSoldOut] = useState(false);
 
   const handleClearShelvesClick = useCallback(() => {
     if (confirmClearShelves) {
@@ -83,6 +88,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     }
   }, [confirmClearLastJars, onClearAllLastJars]);
 
+  const handleClearSoldOutClick = useCallback(() => {
+    if (confirmClearSoldOut) {
+      onClearAllSoldOut();
+      setConfirmClearSoldOut(false);
+    } else {
+      setConfirmClearSoldOut(true);
+    }
+  }, [confirmClearSoldOut, onClearAllSoldOut]);
+
   useEffect(() => {
     let timerShelves: number;
     if (confirmClearShelves) {
@@ -98,13 +112,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     }
     return () => clearTimeout(timerLastJars);
   }, [confirmClearLastJars]);
+
+  useEffect(() => {
+    let timerSoldOut: number;
+    if (confirmClearSoldOut) {
+      timerSoldOut = window.setTimeout(() => setConfirmClearSoldOut(false), CONFIRMATION_TIMEOUT);
+    }
+    return () => clearTimeout(timerSoldOut);
+  }, [confirmClearSoldOut]);
   
   const sortOptions: Array<{ label: string; key: SortCriteria['key'] }> = [
     { label: "Name", key: "name" },
     { label: "Grower", key: "grower" },
     { label: "Class", key: "type" },
     { label: "THC%", key: "thc" },
-    { label: "Last Jar", key: "isLastJar" },
+    { label: menuMode === MenuMode.PREPACKAGED ? "Low Stock" : "Last Jar", key: "isLastJar" },
+    { label: "Sold Out", key: "isSoldOut" },
   ];
 
   return (
@@ -131,8 +154,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           className={`flex items-center space-x-2 min-w-[170px] justify-center ${confirmClearLastJars ? 'bg-yellow-600 hover:bg-yellow-700 text-gray-900' : 'bg-yellow-500 hover:bg-yellow-600 text-gray-800'}`}
         >
           <FlowerJarIcon className="w-5 h-5" />
-          <span>{confirmClearLastJars ? "Are you sure?" : "Clear All Last Jars"}</span>
+          <span>{confirmClearLastJars ? "Are you sure?" : (menuMode === MenuMode.PREPACKAGED ? "Clear All Low Stock" : "Clear All Last Jars")}</span>
         </Button>
+
+        {/* Clear All Sold Out Button - only show if there are sold out items */}
+        {hasSoldOutItems && (
+          <Button 
+            onClick={handleClearSoldOutClick} 
+            variant="danger"
+            size="sm" 
+            className={`flex items-center space-x-2 min-w-[170px] justify-center ${confirmClearSoldOut ? 'bg-red-700 hover:bg-red-800 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+          >
+            <TrashXmarkIcon className="w-5 h-5" />
+            <span>{confirmClearSoldOut ? "Are you sure?" : "Clear All Sold Out"}</span>
+          </Button>
+        )}
 
         <div className="h-6 border-l border-gray-600 mx-1"></div> {/* Divider */}
 

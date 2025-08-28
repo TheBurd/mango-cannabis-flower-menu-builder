@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import domtoimage from 'dom-to-image';
 import { Shelf, PrePackagedShelf, PreviewSettings, SupportedStates, Theme, MenuMode, AnyShelf, isPrePackagedShelf } from '../types';
-import { PreviewControls } from './PreviewControls';
+import { PreviewControlsTop } from './PreviewControlsTop';
+import { PreviewControlsBottom } from './PreviewControlsBottom';
 import { PreviewArtboard } from './PreviewArtboard';
 import { PrePackagedArtboard } from './PrePackagedArtboard';
+import { MultiPageArtboardContainer } from './MultiPageArtboardContainer';
+import { FloatingPageControls } from './FloatingPageControls';
 import { ARTBOARD_DIMENSIONS_MAP, INITIAL_PREVIEW_SETTINGS } from '../constants';
 import { ExportAction } from '../App';
 // import html2canvas from 'html2canvas'; // Removed - not needed for this implementation
@@ -24,6 +27,11 @@ interface MenuPreviewPanelProps {
   hasContentOverflow?: boolean;
   isOptimizing?: boolean;
   isControlsDisabled?: boolean;
+  // Multi-page management
+  onAddPage: () => void;
+  onRemovePage: (pageNumber: number) => void;
+  onGoToPage: (pageNumber: number) => void;
+  onToggleAutoPageBreaks: () => void;
 }
 
 export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
@@ -39,6 +47,10 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   hasContentOverflow: hasOverflow,
   isOptimizing,
   isControlsDisabled,
+  onAddPage,
+  onRemovePage,
+  onGoToPage,
+  onToggleAutoPageBreaks,
 }) => {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -459,21 +471,14 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
     <div className={`flex flex-col h-full ${
       theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
     }`}>
-      <PreviewControls
+      <PreviewControlsTop
         settings={settings}
         onSettingsChange={onSettingsChange}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onFitToWindow={() => onSettingsChange({ fitToWindowTrigger: Date.now() })}
-        onResetZoom={resetZoomAndPan}
-        currentZoom={settings.zoomLevel}
-        onDirectZoomChange={handleZoomChangeFromControls}
-        currentState={currentState}
         theme={theme}
-        onAutoFormat={onAutoFormat}
-        hasContentOverflow={hasOverflow}
-        isOptimizing={isOptimizing}
         isControlsDisabled={isControlsDisabled}
+        onAutoFormat={onAutoFormat}
+        isOptimizing={isOptimizing}
+        hasContentOverflow={hasOverflow}
       />
       
       <div className="flex-1 relative overflow-hidden">
@@ -528,26 +533,50 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
               transformOrigin: 'center center',
             }}
           >
-            {settings.menuMode === MenuMode.PREPACKAGED ? (
-              <PrePackagedArtboard
-                ref={artboardRef}
-                shelves={shelves.filter(isPrePackagedShelf)}
-                settings={settings}
-                currentState={currentState}
-                onOverflowDetected={onOverflowDetected || handleOverflowDetected}
-              />
-            ) : (
-              <PreviewArtboard
-                ref={artboardRef}
-                shelves={shelves.filter(shelf => !isPrePackagedShelf(shelf)) as Shelf[]}
-                settings={settings}
-                currentState={currentState}
-                onOverflowDetected={onOverflowDetected || handleOverflowDetected}
-              />
-            )}
+            <MultiPageArtboardContainer
+              ref={artboardRef}
+              shelves={shelves}
+              settings={settings}
+              currentState={currentState}
+              theme={theme}
+              onOverflowDetected={onOverflowDetected || handleOverflowDetected}
+              onSettingsChange={onSettingsChange}
+              onAddPage={onAddPage}
+              onRemovePage={onRemovePage}
+              onGoToPage={onGoToPage}
+              onToggleAutoPageBreaks={onToggleAutoPageBreaks}
+            />
           </div>
         </div>
+
+        {/* DEPRECATED: Multi-page functionality - hidden for now but preserved for future development
+            FloatingPageControls provided clean bottom-right navigation with page count, arrows, and auto toggle */}
+        {false && (
+          <FloatingPageControls
+            currentPage={settings.currentPage}
+            totalPages={settings.pageCount}
+            onAddPage={onAddPage}
+            onRemovePage={onRemovePage}
+            onGoToPage={onGoToPage}
+            onToggleAutoPageBreaks={onToggleAutoPageBreaks}
+            autoPageBreaks={settings.autoPageBreaks}
+            theme={theme}
+          />
+        )}
       </div>
+
+      <PreviewControlsBottom
+        settings={settings}
+        onSettingsChange={onSettingsChange}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onFitToWindow={() => onSettingsChange({ fitToWindowTrigger: Date.now() })}
+        onResetZoom={resetZoomAndPan}
+        currentZoom={settings.zoomLevel}
+        theme={theme}
+        currentState={currentState}
+        isControlsDisabled={isControlsDisabled}
+      />
     </div>
   );
 };

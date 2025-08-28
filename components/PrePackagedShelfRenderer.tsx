@@ -57,7 +57,7 @@ export const PrePackagedShelfRenderer: React.FC<PrePackagedShelfRendererProps> =
     fontSize: `${baseFontSizePx * 0.9}px`,
     marginBottom: marginBottomStyle,
     ...(applyAvoidBreakStyle && {
-      breakInside: 'avoid' as const,
+      breakInside: 'avoid-column' as const,
     }),
   }), [baseFontSizePx, marginBottomStyle, applyAvoidBreakStyle]);
 

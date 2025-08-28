@@ -205,7 +205,7 @@ export const ResponsiveColumnBreak: React.FC<ResponsiveColumnBreakProps> = ({
     if (avoidBreak) {
       return {
         ...baseStyle,
-        breakInside: 'avoid' as const,
+        breakInside: 'avoid-column' as const,
       };
     }
 
