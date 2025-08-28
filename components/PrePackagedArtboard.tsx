@@ -1,11 +1,11 @@
 import React, { forwardRef, useMemo, useEffect, useRef } from 'react';
-import { Shelf, PreviewSettings, ArtboardSize, HeaderImageSize, SupportedStates } from '../types';
+import { PrePackagedShelf, PreviewSettings, ArtboardSize, HeaderImageSize, SupportedStates } from '../types';
 import { ARTBOARD_DIMENSIONS_MAP, HEADER_IMAGE_CONFIGS, STATE_THC_ICONS } from '../constants';
 import { ContentDistributor } from '../utils/ContentDistributor';
-import { MenuTable } from './MenuTable';
+import { PrePackagedTable } from './PrePackagedTable';
 
-interface PreviewArtboardProps {
-  shelves: Shelf[];
+interface PrePackagedArtboardProps {
+  shelves: PrePackagedShelf[];
   settings: PreviewSettings;
   currentState: SupportedStates;
   onOverflowDetected?: (hasOverflow: boolean) => void;
@@ -27,11 +27,26 @@ const getHeaderImageDetails = (artboardSize: ArtboardSize, headerSize: HeaderIma
   return { height: 0 }; // Fallback if a specific size (Large/Small) is missing for an artboard
 };
 
-
-export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>((
+export const PrePackagedArtboard = forwardRef<HTMLDivElement, PrePackagedArtboardProps>((
   { shelves, settings, currentState, onOverflowDetected }, ref
 ) => {
-  const { artboardSize, baseFontSizePx, columns, forceShelfFit, headerImageSize, linePaddingMultiplier, showThcIcon, showSoldOutProducts, showMenuDate, menuDateText, menuDatePosition } = settings;
+  const { 
+    artboardSize, 
+    baseFontSizePx, 
+    columns, 
+    forceShelfFit, 
+    headerImageSize, 
+    linePaddingMultiplier, 
+    showThcIcon,
+    showSoldOutProducts,
+    showTerpenes = true,
+    showLowStock = true, // Renamed from showInventoryStatus
+    showNetWeight = false,
+    showMenuDate,
+    menuDateText,
+    menuDatePosition
+  } = settings;
+  
   const artboardSpecs = ARTBOARD_DIMENSIONS_MAP[artboardSize];
 
   // Create content distributor for multi-page transforms
@@ -106,14 +121,14 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
     position: 'relative',
   };
 
-  const shelvesWithStrains = useMemo(() => shelves.filter(shelf => shelf.strains.length > 0), [shelves]);
+  const shelvesWithProducts = useMemo(() => shelves.filter(shelf => shelf.products.length > 0), [shelves]);
 
   const renderableShelves = useMemo(() => {
-    return shelvesWithStrains.map(shelf => {
-      // Filter strains based on sold out status
-      const filteredStrains = showSoldOutProducts 
-        ? shelf.strains 
-        : shelf.strains.filter(strain => !strain.isSoldOut);
+    return shelvesWithProducts.map(shelf => {
+      // Filter products based on sold out status
+      const filteredProducts = showSoldOutProducts 
+        ? shelf.products 
+        : shelf.products.filter(product => !product.isSoldOut);
       
       // When forceShelfFit is true, prevent tables from breaking across columns (keep shelves together)
       // When forceShelfFit is false, allow shelves to split across columns (shelf splitting enabled)
@@ -121,41 +136,44 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
       
       // Calculate if shelf might overflow for subtle warning overlay
       let showOverflowWarning = false;
-      if (applyAvoidBreak && filteredStrains.length > 0) {
+      if (applyAvoidBreak && filteredProducts.length > 0) {
         // Only show warning when shelf splitting is disabled AND shelf is genuinely too long
-        // More accurate calculation of shelf height
-        const estimatedRowHeight = baseFontSizePx * 1.8 * (1 + linePaddingMultiplier * 0.8);
-        const estimatedHeaderHeight = baseFontSizePx * 2.5; // Shelf name + pricing
+        // More accurate calculation of shelf height for pre-packaged products
+        const estimatedRowHeight = baseFontSizePx * 2.2 * (1 + linePaddingMultiplier * 0.8);
+        const estimatedHeaderHeight = baseFontSizePx * 2.5; // Shelf name + styling
         const estimatedTableHeaderHeight = baseFontSizePx * 1.6; // Column headers
-        const estimatedShelfHeight = estimatedHeaderHeight + estimatedTableHeaderHeight + (filteredStrains.length * estimatedRowHeight);
+        const estimatedShelfHeight = estimatedHeaderHeight + estimatedTableHeaderHeight + (filteredProducts.length * estimatedRowHeight);
         
         // More accurate calculation of available column height
         const totalContentHeight = artboardSpecs.naturalHeight - headerImageDetails.height - (contentPadding * 2);
         const availableColumnHeight = totalContentHeight;
         
         // Only show warning if shelf is significantly too tall for a single column
-        // Use a higher threshold (90%) and require a minimum number of strains to avoid false positives
+        // Use a higher threshold (90%) and require a minimum number of products to avoid false positives
         const isSignificantlyTooTall = estimatedShelfHeight > availableColumnHeight * 0.9;
-        const hasEnoughStrains = filteredStrains.length >= 8; // Only warn for shelves with many strains
+        const hasEnoughProducts = filteredProducts.length >= 8; // Only warn for shelves with many products
         
-        showOverflowWarning = isSignificantlyTooTall && hasEnoughStrains;
+        showOverflowWarning = isSignificantlyTooTall && hasEnoughProducts;
       }
       
       return (
-        <MenuTable
+        <PrePackagedTable
           key={shelf.id}
           shelf={shelf}
-          strainsToRender={filteredStrains}
+          productsToRender={filteredProducts}
           baseFontSizePx={baseFontSizePx}
           linePaddingMultiplier={linePaddingMultiplier}
           marginBottomStyle={rowGapPx}
           applyAvoidBreakStyle={applyAvoidBreak}
           showOverflowWarning={showOverflowWarning}
           currentState={currentState}
+          showTerpenes={showTerpenes}
+          showLowStock={showLowStock}
+          showNetWeight={showNetWeight}
         />
       );
     });
-  }, [shelvesWithStrains, forceShelfFit, baseFontSizePx, linePaddingMultiplier, rowGapPx, artboardSpecs.naturalHeight, headerImageDetails.height, contentPadding, columns, showSoldOutProducts]);
+  }, [shelvesWithProducts, forceShelfFit, baseFontSizePx, linePaddingMultiplier, rowGapPx, artboardSpecs.naturalHeight, headerImageDetails.height, contentPadding, currentState, showTerpenes, showLowStock, showNetWeight, showSoldOutProducts]);
 
   const overflowRef = useRef<HTMLDivElement>(null);
 
@@ -200,7 +218,7 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
       ref={ref}
       style={artboardStyle}
       className="print-artboard-outer"
-      data-testid="preview-artboard"
+      data-testid="prepackaged-preview-artboard"
     >
       {headerImageDetails.src && headerImageDetails.height > 0 && (
         <img 
@@ -230,7 +248,7 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
             color: '#aaa', 
             fontSize: getScaledValue(baseFontSizePx, 2.5)
         }}>
-          Add strains to shelves to see your menu.
+          Add products to shelves to see your menu.
         </div>
       )}
       
@@ -294,4 +312,4 @@ export const PreviewArtboard = forwardRef<HTMLDivElement, PreviewArtboardProps>(
   );
 });
 
-PreviewArtboard.displayName = 'PreviewArtboard';
+PrePackagedArtboard.displayName = 'PrePackagedArtboard';

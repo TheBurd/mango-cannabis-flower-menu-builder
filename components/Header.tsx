@@ -1,7 +1,8 @@
 import React from 'react';
-import { SupportedStates, Theme } from '../types';
+import { SupportedStates, Theme, MenuMode } from '../types';
 import { MANGO_MAIN_ORANGE, MANGO_SUPPORT_ORANGE, STATE_THC_ICONS } from '../constants';
 import { CustomDropdown } from './common/CustomDropdown';
+import { ModeToggle } from './common/ModeToggle';
 import { SunIcon, MoonIcon, QuestionMarkCircleIcon } from './common/Icon';
 import { getLogoPath } from '../utils/assets';
 
@@ -14,6 +15,8 @@ interface HeaderProps {
   onShowInstructions: () => void;
   onShowWhatsNew: () => void;
   hasViewedWhatsNew: boolean;
+  menuMode: MenuMode;
+  onMenuModeChange: (mode: MenuMode) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -24,7 +27,9 @@ export const Header: React.FC<HeaderProps> = ({
   onThemeChange, 
   onShowInstructions,
   onShowWhatsNew,
-  hasViewedWhatsNew
+  hasViewedWhatsNew,
+  menuMode,
+  onMenuModeChange
 }) => {
   const stateOptions = Object.values(SupportedStates).map(s => ({ value: s, label: s }));
 
@@ -58,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         />
         <h1 className="text-3xl font-bold tracking-tight" style={{fontFamily: "'Poppins', sans-serif"}}>
-          {appName} v1.0.3
+          {appName} v1.1.0
         </h1>
         <button
           onClick={onShowWhatsNew}
@@ -69,25 +74,37 @@ export const Header: React.FC<HeaderProps> = ({
             boxShadow: '0 0 15px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.1)',
             animation: 'subtle-glow 2s ease-in-out infinite alternate'
           } : undefined}
-                      title="See what's new in v1.0.3"
+                      title="See what's new in v1.1.0"
         >
           What's New
         </button>
       </div>
-      <div className="flex items-center space-x-2">
-        <img 
-          src={STATE_THC_ICONS[currentState]} 
-          alt={`${currentState} THC Icon`}
-          className="w-6 h-6"
-        />
-        <span className="text-sm font-medium">Region:</span>
-        <CustomDropdown
-            options={stateOptions}
-            value={currentState}
-            onChange={(value) => onStateChange(value as SupportedStates)}
-            className="min-w-[120px]"
-            variant="header"
-         />
+      <div className="flex items-center space-x-4">
+        {/* Mode Toggle - Only show for Oklahoma */}
+        {currentState === SupportedStates.OKLAHOMA && (
+          <ModeToggle
+            mode={menuMode}
+            onModeChange={onMenuModeChange}
+            theme={theme}
+          />
+        )}
+        
+        {/* State Selector */}
+        <div className="flex items-center space-x-2">
+          <img 
+            src={STATE_THC_ICONS[currentState]} 
+            alt={`${currentState} THC Icon`}
+            className="w-6 h-6"
+          />
+          <span className="text-sm font-medium">Region:</span>
+          <CustomDropdown
+              options={stateOptions}
+              value={currentState}
+              onChange={(value) => onStateChange(value as SupportedStates)}
+              className="min-w-[120px]"
+              variant="header"
+           />
+        </div>
         <button
           onClick={onShowInstructions}
           className="ml-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-200"

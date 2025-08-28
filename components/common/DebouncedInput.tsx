@@ -13,6 +13,9 @@ interface DebouncedInputProps {
   debounceMs?: number;
   step?: string;
   autoFocus?: boolean;
+  disabled?: boolean;
+  min?: string;
+  max?: string;
   'aria-label'?: string;
 }
 
@@ -28,6 +31,9 @@ export const DebouncedInput: React.FC<DebouncedInputProps> = ({
   debounceMs = 300,
   step,
   autoFocus = false,
+  disabled = false,
+  min,
+  max,
   'aria-label': ariaLabel,
 }) => {
   // Internal state for immediate UI updates
@@ -148,6 +154,9 @@ export const DebouncedInput: React.FC<DebouncedInputProps> = ({
       placeholder={placeholder}
       className={className}
       step={step}
+      disabled={disabled}
+      min={min}
+      max={max}
       aria-label={ariaLabel}
     />
   );

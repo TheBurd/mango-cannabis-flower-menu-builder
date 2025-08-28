@@ -207,26 +207,28 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
     elements.push(
       <div
         key={strain.id}
-        className={`bg-white ${strain.isLastJar ? 'last-jar-row' : ''} ${shelf.isInfused ? 'infused-pattern' : ''}`}
+        className={`bg-white ${strain.isLastJar ? 'last-jar-row' : ''} ${strain.isSoldOut ? 'sold-out-row' : ''} ${shelf.isInfused ? 'infused-pattern' : ''}`}
         style={{
           display: 'grid',
           gridTemplateColumns: gridColumns,
           alignItems: 'center',
           minHeight: `${rowHeight}px`,
           padding: `${getScaledValue(baseFontSizePx, linePaddingMultiplier * 0.8, 2)}px ${getScaledValue(baseFontSizePx, 0.6, 6)}px`, // Reduced padding
-          borderLeft: strain.isLastJar ? `4px solid ${MANGO_MAIN_ORANGE}` : `2px solid ${shelfBorderColor}`,
+          borderLeft: strain.isSoldOut ? `4px solid #ef4444` : strain.isLastJar ? `4px solid ${MANGO_MAIN_ORANGE}` : `2px solid ${shelfBorderColor}`,
           borderRight: `2px solid ${shelfBorderColor}`,
           borderBottom: isLastRow ? `2px solid ${shelfBorderColor}` : '1px solid #e5e7eb',
-          backgroundColor: strain.isLastJar ? '#fff7ed' : '#ffffff',
+          backgroundColor: strain.isSoldOut ? '#fef2f2' : strain.isLastJar ? '#fff7ed' : '#ffffff',
+          opacity: strain.isSoldOut ? 0.6 : 1,
           position: 'relative',
           marginBottom: '0',
           fontSize: getScaledFontSize(baseFontSizePx, 0.85, 9), // Reduced from 0.9
           breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
           boxSizing: 'border-box',
-          color: '#374151',
+          color: strain.isSoldOut ? '#9ca3af' : '#374151',
           fontFamily: "'Inter', sans-serif",
           borderRadius: isLastRow ? '0 0 4px 4px' : '0', // Smaller border radius
           lineHeight: '1.3', // Reduced from 1.5
+          textDecoration: strain.isSoldOut ? 'line-through' : 'none',
         }}
       >
         {/* Strain Name */}
@@ -234,9 +236,24 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
           lineHeight: '1.3', // Reduced line height
           display: 'flex',
           alignItems: 'center',
-          color: '#374151',
+          color: strain.isSoldOut ? '#9ca3af' : '#374151',
+          gap: '6px',
         }}>
-          {strain.name || "Unnamed Strain"}
+          {strain.isSoldOut && (
+            <span style={{
+              padding: '2px 6px',
+              fontSize: '10px',
+              backgroundColor: '#ef4444',
+              color: 'white',
+              borderRadius: '3px',
+              fontWeight: 'bold',
+              textDecoration: 'none',
+              flexShrink: 0,
+            }}>
+              SOLD OUT
+            </span>
+          )}
+          <span style={{ textDecoration: strain.isSoldOut ? 'line-through' : 'none' }}>{strain.name || "Unnamed Strain"}</span>
         </div>
         
         {/* Grower */}
@@ -440,8 +457,8 @@ export const MenuTable: React.FC<MenuTableProps> = ({
     minHeight: `${calculatedHeaderHeight}px`,
     marginBottom: '0',
     // When shelf splitting is disabled, keep header with its table
-    breakInside: 'avoid-column',
-    breakAfter: 'avoid-column',
+    breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
+    breakAfter: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
   };
 
   const shelfNameStyle: React.CSSProperties = {
@@ -459,9 +476,9 @@ export const MenuTable: React.FC<MenuTableProps> = ({
 
   const tableHeaderStyles: React.CSSProperties = {
     display: 'table-header-group',
-    // Always keep table headers together with their content
-    breakInside: 'avoid-column',
-    breakAfter: 'avoid-column',
+    // Keep table headers together with their content when shelf splitting is disabled
+    breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
+    breakAfter: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
   };
 
   const thStyles: React.CSSProperties = {
@@ -646,11 +663,28 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                     lineHeight: '1.3', // Reduced line height
                     display: 'flex',
                     alignItems: 'center',
-                    minHeight: 'inherit'
+                    minHeight: 'inherit',
+                    gap: '6px',
                   }}>
+                    {strain.isSoldOut && (
+                      <span style={{
+                        padding: '2px 6px',
+                        fontSize: '10px',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        borderRadius: '3px',
+                        fontWeight: 'bold',
+                        textDecoration: 'none',
+                        flexShrink: 0,
+                      }}>
+                        SOLD OUT
+                      </span>
+                    )}
                     <span style={{
                       ...strainNameTextStyles, 
-                      lineHeight: '1.2'
+                      lineHeight: '1.2',
+                      textDecoration: strain.isSoldOut ? 'line-through' : 'none',
+                      color: strain.isSoldOut ? '#9ca3af' : 'inherit'
                     }}>{strain.name || "Unnamed Strain"}</span>
                   </div>
                 </td>

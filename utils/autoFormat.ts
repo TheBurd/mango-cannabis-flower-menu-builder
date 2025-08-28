@@ -24,7 +24,46 @@ export interface AutoFormatOptions {
   currentSettings: PreviewSettings;
   hasOverflow: boolean;
   maxIterations?: number;
+  menuMode?: 'bulk' | 'prepackaged'; // Add menu mode awareness
 }
+
+/**
+ * Calculate content density score for pre-packaged menus
+ * Takes into account the different rendering characteristics of tabular data
+ */
+export const calculatePrePackagedDensity = (
+  shelfCount: number, 
+  totalProducts: number, 
+  columns: number,
+  showTerpenes = true,
+  showInventoryStatus = true,
+  showNetWeight = false
+): number => {
+  // Base density similar to bulk menus
+  const baseDensity = totalProducts / columns;
+  
+  // Pre-packaged menus have more columns and thus different density characteristics
+  let columnComplexityMultiplier = 1.0;
+  
+  // Each additional column increases rendering complexity
+  let visibleColumns = 6; // Base columns: Strain, Brand, THC%, Type, Size, Price
+  if (showTerpenes) visibleColumns += 1;
+  if (showInventoryStatus) visibleColumns += 1;
+  if (showNetWeight) visibleColumns += 1;
+  
+  // More columns = higher density perception (harder to fit)
+  if (visibleColumns >= 9) columnComplexityMultiplier = 1.4;
+  else if (visibleColumns >= 8) columnComplexityMultiplier = 1.2;
+  else if (visibleColumns >= 7) columnComplexityMultiplier = 1.1;
+  
+  // Table headers and shelf headers add fixed overhead
+  const headerOverhead = shelfCount * 2; // Each shelf has header + table header
+  
+  // Effective density accounting for headers and column complexity
+  const adjustedDensity = (baseDensity + (headerOverhead / columns)) * columnComplexityMultiplier;
+  
+  return adjustedDensity;
+};
 
 /**
  * Auto-format menu by trying different combinations of settings
@@ -214,7 +253,7 @@ export const getSmartAutoFormat = (currentSettings: PreviewSettings): AutoFormat
  */
 export const getIterativeAutoFormat = (
   currentSettings: PreviewSettings, 
-  contentData?: { shelfCount: number; totalStrains: number; hasContentOverflow: boolean },
+  contentData?: { shelfCount: number; totalStrains: number; hasContentOverflow: boolean; menuMode?: 'bulk' | 'prepackaged'; showTerpenes?: boolean; showInventoryStatus?: boolean; showNetWeight?: boolean },
   state?: AutoFormatState
 ): AutoFormatResult => {
   if (!contentData) {
@@ -253,7 +292,20 @@ export const getIterativeAutoFormat = (
         
         // Calculate what the last increment was and back off
         const currentColumns = currentSettings.columns;
-        const contentDensityScore = totalStrains / currentColumns;
+        let contentDensityScore: number;
+        
+        if (contentData.menuMode === 'prepackaged') {
+          contentDensityScore = calculatePrePackagedDensity(
+            contentData.shelfCount,
+            contentData.totalStrains,
+            currentColumns,
+            contentData.showTerpenes,
+            contentData.showInventoryStatus,
+            contentData.showNetWeight
+          );
+        } else {
+          contentDensityScore = contentData.totalStrains / currentColumns;
+        }
         
         let lastIncrement = 0.5;
         if (contentDensityScore < 5) {
@@ -296,7 +348,20 @@ export const getIterativeAutoFormat = (
       if (!(optimizationState.hitFontSizeCeiling || state?.hitFontSizeCeiling) && currentSettings.baseFontSizePx < maxFontSize) {
         // Calculate increment based on content density using CURRENT column count
         const currentColumns = currentSettings.columns;
-        const contentDensityScore = totalStrains / currentColumns;
+        let contentDensityScore: number;
+        
+        if (contentData.menuMode === 'prepackaged') {
+          contentDensityScore = calculatePrePackagedDensity(
+            contentData.shelfCount,
+            contentData.totalStrains,
+            currentColumns,
+            contentData.showTerpenes,
+            contentData.showInventoryStatus,
+            contentData.showNetWeight
+          );
+        } else {
+          contentDensityScore = contentData.totalStrains / currentColumns;
+        }
         
         let increment = 0.5;
         if (contentDensityScore < 5) {
@@ -387,7 +452,20 @@ export const getIterativeAutoFormat = (
       if (!(optimizationState.hitLineHeightCeiling || state?.hitLineHeightCeiling) && currentSettings.linePaddingMultiplier < maxSpacing) {
         // Calculate increment based on content density using CURRENT column count
         const currentColumns = currentSettings.columns;
-        const contentDensityScore = totalStrains / currentColumns;
+        let contentDensityScore: number;
+        
+        if (contentData.menuMode === 'prepackaged') {
+          contentDensityScore = calculatePrePackagedDensity(
+            contentData.shelfCount,
+            contentData.totalStrains,
+            currentColumns,
+            contentData.showTerpenes,
+            contentData.showInventoryStatus,
+            contentData.showNetWeight
+          );
+        } else {
+          contentDensityScore = contentData.totalStrains / currentColumns;
+        }
         
         let increment = 0.05;
         if (contentDensityScore < 8) {
@@ -438,7 +516,7 @@ export const getIterativeAutoFormat = (
  */
 export const getOverflowReductionFormat = (
   currentSettings: PreviewSettings, 
-  contentData: { shelfCount: number; totalStrains: number; hasContentOverflow: boolean },
+  contentData: { shelfCount: number; totalStrains: number; hasContentOverflow: boolean; menuMode?: 'bulk' | 'prepackaged'; showTerpenes?: boolean; showInventoryStatus?: boolean; showNetWeight?: boolean },
   state?: AutoFormatState
 ): AutoFormatResult => {
   const { shelfCount, totalStrains, hasContentOverflow } = contentData;
@@ -465,7 +543,20 @@ export const getOverflowReductionFormat = (
       if (currentSettings.linePaddingMultiplier > minSpacing) {
         // Calculate reduction based on content density
         const currentColumns = currentSettings.columns;
-        const contentDensityScore = totalStrains / currentColumns;
+        let contentDensityScore: number;
+        
+        if (contentData.menuMode === 'prepackaged') {
+          contentDensityScore = calculatePrePackagedDensity(
+            contentData.shelfCount,
+            contentData.totalStrains,
+            currentColumns,
+            contentData.showTerpenes,
+            contentData.showInventoryStatus,
+            contentData.showNetWeight
+          );
+        } else {
+          contentDensityScore = contentData.totalStrains / currentColumns;
+        }
         
         let reduction = 0.05;
         if (contentDensityScore > 30) {
@@ -523,7 +614,20 @@ export const getOverflowReductionFormat = (
       if (currentSettings.baseFontSizePx > minFontSize) {
         // Calculate reduction based on content density
         const currentColumns = currentSettings.columns;
-        const contentDensityScore = totalStrains / currentColumns;
+        let contentDensityScore: number;
+        
+        if (contentData.menuMode === 'prepackaged') {
+          contentDensityScore = calculatePrePackagedDensity(
+            contentData.shelfCount,
+            contentData.totalStrains,
+            currentColumns,
+            contentData.showTerpenes,
+            contentData.showInventoryStatus,
+            contentData.showNetWeight
+          );
+        } else {
+          contentDensityScore = contentData.totalStrains / currentColumns;
+        }
         
         let reduction = 0.5;
         if (contentDensityScore > 30) {
@@ -586,7 +690,7 @@ export const getOverflowReductionFormat = (
  */
 export const getOverflowDrivenAutoFormat = (
   currentSettings: PreviewSettings, 
-  contentData?: { shelfCount: number; totalStrains: number; hasContentOverflow: boolean },
+  contentData?: { shelfCount: number; totalStrains: number; hasContentOverflow: boolean; menuMode?: 'bulk' | 'prepackaged'; showTerpenes?: boolean; showInventoryStatus?: boolean; showNetWeight?: boolean },
   state?: AutoFormatState
 ): AutoFormatResult => {
   if (!contentData) {

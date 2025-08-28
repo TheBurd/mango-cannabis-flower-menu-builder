@@ -36,9 +36,8 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
   onScrollToShelf,
   theme,
   onMoveStrain,
-  onReorderStrain,
-  dragState,
-  onDragStart,
+  onMoveStrainUp,
+  onMoveStrainDown,
   currentState,
   isControlsDisabled,
 }, ref) => {
@@ -71,9 +70,8 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
               onUpdateShelfSortCriteria={(key) => onUpdateShelfSortCriteria(shelf.id, key)}
               theme={theme}
               onMoveStrain={onMoveStrain}
-              onReorderStrain={onReorderStrain}
-              dragState={dragState}
-              onDragStart={onDragStart}
+              onMoveStrainUp={onMoveStrainUp}
+              onMoveStrainDown={onMoveStrainDown}
               availableShelves={shelves}
               currentState={currentState}
               isControlsDisabled={isControlsDisabled}

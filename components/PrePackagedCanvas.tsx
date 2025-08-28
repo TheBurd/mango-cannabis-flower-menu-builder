@@ -1,21 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import domtoimage from 'dom-to-image';
-import { Shelf, PrePackagedShelf, PreviewSettings, SupportedStates, Theme, MenuMode, AnyShelf, isPrePackagedShelf } from '../types';
+import { PrePackagedShelf, PreviewSettings, SupportedStates, Theme } from '../types';
 import { PreviewControlsTop } from './PreviewControlsTop';
 import { PreviewControlsBottom } from './PreviewControlsBottom';
-import { PreviewArtboard } from './PreviewArtboard';
 import { PrePackagedArtboard } from './PrePackagedArtboard';
-import { MultiPageArtboardContainer } from './MultiPageArtboardContainer';
-import { FloatingPageControls } from './FloatingPageControls';
 import { ARTBOARD_DIMENSIONS_MAP, INITIAL_PREVIEW_SETTINGS } from '../constants';
 import { ExportAction } from '../App';
-// import html2canvas from 'html2canvas'; // Removed - not needed for this implementation
 
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 10; 
 
-interface MenuPreviewPanelProps {
-  shelves: AnyShelf[];
+interface PrePackagedCanvasProps {
+  shelves: PrePackagedShelf[];
   settings: PreviewSettings;
   onSettingsChange: (newSettings: Partial<PreviewSettings>) => void;
   exportAction: ExportAction | null;
@@ -27,14 +23,9 @@ interface MenuPreviewPanelProps {
   hasContentOverflow?: boolean;
   isOptimizing?: boolean;
   isControlsDisabled?: boolean;
-  // Multi-page management
-  onAddPage: () => void;
-  onRemovePage: (pageNumber: number) => void;
-  onGoToPage: (pageNumber: number) => void;
-  onToggleAutoPageBreaks: () => void;
 }
 
-export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
+export const PrePackagedCanvas: React.FC<PrePackagedCanvasProps> = ({
   shelves,
   settings,
   onSettingsChange,
@@ -47,10 +38,6 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   hasContentOverflow: hasOverflow,
   isOptimizing,
   isControlsDisabled,
-  onAddPage,
-  onRemovePage,
-  onGoToPage,
-  onToggleAutoPageBreaks,
 }) => {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -259,7 +246,7 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
           overflow: hidden !important;
           text-overflow: ellipsis !important;
         }
-        /* Allow first column (strain names) to wrap if needed but prevent random wrapping */
+        /* Allow first column (product names) to wrap if needed but prevent random wrapping */
         td:first-child {
           white-space: normal !important;
           word-wrap: break-word !important;
@@ -271,42 +258,6 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
           font-weight: inherit !important;
         }
 
-        /* Force consistent rendering for last jar strains */
-        tbody tr[style*="#fff7ed"] {
-          background-color: #fff7ed !important;
-          border-left: 3px solid #fe9426 !important; /* Simple border on the row instead of pseudo-element */
-        }
-        tbody tr[style*="#fff7ed"] td {
-          background-color: #fff7ed !important;
-          font-weight: 500 !important; /* Keep consistent font weight */
-        }
-        tbody tr[style*="#fff7ed"] td:first-child {
-          font-weight: 500 !important; /* Ensure strain names use consistent weight */
-        }
-        tbody tr[style*="#fff7ed"] td:last-child {
-          font-weight: 500 !important; /* Ensure THC column uses consistent weight */
-        }
-        /* Force more predictable column widths during export */
-        table {
-          width: 100% !important;
-        }
-        colgroup col:first-child {
-          width: 35% !important;
-        }
-        colgroup col:nth-child(2) {
-          width: 30% !important;
-        }
-        colgroup col:nth-child(3) {
-          width: 15% !important;
-        }
-        colgroup col:nth-child(4) {
-          width: 20% !important;
-        }
-        /* Hide overflow warnings during export */
-        .shelf-overflow-warning {
-          display: none !important;
-        }
-        
         /* PrePackaged Table Export Styling */
         /* Ensure consistent table styling for pre-packaged products */
         table[style*="border-collapse: separate"] {
@@ -347,6 +298,11 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
         
         td[style*="color: #d97706"] {
           color: #d97706 !important;
+        }
+        
+        /* Hide overflow warnings during export */
+        .shelf-overflow-warning {
+          display: none !important;
         }
       `;
       document.head.appendChild(styleElement);
@@ -533,36 +489,15 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
               transformOrigin: 'center center',
             }}
           >
-            <MultiPageArtboardContainer
+            <PrePackagedArtboard
               ref={artboardRef}
               shelves={shelves}
               settings={settings}
               currentState={currentState}
-              theme={theme}
               onOverflowDetected={onOverflowDetected || handleOverflowDetected}
-              onSettingsChange={onSettingsChange}
-              onAddPage={onAddPage}
-              onRemovePage={onRemovePage}
-              onGoToPage={onGoToPage}
-              onToggleAutoPageBreaks={onToggleAutoPageBreaks}
             />
           </div>
         </div>
-
-        {/* DEPRECATED: Multi-page functionality - hidden for now but preserved for future development
-            FloatingPageControls provided clean bottom-right navigation with page count, arrows, and auto toggle */}
-        {false && (
-          <FloatingPageControls
-            currentPage={settings.currentPage}
-            totalPages={settings.pageCount}
-            onAddPage={onAddPage}
-            onRemovePage={onRemovePage}
-            onGoToPage={onGoToPage}
-            onToggleAutoPageBreaks={onToggleAutoPageBreaks}
-            autoPageBreaks={settings.autoPageBreaks}
-            theme={theme}
-          />
-        )}
       </div>
 
       <PreviewControlsBottom

@@ -6,7 +6,7 @@ import { IconButton } from './common/IconButton';
 import { ToggleSwitch } from './common/ToggleSwitch';
 import { DebouncedInput } from './common/DebouncedInput';
 import { Select } from './common/Select';
-import { TrashXmarkIcon, ArrowUpIcon, ArrowDownIcon, CircleIcon } from './common/Icon';
+import { TrashXmarkIcon, ArrowUpIcon, ArrowDownIcon, CircleIcon, Icon } from './common/Icon';
 import { getPatternPath } from '../utils/assets';
 
 interface StrainInputRowProps {
@@ -14,14 +14,14 @@ interface StrainInputRowProps {
   onUpdate: (updatedStrain: Partial<Strain>) => void;
   onRemove: () => void;
   onCopy: (direction: 'above' | 'below') => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   isFirst: boolean;
   isLast: boolean;
   isNewlyAdded?: boolean;
   theme: Theme;
   shelfId: string;
   strainIndex: number;
-  onDragStart?: (strainId: string, shelfId: string, strainIndex: number) => void;
-  isDragging?: boolean;
   isFiftyPercentOff?: boolean; // Whether this strain is in the 50% OFF shelf
   availableShelves?: Shelf[]; // Available shelves for original shelf selection
   currentState?: SupportedStates; // Current app state for shelf hierarchy
@@ -33,14 +33,14 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
   onUpdate,
   onRemove,
   onCopy,
+  onMoveUp,
+  onMoveDown,
   isFirst,
   isLast,
   isNewlyAdded,
   theme,
   shelfId,
   strainIndex,
-  onDragStart,
-  isDragging = false,
   isFiftyPercentOff = false,
   availableShelves = [],
   currentState,
@@ -77,23 +77,6 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
     onUpdate({ originalShelf: event.target.value });
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    if (onDragStart) {
-      onDragStart(strain.id, shelfId, strainIndex);
-    }
-    e.dataTransfer.setData('text/plain', JSON.stringify({
-      strainId: strain.id,
-      shelfId: shelfId,
-      strainIndex: strainIndex,
-      strain: strain
-    }));
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragEnd = (e: React.DragEvent) => {
-    // Reset any drag state if needed
-    e.dataTransfer.clearData();
-  };
 
   // CSS for infused pattern
   const infusedPatternCSS = `
@@ -124,18 +107,39 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
         <style dangerouslySetInnerHTML={{ __html: infusedPatternCSS }} />
       )}
       <div 
-      className={`p-3 rounded-md shadow grid grid-cols-12 gap-2 items-center cursor-move transition-opacity ${
+      className={`p-3 rounded-md shadow grid grid-cols-12 gap-2 items-center transition-all duration-200 relative ${
         theme === 'dark' 
           ? `bg-gray-600 text-gray-200 ${strain.isLastJar ? 'bg-opacity-80 border-l-2 border-orange-400' : ''}` 
           : `bg-white text-gray-800 ${strain.isLastJar ? 'border-l-2 border-orange-400' : ''}`
-      } ${isDragging ? 'opacity-50' : 'hover:shadow-lg'} ${isInfused ? 'infused-pattern' : ''}`}
+      } ${'hover:shadow-lg hover:scale-[1.005]'} ${isInfused ? 'infused-pattern' : ''}`}
       style={{
         position: 'relative',
       }}
-      draggable={true}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
     >
+      {/* Move Up/Down Arrows */}
+      <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col space-y-0.5">
+        <button
+          onClick={onMoveUp}
+          disabled={isFirst}
+          className={`p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+            isFirst ? 'invisible' : ''
+          } ${theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+          title="Move up"
+        >
+          <Icon name="chevron-up" className="w-3 h-3" />
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={isLast}
+          className={`p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+            isLast ? 'invisible' : ''
+          } ${theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+          title="Move down"
+        >
+          <Icon name="chevron-down" className="w-3 h-3" />
+        </button>
+      </div>
+
       {/* Inputs */}
       <DebouncedInput
         value={strain.name}
@@ -244,20 +248,39 @@ export const StrainInputRow: React.FC<StrainInputRowProps> = ({
         })}
       </div>
       
-      {/* Last Jar Toggle */}
-      <div className="col-span-9 flex items-center space-x-2 mt-1">
-        <ToggleSwitch
-          id={`lastJar-${strain.id}`}
-          checked={strain.isLastJar}
-          onChange={(checked) => onUpdate({ isLastJar: checked })}
-          theme={theme}
-        />
-        <label htmlFor={`lastJar-${strain.id}`} className={`text-sm select-none flex items-center ${
-          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-        }`}>
-          {strain.isLastJar && <CircleIcon className="w-2.5 h-2.5 mr-1.5" style={{ color: MANGO_MAIN_ORANGE }} />}
-          Last Jar?
-        </label>
+      {/* Last Jar and Sold Out Toggles */}
+      <div className="col-span-9 flex items-center space-x-4 mt-1">
+        {/* Last Jar Toggle */}
+        <div className="flex items-center space-x-2">
+          <ToggleSwitch
+            id={`lastJar-${strain.id}`}
+            checked={strain.isLastJar}
+            onChange={(checked) => onUpdate({ isLastJar: checked })}
+            theme={theme}
+          />
+          <label htmlFor={`lastJar-${strain.id}`} className={`text-sm select-none flex items-center ${
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            {strain.isLastJar && <CircleIcon className="w-2.5 h-2.5 mr-1.5" style={{ color: MANGO_MAIN_ORANGE }} />}
+            Last Jar?
+          </label>
+        </div>
+        
+        {/* Sold Out Toggle */}
+        <div className="flex items-center space-x-2">
+          <ToggleSwitch
+            id={`soldOut-${strain.id}`}
+            checked={strain.isSoldOut}
+            onChange={(checked) => onUpdate({ isSoldOut: checked })}
+            theme={theme}
+          />
+          <label htmlFor={`soldOut-${strain.id}`} className={`text-sm select-none flex items-center ${
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            {strain.isSoldOut && <span className="mr-1.5 text-red-500">❌</span>}
+            Sold Out?
+          </label>
+        </div>
       </div>
 
       {/* Action Buttons */}
