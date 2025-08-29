@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { PrePackagedShelf, PrePackagedProduct, PrePackagedSortCriteria, Theme, SupportedStates } from '../types';
 import { PrePackagedShelfComponent } from './PrePackagedShelfComponent';
 import { PrePackagedShelfTabs } from './PrePackagedShelfTabs';
 import { ScrollNavigationOverlay } from './common/ScrollNavigationOverlay';
-import { useScrollVelocity } from '../hooks/useScrollVelocity';
-import { useVisibleStrains } from '../hooks/useVisibleStrains';
+import { ScrollOverlayFooter } from './common/ScrollOverlayFooter';
+import { useAdvancedScrollOverlay } from '../hooks/useAdvancedScrollOverlay';
 
 interface PrePackagedPanelProps {
   shelves: PrePackagedShelf[]; // Will receive processed (sorted) shelves
@@ -44,11 +44,18 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
   isControlsDisabled,
 }, ref) => {
   const [containerElement, setContainerElement] = useState<HTMLElement | null>(null);
-  const [showOverlay, setShowOverlay] = useState(false);
-  const showOverlayRef = useRef(false);
+  const [overlayEnabled, setOverlayEnabled] = useState(() => {
+    // Load preference from localStorage, default to true
+    const saved = localStorage.getItem('prepackagedScrollOverlayEnabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const internalRef = React.useRef<HTMLDivElement>(null);
   
-  // Combine refs
+  // Combine refs - target the scrollable container
+  const scrollContainerRef = React.useCallback((node: HTMLDivElement | null) => {
+    setContainerElement(node);
+  }, []);
+  
   const divRef = React.useCallback((node: HTMLDivElement) => {
     if (ref) {
       if (typeof ref === 'function') {
@@ -58,17 +65,9 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
       }
     }
     internalRef.current = node;
-    setContainerElement(node);
   }, [ref]);
   
-  // Track scroll velocity
-  const { isScrolling, isScrollbarDragging } = useScrollVelocity({
-    element: containerElement,
-    threshold: 15, // Very low threshold - show on light scrolling
-    hideDelay: 2500 // Stay visible much longer (2.5 seconds)
-  });
-  
-  // Convert PrePackagedShelf to match Shelf interface for hooks
+  // Convert PrePackagedShelf to match Shelf interface for unified hook
   const adaptedShelves = React.useMemo(() => {
     return shelves.map(shelf => ({
       ...shelf,
@@ -84,72 +83,101 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
     }));
   }, [shelves]);
   
-  // Track visible products
-  const { allStrains, centerStrainIndex } = useVisibleStrains({
+  // Use the advanced scroll overlay manager for better performance
+  const scrollOverlayState = useAdvancedScrollOverlay({
+    enabled: overlayEnabled,
     shelves: adaptedShelves as any,
     containerElement,
-    rootMargin: '-20% 0px -20% 0px'
+    velocityThreshold: 15,
+    hideDelay: 2500,
+    rootMargin: '-20% 0px -20% 0px',
+    maxVisibleStrains: 50,
+    performanceMode: 'auto' // Auto-detects performance needs
   });
   
-  // Show overlay immediately when scrolling
-  useEffect(() => {
-    const shouldShow = isScrolling || isScrollbarDragging;
-    // Only update state if actually changed
-    if (shouldShow !== showOverlayRef.current) {
-      showOverlayRef.current = shouldShow;
-      setShowOverlay(shouldShow);
-    }
-  }, [isScrolling, isScrollbarDragging]);
+  // Handle overlay toggle with persistence
+  const handleOverlayToggle = useCallback((enabled: boolean) => {
+    setOverlayEnabled(enabled);
+    localStorage.setItem('prepackagedScrollOverlayEnabled', JSON.stringify(enabled));
+  }, []);
   
   
   return (
     <>
       <div 
         ref={divRef}
-        id="prepackaged-panel" // Added ID for aria-controls
-        className={`no-print flex-shrink-0 rounded-lg shadow-lg overflow-y-auto relative ${
+        id="prepackaged-panel"
+        className={`no-print flex-shrink-0 rounded-lg shadow-lg overflow-hidden relative flex flex-col ${
           theme === 'dark' ? 'bg-gray-800' : 'bg-white'
         } ${isControlsDisabled ? 'opacity-50 pointer-events-none' : ''}`}
-        style={style} // Apply dynamic width for resizable panel
+        style={style}
       >
-      <PrePackagedShelfTabs 
-        shelves={shelves}
-        onScrollToShelf={onScrollToShelf}
-        theme={theme}
-      />
-      <div className="space-y-3 p-1"> {/* Added padding inside scrollable area */}
-        {shelves.map(shelf => (
-          <div key={shelf.id} data-shelf-id={shelf.id}>
-            <PrePackagedShelfComponent
-              shelf={shelf} // shelf.products is already sorted
-              onAddProduct={() => onAddProduct(shelf.id)}
-              onUpdateProduct={(productId, updatedProduct) => onUpdateProduct(shelf.id, productId, updatedProduct)}
-              onRemoveProduct={(productId) => onRemoveProduct(shelf.id, productId)} 
-              onCopyProduct={(productId, direction) => onCopyProduct(shelf.id, productId, direction)}
-              onClearProducts={() => onClearShelfProducts(shelf.id)}
-              newlyAddedProductId={newlyAddedProductId}
-              onUpdateShelfSortCriteria={(key) => onUpdateShelfSortCriteria(shelf.id, key)}
-              theme={theme}
-              onMoveProduct={onMoveProduct}
-              onMoveProductUp={onMoveProductUp}
-              onMoveProductDown={onMoveProductDown}
-              availableShelves={shelves}
-              currentState={currentState}
-              isControlsDisabled={isControlsDisabled}
-            />
+        {/* Header with tabs */}
+        <div className="flex-shrink-0">
+          <PrePackagedShelfTabs 
+            shelves={shelves}
+            onScrollToShelf={onScrollToShelf}
+            theme={theme}
+          />
+        </div>
+        
+        {/* Scrollable content area */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto"
+        >
+          <div className="space-y-3 p-1">
+            {shelves.map(shelf => (
+              <div key={shelf.id} data-shelf-id={shelf.id}>
+                <PrePackagedShelfComponent
+                  shelf={shelf}
+                  onAddProduct={() => onAddProduct(shelf.id)}
+                  onUpdateProduct={(productId, updatedProduct) => onUpdateProduct(shelf.id, productId, updatedProduct)}
+                  onRemoveProduct={(productId) => onRemoveProduct(shelf.id, productId)} 
+                  onCopyProduct={(productId, direction) => onCopyProduct(shelf.id, productId, direction)}
+                  onClearProducts={() => onClearShelfProducts(shelf.id)}
+                  newlyAddedProductId={newlyAddedProductId}
+                  onUpdateShelfSortCriteria={(key) => onUpdateShelfSortCriteria(shelf.id, key)}
+                  theme={theme}
+                  onMoveProduct={onMoveProduct}
+                  onMoveProductUp={onMoveProductUp}
+                  onMoveProductDown={onMoveProductDown}
+                  availableShelves={shelves}
+                  currentState={currentState}
+                  isControlsDisabled={isControlsDisabled}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        
+        {/* Footer with overlay toggle - wrapped to allow tooltip overflow */}
+        <div className="relative" style={{ overflow: 'visible' }}>
+          <ScrollOverlayFooter
+            enabled={overlayEnabled}
+            onToggle={handleOverlayToggle}
+            theme={theme}
+            performanceLevel={scrollOverlayState.performanceLevel}
+            frameSkipCount={scrollOverlayState.frameSkipCount}
+            currentFPS={scrollOverlayState.currentFPS}
+            avgFrameTime={scrollOverlayState.avgFrameTime}
+            totalStrains={scrollOverlayState.totalStrains}
+            memoryUsage={scrollOverlayState.memoryUsage}
+            dropFrameRate={scrollOverlayState.dropFrameRate}
+          />
+        </div>
       </div>
-    </div>
     
-    {/* Scroll Navigation Overlay */}
-    <ScrollNavigationOverlay
-      isVisible={showOverlay}
-      strains={allStrains}
-      centerStrainIndex={centerStrainIndex}
-      containerElement={containerElement}
-      theme={theme}
-    />
-  </>
+      {/* Scroll Overlay - only rendered when enabled */}
+      {overlayEnabled && (
+        <ScrollNavigationOverlay
+          isVisible={scrollOverlayState.showOverlay}
+          strains={scrollOverlayState.allStrains}
+          centerStrainIndex={scrollOverlayState.centerStrainIndex}
+          containerElement={containerElement}
+          theme={theme}
+        />
+      )}
+    </>
   );
 }));

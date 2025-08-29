@@ -574,38 +574,19 @@ export const NEW_MEXICO_PREPACKAGED_SHELVES: Omit<PrePackagedShelf, 'products' |
 
 // Helper function to get default pre-packaged shelves
 export const getDefaultPrePackagedShelves = (state: SupportedStates): PrePackagedShelf[] => {
-  // For Oklahoma, use the pricing hierarchy (price-point based organization)
-  // For other states, return empty array as Pre-Packaged mode is Oklahoma-only
+  // All states now support Pre-Packaged mode with weight-based pricing hierarchy
   let hierarchy: Omit<PrePackagedShelf, 'products' | 'id' | 'sortCriteria'>[] = [];
   
-  switch (state) {
-    case SupportedStates.OKLAHOMA:
-      // Use the pricing hierarchy for Oklahoma pre-packaged products (price-point based organization)
-      hierarchy = OKLAHOMA_PREPACKAGED_PRICING_HIERARCHY.map(shelf => ({
-        name: shelf.name,
-        color: shelf.color,
-        textColor: shelf.textColor,
-        hidePricing: shelf.hidePricing,
-        brandEmphasis: true, // Enable brand emphasis for pre-packaged products
-        weightFilter: getWeightFilterFromShelfName(shelf.name),
-      }));
-      break;
-    case SupportedStates.MICHIGAN:
-    case SupportedStates.NEW_MEXICO:
-      // Pre-Packaged mode is Oklahoma-only, return empty array for other states
-      hierarchy = [];
-      break;
-    default:
-      // Default to Oklahoma pricing hierarchy
-      hierarchy = OKLAHOMA_PREPACKAGED_PRICING_HIERARCHY.map(shelf => ({
-        name: shelf.name,
-        color: shelf.color,
-        textColor: shelf.textColor,
-        hidePricing: shelf.hidePricing,
-        brandEmphasis: true,
-        weightFilter: getWeightFilterFromShelfName(shelf.name),
-      }));
-  }
+  // Use the pricing hierarchy for all states (weight-based organization)
+  // This provides a consistent experience across all states
+  hierarchy = OKLAHOMA_PREPACKAGED_PRICING_HIERARCHY.map(shelf => ({
+    name: shelf.name,
+    color: shelf.color,
+    textColor: shelf.textColor,
+    hidePricing: shelf.hidePricing,
+    brandEmphasis: true, // Enable brand emphasis for pre-packaged products
+    weightFilter: getWeightFilterFromShelfName(shelf.name),
+  }));
 
   return hierarchy.map(shelf => ({
     ...shelf,
@@ -614,4 +595,3 @@ export const getDefaultPrePackagedShelves = (state: SupportedStates): PrePackage
     sortCriteria: null,
   }));
 };
-    

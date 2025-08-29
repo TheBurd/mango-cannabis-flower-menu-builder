@@ -1,6 +1,7 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Theme, MenuMode, SupportedStates } from '../types';
 import { TabContainer, TabItem } from './common/TabContainer';
+import { FeedbackPopup } from './FeedbackPopup';
 
 interface InstructionsModalTabsProps {
   isOpen: boolean;
@@ -17,11 +18,22 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
   currentMode,
   currentState,
 }) => {
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const feedbackButtonRef = useRef<HTMLButtonElement>(null);
+
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   }, [onClose]);
+
+  const handleToggleFeedback = () => {
+    setShowFeedbackForm(!showFeedbackForm);
+  };
+
+  const handleCloseFeedback = () => {
+    setShowFeedbackForm(false);
+  };
 
   if (!isOpen) return null;
 
@@ -43,10 +55,12 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
         }`}>
           <h3 className="font-semibold mb-3 text-orange-600">NEW in v1.1.0:</h3>
           <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            <li>✨ Enhanced CSV import with step-by-step wizard</li>
-            <li>✨ Smart toast notifications for all operations</li>
-            <li>✨ Context-sensitive help tooltips throughout the app</li>
-            <li>✨ Tab-based navigation in modals</li>
+            <li>✨ Pre-Packaged mode now available for all states</li>
+            <li>✨ Dynamic scroll overlay with performance monitoring</li>
+            <li>✨ Enhanced CSV export modal with better layout</li>
+            <li>✨ Improved strain/product reordering with up/down arrows</li>
+            <li>✨ Real-time performance metrics and tooltips</li>
+            <li>✨ Smart performance optimization based on menu size</li>
           </ul>
         </div>
 
@@ -71,7 +85,7 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
               <h3 className="font-semibold">Select Mode</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} ml-8`}>
-              Choose Bulk Flower or Pre-Packaged mode based on your products (Oklahoma only supports both modes).
+              Choose Bulk Flower or Pre-Packaged mode based on your products (all states support both modes).
             </p>
           </div>
 
@@ -138,7 +152,8 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
             <li>• Fill in required fields: {currentMode === MenuMode.BULK ? 'name, grower, THC%' : 'name, brand, price'}</li>
             <li>• Select strain type: Indica (I), Sativa (S), or Hybrid (H)</li>
             <li>• Mark items as "Last Jar" or "Sold Out" for special highlighting</li>
-            <li>• Use up/down arrows to reorder items as needed</li>
+            <li>• Use up/down arrows to reorder items within shelves</li>
+            <li>• Use the scroll overlay to navigate large menus while scrolling</li>
           </ul>
         </div>
 
@@ -169,10 +184,11 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
         }`}>
           <h3 className="font-semibold mb-3">🔄 Reordering {currentMode === MenuMode.BULK ? 'Strains' : 'Products'}:</h3>
           <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            <li>• <strong>Up/Down Arrows:</strong> Click arrows on the left of each row to move items</li>
+            <li>• <strong>Arrow Controls:</strong> Click up/down arrows on the left of each row to move items</li>
             <li>• <strong>Smart Boundaries:</strong> Arrows disappear when items can't move further</li>
-            <li>• <strong>Reliable Operation:</strong> No more duplication issues from drag & drop</li>
+            <li>• <strong>Performance Monitor:</strong> Watch the scroll overlay footer for real-time FPS metrics</li>
             <li>• <strong>Sort Reset:</strong> Manual reordering clears any active sorting</li>
+            <li>• <strong>Reliable Operation:</strong> No duplication issues - precise control guaranteed</li>
           </ul>
         </div>
 
@@ -323,6 +339,20 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
         </div>
 
         <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-orange-900/20 border border-orange-700' : 'bg-orange-50 border border-orange-200'
+        }`}>
+          <h3 className="font-semibold mb-3 text-orange-600">🧭 NEW: Scroll Overlay System:</h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• <strong>Smart Position Tracking:</strong> Shows current strains while scrolling</li>
+            <li>• <strong>Performance Monitoring:</strong> Real-time FPS, frame time, and strain count</li>
+            <li>• <strong>Toggle Control:</strong> Enable/disable via footer with performance indicator</li>
+            <li>• <strong>Adaptive Optimization:</strong> Auto-adjusts based on menu size and device performance</li>
+            <li>• <strong>Dynamic Performance Levels:</strong> High/Medium/Low with detailed tooltips</li>
+            <li>• <strong>Memory Usage:</strong> Live tracking of resource consumption</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
           theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
         }`}>
           <h3 className="font-semibold mb-3">✨ Visual Enhancements:</h3>
@@ -443,8 +473,8 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
           <h3 className="font-semibold mb-3 text-blue-600">🏛️ State Compliance:</h3>
           <div className="space-y-2 text-sm">
             <div><strong>Oklahoma:</strong> Both Bulk and Pre-Packaged modes, extensive shelf options</div>
-            <div><strong>Michigan:</strong> Bulk mode only, includes Infused product support</div>
-            <div><strong>New Mexico:</strong> Bulk mode only, state-specific pricing tiers</div>
+            <div><strong>Michigan:</strong> Both Bulk and Pre-Packaged modes, includes Infused product support</div>
+            <div><strong>New Mexico:</strong> Both Bulk and Pre-Packaged modes, state-specific pricing tiers</div>
             <p className={`mt-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
               Each state includes appropriate THC regulatory symbols and pricing structures.
             </p>
@@ -529,10 +559,26 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
           <div className="flex justify-between items-center">
-            <div className={`text-sm ${
-              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Mango Cannabis Flower Menu Builder v1.1.0 - Enhanced with smart features
+            <div className="flex items-center gap-4">
+              <div className={`text-sm ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                🥭 Mango Cannabis Flower Menu Builder v1.1.0
+              </div>
+              <button
+                ref={feedbackButtonRef}
+                onClick={handleToggleFeedback}
+                className={`text-sm font-medium transition-colors flex items-center gap-1 ${
+                  showFeedbackForm 
+                    ? 'text-orange-500 hover:text-orange-600' 
+                    : theme === 'dark' 
+                      ? 'text-gray-400 hover:text-gray-300' 
+                      : 'text-gray-600 hover:text-gray-700'
+                }`}
+              >
+                <span>📧</span>
+                {showFeedbackForm ? 'Hide Feedback' : 'Leave Feedback'}
+              </button>
             </div>
             <button
               onClick={onClose}
@@ -546,6 +592,14 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Feedback Popup */}
+        <FeedbackPopup 
+          theme={theme}
+          isOpen={showFeedbackForm}
+          onClose={handleCloseFeedback}
+          triggerRef={feedbackButtonRef}
+        />
       </div>
     </div>
   );

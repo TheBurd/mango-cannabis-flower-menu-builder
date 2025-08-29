@@ -80,14 +80,12 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
       <div className="flex items-center space-x-4">
-        {/* Mode Toggle - Only show for Oklahoma */}
-        {currentState === SupportedStates.OKLAHOMA && (
-          <ModeToggle
-            mode={menuMode}
-            onModeChange={onMenuModeChange}
-            theme={theme}
-          />
-        )}
+        {/* Mode Toggle - Available for all states */}
+        <ModeToggle
+          mode={menuMode}
+          onModeChange={onMenuModeChange}
+          theme={theme}
+        />
         
         {/* State Selector */}
         <div className="flex items-center space-x-2">

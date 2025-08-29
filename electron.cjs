@@ -20,8 +20,8 @@ function createWindow() {
       webSecurity: true,
       preload: path.join(__dirname, 'preload.cjs')
     },
-    icon: isDev 
-      ? path.join(__dirname, 'assets/icons/appIcon.png')
+    icon: process.platform === 'win32' 
+      ? path.join(__dirname, 'assets/icons/appIcon.ico')
       : path.join(__dirname, 'assets/icons/appIcon.png'),
     title: 'Mango Cannabis Flower Menu Builder',
     titleBarStyle: 'default',
@@ -59,8 +59,9 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     
-    // Optional: Flash the window to draw attention (Windows only)
+    // Explicitly set icon for Windows (helps with taskbar/start menu)
     if (process.platform === 'win32') {
+      mainWindow.setIcon(path.join(__dirname, 'assets/icons/appIcon.ico'));
       mainWindow.flashFrame(false);
     }
     
@@ -435,6 +436,9 @@ if (!isDev) {
     // Repository is public, no token needed
   });
 
+  // Log update source for verification
+  console.log('[Updater] Update source configured:', autoUpdater.getFeedURL());
+
   // Configure auto-updater to download but not apply automatically
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
@@ -493,8 +497,15 @@ if (!isDev) {
     console.error('🚨 Auto-updater error:', err);
     console.error('Error stack:', err.stack);
     updateInfo = null;
-    // Send error info to renderer
+    // Send enhanced error info to renderer with manual fallback
     if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update-error', {
+        message: 'Update failed. Please download manually from GitHub.',
+        originalError: err.message,
+        stack: err.stack,
+        manualDownloadUrl: 'https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases'
+      });
+      // Also send to debug for development
       mainWindow.webContents.send('update-debug', {
         type: 'error',
         message: `Update error: ${err.message}`,
@@ -600,6 +611,11 @@ function checkForUpdatesOnStartup() {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  // Set app icon explicitly for Windows
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.mangocannabis.flowerMenuBuilder');
+  }
+  
   createWindow();
   createMenu();
   

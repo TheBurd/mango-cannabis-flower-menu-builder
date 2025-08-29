@@ -16,10 +16,24 @@
     ; Create a link to GitHub releases in the Start Menu
     CreateDirectory "$SMPROGRAMS\Mango Cannabis"
     CreateShortcut "$SMPROGRAMS\Mango Cannabis\Visit GitHub Releases.lnk" "https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases" "" "" "" SW_SHOWNORMAL "" "Check for updates and download releases from GitHub"
+    
+    ; Force refresh the Start Menu shortcut with correct icon
+    ; Delete and recreate the main app shortcut to clear icon cache
+    Delete "$SMPROGRAMS\Mango Cannabis\Mango Cannabis Flower Menu Builder.lnk"
+    CreateShortcut "$SMPROGRAMS\Mango Cannabis\Mango Cannabis Flower Menu Builder.lnk" "$INSTDIR\Mango Cannabis Flower Menu Builder.exe" "" "$INSTDIR\Mango Cannabis Flower Menu Builder.exe" 0 SW_SHOWNORMAL "" "Professional cannabis flower menu builder"
+    
+    ; Register app with Windows for proper icon display (per-user install)
+    ; Use HKCU because installer runs per-user (nsis.perMachine=false)
+    WriteRegStr HKCU "SOFTWARE\Classes\Applications\Mango Cannabis Flower Menu Builder.exe" "FriendlyAppName" "Mango Cannabis Flower Menu Builder"
+    WriteRegStr HKCU "SOFTWARE\Classes\Applications\Mango Cannabis Flower Menu Builder.exe\DefaultIcon" "" "$INSTDIR\Mango Cannabis Flower Menu Builder.exe,0"
+    WriteRegStr HKCU "SOFTWARE\Classes\Applications\Mango Cannabis Flower Menu Builder.exe\shell\open\command" "" '"$INSTDIR\Mango Cannabis Flower Menu Builder.exe"'
 !macroend
 
 !macro customUnInstall
     ; Remove the GitHub releases link
     Delete "$SMPROGRAMS\Mango Cannabis\Visit GitHub Releases.lnk"
     RMDir "$SMPROGRAMS\Mango Cannabis"
+    
+    ; Clean up Windows registry entries (per-user install)
+    DeleteRegKey HKCU "SOFTWARE\Classes\Applications\Mango Cannabis Flower Menu Builder.exe"
 !macroend 

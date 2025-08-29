@@ -25,6 +25,8 @@ interface UpdateNotificationProps {
   noUpdatesFound?: boolean;
   isDownloading?: boolean;
   downloadProgress?: DownloadProgress | null;
+  updateError?: string | null;
+  updateErrorUrl?: string | null;
 }
 
 export const UpdateNotification: React.FC<UpdateNotificationProps> = ({ 
@@ -37,7 +39,9 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
   isCheckingForUpdates = false,
   noUpdatesFound = false,
   isDownloading = false,
-  downloadProgress = null
+  downloadProgress = null,
+  updateError = null,
+  updateErrorUrl = null
 }) => {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -50,9 +54,9 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
 
   // Remove duplicate event listeners - these are now handled in App.tsx
 
-  // Show when update is available, downloaded, or manual check states
+  // Show when update is available, downloaded, manual check states, or error occurs
   useEffect(() => {
-    if (updateAvailable || updateDownloaded || isManualCheck || isCheckingForUpdates || noUpdatesFound) {
+    if (updateAvailable || updateDownloaded || isManualCheck || isCheckingForUpdates || noUpdatesFound || updateError) {
       setIsVisible(true);
       setTimeout(() => setIsSlideIn(true), 100);
       
@@ -64,7 +68,7 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
         setAutoDismissTimer(timer);
       }
     }
-  }, [updateAvailable, updateDownloaded, isManualCheck, isCheckingForUpdates, noUpdatesFound]);
+  }, [updateAvailable, updateDownloaded, isManualCheck, isCheckingForUpdates, noUpdatesFound, updateError]);
 
   // Cleanup auto-dismiss timer
   useEffect(() => {
@@ -174,7 +178,11 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
             <div className={`w-10 h-10 ${iconBgClasses} rounded-lg flex items-center justify-center`}>
-              {noUpdatesFound ? (
+              {updateError ? (
+                <svg className={`w-6 h-6 text-red-600 ${theme === 'dark' ? 'text-red-400' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              ) : noUpdatesFound ? (
                 <svg className={`w-6 h-6 text-green-600 ${theme === 'dark' ? 'text-green-400' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -197,7 +205,9 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
           
           <div className="flex-1 min-w-0">
             <div className={`text-sm font-semibold ${textClasses}`}>
-              {noUpdatesFound 
+              {updateError
+                ? 'Update Failed'
+                : noUpdatesFound 
                 ? 'You have the latest version!' 
                 : isCheckingForUpdates 
                 ? 'Checking for Updates...' 
@@ -209,7 +219,9 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
               }
             </div>
             <div className={`text-sm ${subtextClasses} mt-1`}>
-              {noUpdatesFound 
+              {updateError
+                ? updateError
+                : noUpdatesFound 
                 ? "You're running the latest version!"
                 : isCheckingForUpdates 
                 ? 'Please wait while we check for new updates...'
@@ -220,6 +232,30 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                 : `Version ${updateVersion} is available for download.`
               }
             </div>
+            
+            {/* Manual download link for errors */}
+            {updateError && updateErrorUrl && (
+              <div className="mt-2">
+                <button
+                  onClick={() => {
+                    if (window.electronAPI?.openExternal) {
+                      window.electronAPI.openExternal(updateErrorUrl).catch((error) => {
+                        console.error('❌ Failed to open GitHub URL:', error);
+                        window.open(updateErrorUrl, '_blank');
+                      });
+                    } else {
+                      window.open(updateErrorUrl, '_blank');
+                    }
+                  }}
+                  className={`text-xs ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} underline transition-colors flex items-center space-x-1`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span>Manual download available at GitHub Releases</span>
+                </button>
+              </div>
+            )}
             
             {/* GitHub release link for available updates AND downloaded updates */}
             {(updateAvailable || isDownloaded) && !isDownloading && !isCheckingForUpdates && (
@@ -277,7 +313,14 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
             {/* Only show buttons if not in checking state */}
             {!isCheckingForUpdates && (
               <div className="mt-4 flex space-x-2">
-                {noUpdatesFound ? (
+                {updateError ? (
+                  <button
+                    onClick={handleMaybeLater}
+                    className={`text-xs px-3 py-1.5 ${laterButtonClasses} rounded-md transition-colors`}
+                  >
+                    Dismiss
+                  </button>
+                ) : noUpdatesFound ? (
                   <button
                     onClick={handleMaybeLater}
                     className={`text-xs px-3 py-1.5 ${laterButtonClasses} rounded-md transition-colors`}

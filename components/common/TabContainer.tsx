@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, ReactNode } from 'react';
 import { Theme } from '../../types';
 
 export interface TabItem {
@@ -30,6 +30,19 @@ export const TabContainer: React.FC<TabContainerProps> = ({
   
   const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const indicatorRef = useRef<HTMLDivElement>(null);
+
+  // Set initial indicator position and size immediately on mount
+  useLayoutEffect(() => {
+    const activeIndex = tabs.findIndex(tab => tab.id === activeTab);
+    if (activeIndex !== -1 && indicatorRef.current && tabsRef.current[activeIndex]) {
+      const activeButton = tabsRef.current[activeIndex];
+      if (activeButton) {
+        const { offsetLeft, offsetWidth } = activeButton;
+        indicatorRef.current.style.transform = `translateX(${offsetLeft}px)`;
+        indicatorRef.current.style.width = `${offsetWidth}px`;
+      }
+    }
+  }, []); // Run only on mount
 
   // Update indicator position when active tab changes
   useEffect(() => {

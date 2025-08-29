@@ -214,7 +214,7 @@ export const CsvExportModal: React.FC<CsvExportModalProps> = ({
       className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div className={`max-w-4xl w-full max-h-[90vh] rounded-lg shadow-2xl overflow-hidden ${
+      <div className={`max-w-4xl w-full max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col ${
         theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'
       }`}>
         {/* Header */}
@@ -237,7 +237,7 @@ export const CsvExportModal: React.FC<CsvExportModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className={`px-6 py-4 max-h-[calc(90vh-120px)] overflow-y-auto ${
+        <div className={`px-6 py-4 pb-6 flex-1 overflow-y-auto ${
           theme === 'dark' ? 'bg-gray-800' : 'bg-white'
         }`}>
           {/* Export Type Selection */}
@@ -376,7 +376,7 @@ export const CsvExportModal: React.FC<CsvExportModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className={`px-6 py-4 border-t flex items-center justify-between ${
+        <div className={`px-6 py-4 border-t flex items-center justify-between flex-shrink-0 ${
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
           <div className={`text-sm ${

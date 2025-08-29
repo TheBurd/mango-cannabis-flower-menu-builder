@@ -424,6 +424,8 @@ const AppContent: React.FC = () => {
     setIsManualCheck(false);
     setIsCheckingForUpdates(false);
     setNoUpdatesFound(false);
+    setUpdateError(null);
+    setUpdateErrorUrl(null);
     // Note: We don't save to localStorage so the notification will show again next app launch
   }, []);
 
@@ -731,6 +733,8 @@ const AppContent: React.FC = () => {
   const [isManualCheck, setIsManualCheck] = useState<boolean>(false);
   const [isCheckingForUpdates, setIsCheckingForUpdates] = useState<boolean>(false);
   const [noUpdatesFound, setNoUpdatesFound] = useState<boolean>(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateErrorUrl, setUpdateErrorUrl] = useState<string | null>(null);
   const manualCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
@@ -799,12 +803,6 @@ const AppContent: React.FC = () => {
     setCurrentAppState(newState);
     // Save the selected state to localStorage
     localStorage.setItem('mango-selected-state', newState);
-    
-    // Auto-switch to Bulk Flower mode for non-Oklahoma states if currently in Pre-Packaged mode
-    if (newState !== SupportedStates.OKLAHOMA && menuMode === MenuMode.PREPACKAGED) {
-      setMenuMode(MenuMode.BULK);
-      localStorage.setItem('mango-menu-mode', MenuMode.BULK);
-    }
   }, [currentAppState, hasMenuContent, menuMode]);
 
   // Welcome modal handlers
@@ -932,11 +930,20 @@ const AppContent: React.FC = () => {
       console.log('Update Debug:', debug);
     };
 
+    const handleUpdateError = (_event: any, errorInfo: { message: string; originalError: string; manualDownloadUrl: string }) => {
+      console.error('Update error received:', errorInfo);
+      setUpdateError(errorInfo.message);
+      setUpdateErrorUrl(errorInfo.manualDownloadUrl);
+      setIsDownloadingUpdate(false);
+      setIsCheckingForUpdates(false);
+    };
+
           window.electronAPI.onUpdateAvailable(handleUpdateAvailable);
       window.electronAPI.onDownloadProgress(handleDownloadProgress);
       window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
       window.electronAPI.onUpdateDebug?.(handleUpdateDebug);
       window.electronAPI.onUpdateNotAvailable?.(handleUpdateNotAvailable);
+      window.electronAPI.onUpdateError?.(handleUpdateError);
 
     return () => {
       window.electronAPI?.removeUpdateListeners();
@@ -3040,6 +3047,8 @@ const AppContent: React.FC = () => {
             noUpdatesFound={noUpdatesFound}
             isDownloading={isDownloadingUpdate}
             downloadProgress={updateDownloadProgressFull}
+            updateError={updateError}
+            updateErrorUrl={updateErrorUrl}
           />
         )}
         

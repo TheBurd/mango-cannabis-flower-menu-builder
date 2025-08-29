@@ -47,17 +47,25 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
 }) => {
   // Calculate which strains to show and their magnification
   const visibleStrains = useMemo(() => {
-    if (!containerElement || strains.length === 0) return [];
+    if (strains.length === 0) return [];
     
-    // Show a window of strains around the center
-    const windowSize = 25; // Show 25 strains total for better height
+    // Adaptive window size based on total strain count for better performance
+    const baseWindowSize = 25;
+    const windowSize = strains.length > 500 ? 
+      Math.min(baseWindowSize, 15) : // Smaller window for very large lists
+      strains.length > 200 ? 
+      Math.min(baseWindowSize, 20) : 
+      baseWindowSize;
+    
     const halfWindow = Math.floor(windowSize / 2);
     
-    const startIdx = Math.max(0, centerStrainIndex - halfWindow);
-    const endIdx = Math.min(strains.length - 1, centerStrainIndex + halfWindow);
+    // Ensure we don't go out of bounds
+    const centerIdx = Math.max(0, Math.min(centerStrainIndex, strains.length - 1));
+    const startIdx = Math.max(0, centerIdx - halfWindow);
+    const endIdx = Math.min(strains.length - 1, centerIdx + halfWindow);
     
     return strains.slice(startIdx, endIdx + 1).map(strain => {
-      const distance = Math.abs(strain.index - centerStrainIndex);
+      const distance = Math.abs(strain.index - centerIdx);
       const style = getStyleForDistance(distance);
       
       return {
@@ -65,7 +73,7 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
         ...style
       };
     });
-  }, [strains, centerStrainIndex]); // Remove containerElement dependency
+  }, [strains, centerStrainIndex])
 
   // Always render but control visibility with opacity for smooth animations
   if (visibleStrains.length === 0) return null;
@@ -159,9 +167,33 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison for better performance
-  return prevProps.isVisible === nextProps.isVisible &&
-         prevProps.centerStrainIndex === nextProps.centerStrainIndex &&
-         prevProps.theme === nextProps.theme &&
-         prevProps.strains.length === nextProps.strains.length;
+  // Enhanced comparison for better performance - check what actually matters for rendering
+  if (prevProps.isVisible !== nextProps.isVisible ||
+      prevProps.centerStrainIndex !== nextProps.centerStrainIndex ||
+      prevProps.theme !== nextProps.theme ||
+      prevProps.strains.length !== nextProps.strains.length) {
+    return false;
+  }
+  
+  // Deep comparison of strain data within the visible window only
+  const windowSize = 25;
+  const halfWindow = Math.floor(windowSize / 2);
+  const startIdx = Math.max(0, nextProps.centerStrainIndex - halfWindow);
+  const endIdx = Math.min(nextProps.strains.length - 1, nextProps.centerStrainIndex + halfWindow);
+  
+  // Check if the visible window strains have changed
+  for (let i = startIdx; i <= endIdx && i < Math.min(prevProps.strains.length, nextProps.strains.length); i++) {
+    const prevStrain = prevProps.strains[i];
+    const nextStrain = nextProps.strains[i];
+    
+    if (!prevStrain || !nextStrain ||
+        prevStrain.strainId !== nextStrain.strainId ||
+        prevStrain.strainName !== nextStrain.strainName ||
+        prevStrain.shelfColor !== nextStrain.shelfColor ||
+        prevStrain.isShelfHeader !== nextStrain.isShelfHeader) {
+      return false;
+    }
+  }
+  
+  return true;
 });

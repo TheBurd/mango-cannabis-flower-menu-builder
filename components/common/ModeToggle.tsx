@@ -34,7 +34,7 @@ export const ModeToggle: React.FC<ModeToggleProps> = ({
       <div 
         className="relative flex bg-white/10 rounded-lg p-1 border border-white/20"
         role="tablist"
-        aria-label="Oklahoma Menu Mode Toggle"
+        aria-label="Menu Mode Toggle"
       >
         {/* Bulk Mode Button */}
         <button

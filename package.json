@@ -99,7 +99,6 @@
         "to": "assets/installer.nsh"
       }
     ],
-    "icon": "assets/icons/appIcon.png",
     "publish": {
       "provider": "github",
       "owner": "TheBurd",
@@ -163,6 +162,7 @@
     },
     "linux": {
       "category": "Office",
+      "icon": "assets/icons/appIcon.png",
       "target": [
         {
           "target": "AppImage",

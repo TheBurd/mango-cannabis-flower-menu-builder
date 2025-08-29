@@ -1,6 +1,7 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Theme } from '../types';
 import { TabContainer, TabItem } from './common/TabContainer';
+import { FeedbackPopup } from './FeedbackPopup';
 
 interface WhatsNewModalTabsProps {
   isOpen: boolean;
@@ -13,11 +14,22 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
   onClose,
   theme,
 }) => {
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const feedbackButtonRef = useRef<HTMLButtonElement>(null);
+
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   }, [onClose]);
+
+  const handleToggleFeedback = () => {
+    setShowFeedbackForm(!showFeedbackForm);
+  };
+
+  const handleCloseFeedback = () => {
+    setShowFeedbackForm(false);
+  };
 
   if (!isOpen) return null;
 
@@ -351,13 +363,14 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
           theme === 'dark' ? 'bg-amber-900/20 border border-amber-700' : 'bg-amber-50 border border-amber-200'
         }`}>
           <h3 className="font-semibold mb-3 flex items-center gap-2">
-            <span>🧭</span> Scroll Navigation Overlay:
+            <span>🧭</span> Scroll Overlay:
           </h3>
           <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
             <li>• Smart overlay appears while scrolling to show current position</li>
             <li>• Magnified strain names with visual hierarchy (16px current, 14px adjacent)</li>
             <li>• Color-coded shelf headers with visual breakpoints</li>
-            <li>• Non-obstructive design positioned within the panel</li>
+            <li>• Toggleable footer with performance indicator</li>
+            <li>• Adaptive frame skipping for smooth scrolling on large menus</li>
             <li>• 2.5 second visibility with smooth fade-out animation</li>
             <li>• Instant position tracking with zero lag</li>
           </ul>
@@ -376,6 +389,37 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             <li>• Optimized transitions from all to specific properties</li>
             <li>• 90% reduction in unnecessary re-renders</li>
             <li>• Pre-calculated style lookups for instant access</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-purple-900/20 border border-purple-700' : 'bg-purple-50 border border-purple-200'
+        }`}>
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <span>📊</span> Smart Performance Monitoring:
+          </h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• Dynamic performance level detection (High/Medium/Low)</li>
+            <li>• Real-time FPS and frame time monitoring in tooltips</li>
+            <li>• Automatic optimization based on menu size</li>
+            <li>• Performance resets when clearing/reducing menus</li>
+            <li>• Live metrics: FPS counter, strain count, memory usage</li>
+            <li>• Tooltips for all performance states with detailed stats</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-green-900/20 border border-green-700' : 'bg-green-50 border border-green-200'
+        }`}>
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <span>🏛️</span> Pre-Packaged Mode Expansion:
+          </h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• Pre-Packaged mode now available for ALL states</li>
+            <li>• Michigan and New Mexico gain full pre-packaged support</li>
+            <li>• Consistent weight-based shelf structure across states</li>
+            <li>• 28g, 14g, 7g, 3.5g categories for Flower and Shake</li>
+            <li>• Mode toggle now visible for all state selections</li>
           </ul>
         </div>
 
@@ -515,10 +559,26 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
           <div className="flex justify-between items-center">
-            <div className={`text-sm ${
-              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Major release: Complete Pre-Packaged system, Smart reordering, Enhanced CSV, 35+ components
+            <div className="flex items-center gap-4">
+              <div className={`text-sm ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                🥭 Flower Menu Builder v1.1.0
+              </div>
+              <button
+                ref={feedbackButtonRef}
+                onClick={handleToggleFeedback}
+                className={`text-sm font-medium transition-colors flex items-center gap-1 ${
+                  showFeedbackForm 
+                    ? 'text-orange-500 hover:text-orange-600' 
+                    : theme === 'dark' 
+                      ? 'text-gray-400 hover:text-gray-300' 
+                      : 'text-gray-600 hover:text-gray-700'
+                }`}
+              >
+                <span>📧</span>
+                {showFeedbackForm ? 'Hide Feedback' : 'Leave Feedback'}
+              </button>
             </div>
             <button
               onClick={onClose}
@@ -532,6 +592,14 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Feedback Popup */}
+        <FeedbackPopup 
+          theme={theme}
+          isOpen={showFeedbackForm}
+          onClose={handleCloseFeedback}
+          triggerRef={feedbackButtonRef}
+        />
       </div>
     </div>
   );

@@ -80,6 +80,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateNotAvailable: (callback) => {
     return ipcRenderer.on('update-not-available', callback);
   },
+
+  onUpdateError: (callback) => {
+    return ipcRenderer.on('update-error', callback);
+  },
   
   // Remove update listeners
   removeUpdateListeners: () => {
@@ -88,6 +92,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('update-downloaded');
     ipcRenderer.removeAllListeners('update-debug');
     ipcRenderer.removeAllListeners('update-not-available');
+    ipcRenderer.removeAllListeners('update-error');
   }
 });
 

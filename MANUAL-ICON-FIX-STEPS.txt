@@ -1,0 +1,41 @@
+MANUAL WINDOWS ICON FIX STEPS
+===============================
+
+If the automated script doesn't work, try these manual steps:
+
+1. COMPLETE UNINSTALL & REINSTALL:
+   - Uninstall the app completely
+   - Delete any remaining files in Program Files
+   - Delete any remaining Start Menu shortcuts
+   - Run the FORCE-WINDOWS-ICON-REFRESH.bat as Admin
+   - Wait 2-3 minutes
+   - Reinstall with the new version
+
+2. WINDOWS SEARCH INDEX REBUILD:
+   - Go to Settings > Search > Searching Windows
+   - Click "Advanced Search Indexer Settings"
+   - Click "Advanced" button
+   - Click "Rebuild" button
+   - Wait 15-30 minutes for rebuild
+
+3. REGISTRY MANUAL CLEAR (Advanced):
+   - Open Registry Editor (regedit)
+   - Navigate to: HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.exe
+   - Delete the entire ".exe" folder
+   - Navigate to: HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.exe
+   - Check if icon paths are correct
+   - Reboot computer
+
+4. NUCLEAR OPTION - Windows Reset:
+   - Settings > Update & Security > Recovery
+   - "Reset this PC" > "Keep my files"
+   - This will reinstall Windows but keep your data
+
+5. CHECK THESE LOCATIONS MANUALLY:
+   - Start Menu: Check the actual shortcut icon
+   - Desktop: Check desktop shortcut icon  
+   - Programs list: Check Apps & Features icon
+   - File Explorer: Check in Program Files folder
+
+The problem is likely Windows Search Index being stubborn.
+Try Option 2 (Search Index Rebuild) first - it's the most common fix.
