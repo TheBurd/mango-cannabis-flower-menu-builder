@@ -59,6 +59,32 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url) => {
     return ipcRenderer.invoke('open-external', url);
   },
+
+  // Window controls for custom title bar
+  windowMinimize: () => {
+    return ipcRenderer.invoke('window-minimize');
+  },
+
+  windowMaximize: () => {
+    return ipcRenderer.invoke('window-maximize');
+  },
+
+  windowClose: () => {
+    return ipcRenderer.invoke('window-close');
+  },
+
+  windowIsMaximized: () => {
+    return ipcRenderer.invoke('window-is-maximized');
+  },
+
+  // Header preferences
+  getHeaderPreferences: () => {
+    return ipcRenderer.invoke('get-header-preferences');
+  },
+
+  setHeaderPreferences: (preferences) => {
+    return ipcRenderer.invoke('set-header-preferences', preferences);
+  },
   
   // Listen for update events
   onUpdateAvailable: (callback) => {

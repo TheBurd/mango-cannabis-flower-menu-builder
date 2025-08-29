@@ -7,6 +7,7 @@ const isDev = process.env.NODE_ENV === 'development';
 let mainWindow;
 
 function createWindow() {
+  console.log('🚀 Creating Electron window...');
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -25,6 +26,7 @@ function createWindow() {
       : path.join(__dirname, 'assets/icons/appIcon.png'),
     title: 'Mango Cannabis Flower Menu Builder',
     titleBarStyle: 'default',
+    frame: true,
     backgroundColor: '#1f2937', // Dark gray background while loading
     show: false, // Don't show until ready
     center: true, // Center the window on screen
@@ -32,31 +34,49 @@ function createWindow() {
     maximizable: true,
     minimizable: true,
     fullscreenable: true,
-    // Better window frame on Windows
+    // Windows specific improvements with overlay
     ...(process.platform === 'win32' && {
-      titleBarStyle: 'default',
-      frame: true
+      titleBarOverlay: {
+        color: '#f97316', // Mango orange color for title bar
+        symbolColor: '#ffffff', // White symbols
+        height: 32
+      }
     }),
-    // macOS specific improvements
+    // macOS specific improvements with hidden title bar
     ...(process.platform === 'darwin' && {
-      titleBarStyle: 'default',
-      frame: true,
-      trafficLightPosition: { x: 20, y: 20 }
+      titleBarStyle: 'hiddenInset',
+      trafficLightPosition: { x: 15, y: 15 },
+      transparent: false,
+      vibrancy: 'window'
     })
   });
 
   // Load the app
+  console.log('🔍 Loading app content...');
   if (isDev) {
     const devUrl = process.env.VITE_DEV_URL || 'http://localhost:5173';
+    console.log('🌐 Loading dev URL:', devUrl);
     mainWindow.loadURL(devUrl);
     // Open DevTools in development
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
+    const indexPath = path.join(__dirname, 'dist/index.html');
+    console.log('📁 Loading file:', indexPath);
+    mainWindow.loadFile(indexPath);
   }
+
+  // Add error handling
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('❌ Failed to load:', errorCode, errorDescription);
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('✅ Content loaded successfully');
+  });
 
   // Show window when ready with a nice fade-in effect
   mainWindow.once('ready-to-show', () => {
+    console.log('✅ Electron window ready to show');
     mainWindow.show();
     
     // Explicitly set icon for Windows (helps with taskbar/start menu)
@@ -67,6 +87,7 @@ function createWindow() {
     
     // Focus the window
     mainWindow.focus();
+    console.log('✅ Electron window shown and focused');
   });
 
   // Handle window closed
@@ -381,19 +402,20 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
      });
    }
 
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
+  // Hide the native menu bar completely since we have our custom HeaderTabs
+  Menu.setApplicationMenu(null);
   
-  return menu;
+  return null;
 }
 
 // Function to update menu with dynamic data (shelves, dark mode state)
+// Disabled since we're using custom HeaderTabs instead of native menu
 async function updateMenuWithDynamicData(dynamicData) {
-  const newMenu = createMenu(dynamicData);
-  Menu.setApplicationMenu(newMenu);
+  // Menu is disabled - using custom HeaderTabs system instead
+  return;
 }
 
-// IPC handlers
+// IPC handlers - keeping original handlers only for now
 ipcMain.handle('show-confirm-dialog', async (event, message, detail) => {
   return await showConfirmDialog(message, detail);
 });
@@ -594,6 +616,59 @@ ipcMain.handle('get-current-version', async () => {
 ipcMain.handle('open-external', async (event, url) => {
   const { shell } = require('electron');
   await shell.openExternal(url);
+  return true;
+});
+
+// Window control IPC handlers for custom title bar
+ipcMain.handle('window-minimize', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.minimize();
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('window-maximize', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+    return mainWindow.isMaximized();
+  }
+  return false;
+});
+
+ipcMain.handle('window-close', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.close();
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('window-is-maximized', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return mainWindow.isMaximized();
+  }
+  return false;
+});
+
+// Header preferences storage
+ipcMain.handle('get-header-preferences', async () => {
+  // Return default preferences if none stored
+  return {
+    activeTab: 'file',
+    pinnedActions: ['mode-toggle', 'auto-format', 'export'],
+    showQuickActions: true,
+    compactMode: false
+  };
+});
+
+ipcMain.handle('set-header-preferences', async (event, preferences) => {
+  // In a real implementation, you'd store these in a file or database
+  console.log('Saving header preferences:', preferences);
   return true;
 });
 

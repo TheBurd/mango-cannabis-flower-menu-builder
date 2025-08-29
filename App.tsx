@@ -243,7 +243,7 @@ const AppContent: React.FC = () => {
     if (savedMode && Object.values(MenuMode).includes(savedMode as MenuMode)) {
       return savedMode as MenuMode;
     }
-    return MenuMode.BULK; // Default to bulk flower mode
+    return MenuMode.PREPACKAGED; // Default to pre-packaged mode
   });
   
   // Bulk flower shelves state
@@ -1723,6 +1723,16 @@ const AppContent: React.FC = () => {
   const handleImportCSVRequest = useCallback(() => {
     setShowCsvImportModal(true);
   }, []);
+
+  const handleNewMenu = useCallback(() => {
+    recordChange(() => {
+      if (menuMode === MenuMode.BULK) {
+        setBulkShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+      } else {
+        setPrePackagedShelves(getDefaultPrePackagedShelves(currentAppState));
+      }
+    });
+  }, [menuMode, currentAppState, fiftyPercentOffEnabled]);
   
   const processImportedCSVFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -2667,6 +2677,25 @@ const AppContent: React.FC = () => {
         hasViewedWhatsNew={hasViewedWhatsNew}
         menuMode={menuMode}
         onMenuModeChange={handleMenuModeChange}
+        onExportPNG={() => triggerImageExport('png')}
+        onExportJPEG={() => triggerImageExport('jpeg')}
+        onExportCSV={handleExportCSV}
+        onNewMenu={handleNewMenu}
+        onOpenCSV={handleImportCSVRequest}
+        onAutoFormat={handleAutoFormat}
+        onClearAll={handleClearAllShelves}
+        onGlobalSort={handleUpdateGlobalSortCriteria}
+        onClearAllShelves={handleClearAllShelves}
+        onClearAllLastJars={handleClearAllLastJars}
+        onClearAllSoldOut={handleClearAllSoldOut}
+        onAddStrain={handleAddStrain}
+        onCheckUpdates={handleManualCheckForUpdates}
+        onJumpToShelf={handleScrollToShelf}
+        shelves={processedShelves.map(shelf => ({ id: shelf.id, name: shelf.name }))}
+        hasUnsavedWork={hasMenuContent()}
+        hasSoldOutItems={hasSoldOutItems()}
+        onToggleFiftyPercentOff={handleFiftyPercentOffToggle}
+        fiftyPercentOffEnabled={fiftyPercentOffEnabled}
       />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}

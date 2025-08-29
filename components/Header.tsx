@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { SupportedStates, Theme, MenuMode } from '../types';
 import { MANGO_MAIN_ORANGE, MANGO_SUPPORT_ORANGE, STATE_THC_ICONS } from '../constants';
 import { CustomDropdown } from './common/CustomDropdown';
 import { ModeToggle } from './common/ModeToggle';
 import { SunIcon, MoonIcon, QuestionMarkCircleIcon } from './common/Icon';
 import { getLogoPath } from '../utils/assets';
+// Testing just the import without usage
+// import { HeaderTabs } from './HeaderTabs';
+// import { HeaderTabsDebug } from './HeaderTabsDebug';
+import { HeaderTabsSimple } from './HeaderTabsSimple';
 
 interface HeaderProps {
   appName: string;
@@ -17,6 +21,30 @@ interface HeaderProps {
   hasViewedWhatsNew: boolean;
   menuMode: MenuMode;
   onMenuModeChange: (mode: MenuMode) => void;
+  // New props for header tab functionality
+  onExportPNG?: () => void;
+  onExportJPEG?: () => void;
+  onExportCSV?: () => void;
+  onNewMenu?: () => void;
+  onOpenCSV?: () => void;
+  onAutoFormat?: () => void;
+  onClearAll?: () => void;
+  onGlobalSort?: (criteria: string) => void;
+  // Additional enhanced menu props
+  onClearAllShelves?: () => void;
+  onClearAllLastJars?: () => void;
+  onClearAllSoldOut?: () => void;
+  onAddStrain?: (shelfId?: string) => void;
+  onCheckUpdates?: () => void;
+  onJumpToShelf?: (shelfId: string) => void;
+  shelves?: { id: string; name: string }[];
+  hasUnsavedWork?: boolean;
+  hasSoldOutItems?: boolean;
+  // Additional functionality
+  onToggleFiftyPercentOff?: (enabled: boolean) => void;
+  fiftyPercentOffEnabled?: boolean;
+  // Header tabs control
+  enableHeaderTabs?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -29,10 +57,76 @@ export const Header: React.FC<HeaderProps> = ({
   onShowWhatsNew,
   hasViewedWhatsNew,
   menuMode,
-  onMenuModeChange
+  onMenuModeChange,
+  onExportPNG,
+  onExportJPEG,
+  onExportCSV,
+  onNewMenu,
+  onOpenCSV,
+  onAutoFormat,
+  onClearAll,
+  onGlobalSort,
+  onClearAllShelves,
+  onClearAllLastJars,
+  onClearAllSoldOut,
+  onAddStrain,
+  onCheckUpdates,
+  onJumpToShelf,
+  shelves,
+  hasUnsavedWork,
+  hasSoldOutItems,
+  onToggleFiftyPercentOff,
+  fiftyPercentOffEnabled,
+  enableHeaderTabs = false
 }) => {
+  const [isElectron, setIsElectron] = useState(false);
+
+  useEffect(() => {
+    // Check if running in Electron and enable header tabs by default in Electron
+    const electronDetected = typeof window !== 'undefined' && !!window.electronAPI;
+    setIsElectron(electronDetected);
+  }, []);
   const stateOptions = Object.values(SupportedStates).map(s => ({ value: s, label: s }));
 
+  // Test with actual electron detection
+  if (isElectron || enableHeaderTabs) {
+    return (
+      <HeaderTabsSimple
+        theme={theme}
+        menuMode={menuMode}
+        currentState={currentState}
+        className="no-print"
+        onStateChange={onStateChange}
+        onThemeChange={onThemeChange}
+        onMenuModeChange={onMenuModeChange}
+        onShowInstructions={onShowInstructions}
+        onShowWhatsNew={onShowWhatsNew}
+        hasViewedWhatsNew={hasViewedWhatsNew}
+        appName={appName}
+        onExportPNG={onExportPNG}
+        onExportJPEG={onExportJPEG}
+        onExportCSV={onExportCSV}
+        onNewMenu={onNewMenu}
+        onOpenCSV={onOpenCSV}
+        onAutoFormat={onAutoFormat}
+        onClearAll={onClearAll}
+        onGlobalSort={onGlobalSort}
+        onClearAllShelves={onClearAllShelves}
+        onClearAllLastJars={onClearAllLastJars}
+        onClearAllSoldOut={onClearAllSoldOut}
+        onAddStrain={onAddStrain}
+        onCheckUpdates={onCheckUpdates}
+        onJumpToShelf={onJumpToShelf}
+        shelves={shelves}
+        hasUnsavedWork={hasUnsavedWork}
+        hasSoldOutItems={hasSoldOutItems}
+        onToggleFiftyPercentOff={onToggleFiftyPercentOff}
+        fiftyPercentOffEnabled={fiftyPercentOffEnabled}
+      />
+    );
+  }
+
+  // Original header for web version
   return (
     <>
       {/* CSS Animation for subtle glow */}
