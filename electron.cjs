@@ -144,23 +144,13 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
         {
           label: 'Open Menu',
           accelerator: 'CmdOrCtrl+O',
-          click: async () => {
-            try {
-              const result = await dialog.showOpenDialog(mainWindow, {
-                properties: ['openFile'],
-                filters: [
-                  { name: 'CSV Files', extensions: ['csv'] }
-                ]
-              });
-              
-              if (!result.canceled && result.filePaths.length > 0) {
-                const filePath = result.filePaths[0];
-                sendToRenderer('open-menu-file', filePath);
-              }
-            } catch (error) {
-              console.error('Error opening file dialog:', error);
-            }
-          }
+          click: () => sendToRenderer('open-menu')
+        },
+        { type: 'separator' },
+        {
+          label: 'Switch Menu Mode',
+          accelerator: 'CmdOrCtrl+M',
+          click: () => sendToRenderer('switch-menu-mode')
         },
         { type: 'separator' },
         {
@@ -177,6 +167,10 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
             {
               label: 'New Mexico',
               click: () => sendToRenderer('switch-state', 'new_mexico')
+            },
+            {
+              label: 'New York',
+              click: () => sendToRenderer('switch-state', 'new_york')
             }
           ]
         },
@@ -186,17 +180,17 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
           submenu: [
             {
               label: 'Export as CSV',
-              accelerator: 'Alt+Shift+C',
+              accelerator: 'CmdOrCtrl+Shift+E',
               click: () => sendToRenderer('export-csv')
             },
             {
               label: 'Export as PNG',
-              accelerator: 'Alt+Shift+P', 
+              accelerator: 'CmdOrCtrl+Shift+P', 
               click: () => sendToRenderer('export-png')
             },
             {
               label: 'Export as JPEG',
-              accelerator: 'Alt+Shift+J',
+              accelerator: 'CmdOrCtrl+Shift+J',
               click: () => sendToRenderer('export-jpeg')
             }
           ]
@@ -227,6 +221,7 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
       submenu: [
         {
           label: 'Add Strain',
+          accelerator: 'CmdOrCtrl+Shift+A',
           submenu: [
             {
               label: 'Add to Last Used Shelf',
@@ -284,6 +279,7 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
           label: 'Dark Mode',
           type: 'checkbox',
           checked: dynamicData.darkMode,
+          accelerator: 'CmdOrCtrl+T',
           click: (menuItem) => sendToRenderer('toggle-dark-mode', menuItem.checked)
         },
         {
@@ -309,13 +305,18 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
           submenu: [
             {
               label: 'Zoom In',
-              accelerator: 'Ctrl+=',
+              accelerator: 'CmdOrCtrl+=',
               click: () => sendToRenderer('zoom-in')
             },
             {
               label: 'Zoom Out', 
-              accelerator: 'Ctrl+-',
+              accelerator: 'CmdOrCtrl+-',
               click: () => sendToRenderer('zoom-out')
+            },
+            {
+              label: 'Reset Zoom',
+              accelerator: 'CmdOrCtrl+\\',
+              click: () => sendToRenderer('reset-zoom')
             },
             { type: 'separator' },
             {
@@ -357,7 +358,14 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
       submenu: [
         {
           label: 'Check for Updates...',
+          accelerator: 'CmdOrCtrl+U',
           click: () => sendToRenderer('check-for-updates-manual')
+        },
+        { type: 'separator' },
+        {
+          label: 'Reset App Data',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => sendToRenderer('reset-app-data')
         },
         { type: 'separator' },
         {
@@ -402,17 +410,28 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
      });
    }
 
-  // Hide the native menu bar completely since we have our custom HeaderTabs
-  Menu.setApplicationMenu(null);
+  // Create and set the application menu to enable keyboard shortcuts
+  // but hide the menu bar since we use custom HeaderTabs
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
   
-  return null;
+  // Hide the menu bar on Windows/Linux (macOS always shows app menu)
+  if (mainWindow) {
+    mainWindow.setMenuBarVisibility(false);
+  }
+  
+  return menu;
 }
 
 // Function to update menu with dynamic data (shelves, dark mode state)
-// Disabled since we're using custom HeaderTabs instead of native menu
 async function updateMenuWithDynamicData(dynamicData) {
-  // Menu is disabled - using custom HeaderTabs system instead
-  return;
+  try {
+    createMenu(dynamicData);
+    return true;
+  } catch (error) {
+    console.error('Error updating menu:', error);
+    return false;
+  }
 }
 
 // IPC handlers - keeping original handlers only for now

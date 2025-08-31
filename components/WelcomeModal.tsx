@@ -43,6 +43,11 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onStateSelec
       state: SupportedStates.NEW_MEXICO,
       description: "Red THC diamond symbol. Features streamlined pricing with focused shelf configurations.",
       features: ["Only one shake shelf - Unnamed", "Red diamond THC compliance symbol"]
+    },
+    {
+      state: SupportedStates.NEW_YORK,
+      description: "Yellow triangular THC symbol. Pre-Packaged products only with streamlined organization.",
+      features: ["Pre-Packaged mode only (no bulk flower)", "Yellow triangular THC compliance symbol"]
     }
   ];
 
@@ -61,7 +66,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onStateSelec
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">🥭 Welcome to Flower Menu Builder!</h1>
-              <p className="text-orange-100 text-lg">Let's get started by selecting your state's bulk flower tiers</p>
+              <p className="text-orange-100 text-lg">Let's get started by selecting your state's menu configuration</p>
             </div>
             <button
               onClick={onClose}
@@ -84,7 +89,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onStateSelec
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {stateOptions.map(({ state, description, features }) => (
               <div
                 key={state}

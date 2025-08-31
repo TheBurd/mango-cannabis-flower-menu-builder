@@ -73,7 +73,7 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
               <h3 className="font-semibold">Choose Your State</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} ml-8`}>
-              Select Oklahoma, Michigan, or New Mexico from the header dropdown to configure pricing and compliance.
+              Select Oklahoma, Michigan, New Mexico, or New York from the header dropdown to configure pricing and compliance.
             </p>
           </div>
 
@@ -85,7 +85,7 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
               <h3 className="font-semibold">Select Mode</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} ml-8`}>
-              Choose Bulk Flower or Pre-Packaged mode based on your products (all states support both modes).
+              Choose Bulk Flower or Pre-Packaged mode based on your products. Note: New York only supports Pre-Packaged mode due to regulatory requirements.
             </p>
           </div>
 

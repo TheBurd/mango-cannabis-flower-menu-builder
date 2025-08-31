@@ -245,6 +245,15 @@ const AppContent: React.FC = () => {
     }
     return MenuMode.PREPACKAGED; // Default to pre-packaged mode
   });
+
+  // Startup validation: Auto-correct invalid NY+Bulk combinations
+  useEffect(() => {
+    if (currentAppState === SupportedStates.NEW_YORK && menuMode === MenuMode.BULK) {
+      // Silent auto-correction on startup for invalid combinations
+      setMenuMode(MenuMode.PREPACKAGED);
+      localStorage.setItem('mango-menu-mode', MenuMode.PREPACKAGED);
+    }
+  }, [currentAppState, menuMode]);
   
   // Bulk flower shelves state
   const [bulkShelves, setBulkShelves] = useState<Shelf[]>(() => {
@@ -382,6 +391,12 @@ const AppContent: React.FC = () => {
   // Menu mode change handler
   const handleMenuModeChange = useCallback((newMode: MenuMode) => {
     if (newMode === menuMode) return; // No change needed
+    
+    // Block Bulk mode for New York state
+    if (newMode === MenuMode.BULK && currentAppState === SupportedStates.NEW_YORK) {
+      alert('New York only supports Pre-Packaged mode. Bulk Flower mode is not available in this state.');
+      return;
+    }
     
     // Check if current mode has content before switching
     const currentModeHasContent = menuMode === MenuMode.BULK
@@ -803,6 +818,12 @@ const AppContent: React.FC = () => {
     setCurrentAppState(newState);
     // Save the selected state to localStorage
     localStorage.setItem('mango-selected-state', newState);
+    
+    // Auto-switch to Pre-Packaged mode if switching to New York (which doesn't support Bulk mode)
+    if (newState === SupportedStates.NEW_YORK && menuMode === MenuMode.BULK) {
+      setMenuMode(MenuMode.PREPACKAGED);
+      localStorage.setItem('mango-menu-mode', MenuMode.PREPACKAGED);
+    }
   }, [currentAppState, hasMenuContent, menuMode]);
 
   // Welcome modal handlers
@@ -810,8 +831,15 @@ const AppContent: React.FC = () => {
     setCurrentAppState(selectedState);
     localStorage.setItem('mango-selected-state', selectedState);
     localStorage.setItem('mango-has-seen-welcome', 'true');
+    
+    // Auto-switch to Pre-Packaged mode if selecting New York (which doesn't support Bulk mode)
+    if (selectedState === SupportedStates.NEW_YORK && menuMode === MenuMode.BULK) {
+      setMenuMode(MenuMode.PREPACKAGED);
+      localStorage.setItem('mango-menu-mode', MenuMode.PREPACKAGED);
+    }
+    
     setShowWelcomeModal(false);
-  }, []);
+  }, [menuMode]);
 
   const handleWelcomeModalClose = useCallback(() => {
     localStorage.setItem('mango-has-seen-welcome', 'true');
@@ -1543,6 +1571,79 @@ const AppContent: React.FC = () => {
       return { key, direction: defaultDirection };
     });
     setShelves(prevShelves => prevShelves.map(s => ({ ...s, sortCriteria: null })));
+  }, []);
+
+  // Zoom handlers
+  const handleZoomIn = useCallback(() => {
+    setPreviewSettings(prev => ({
+      ...prev,
+      zoomLevel: Math.min(prev.zoomLevel * 1.2, 3.0)
+    }));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setPreviewSettings(prev => ({
+      ...prev,
+      zoomLevel: Math.max(prev.zoomLevel / 1.2, 0.1)
+    }));
+  }, []);
+
+  const handleResetZoom = useCallback(() => {
+    setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
+  }, []);
+
+  const handleFitToWindow = useCallback(() => {
+    setPreviewSettings(prev => ({
+      ...prev,
+      fitToWindowTrigger: prev.fitToWindowTrigger ? prev.fitToWindowTrigger + 1 : 1
+    }));
+  }, []);
+
+  const handleResetAppData = useCallback(async () => {
+    // Reset all app data with confirmation - same logic as menu command handler
+    const confirmReset = await showElectronConfirm(
+      'Reset App Data',
+      'This will clear all saved data including menus, settings, and preferences. The app will restart to show the Welcome screen. This action cannot be undone.\n\nDo you want to continue?'
+    );
+    if (confirmReset) {
+      // Clear ALL localStorage keys
+      const allKeysToRemove = [
+        'mango-selected-state',
+        'mango-oklahoma-menu-mode',
+        'mango-menu-mode',
+        'mango-imported-bulk-shelves',
+        'mango-fifty-percent-off-enabled',
+        'mango-imported-prepackaged-shelves',
+        'mango-theme',
+        'mango-has-seen-welcome',
+        'mango-whats-new-viewed-version'
+      ];
+      
+      allKeysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Reset all React state to initial values
+      setCurrentAppState(SupportedStates.OKLAHOMA);
+      setMenuMode(MenuMode.BULK);
+      setBulkShelves(getDefaultShelves(SupportedStates.OKLAHOMA));
+      setPrePackagedShelves(getDefaultPrePackagedShelves(SupportedStates.OKLAHOMA));
+      setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
+      setTheme('dark');
+      setFiftyPercentOffEnabled(false);
+      setHasViewedWhatsNew(false);
+      setShelvesPanelWidth(DEFAULT_SHELVES_PANEL_WIDTH);
+      setExportFilename('mango-menu');
+      setIsExporting(false);
+      setExportAction(null);
+      setShowExportOverlay(false);
+      
+      // Show welcome modal (app fresh state)
+      setShowWelcomeModal(true);
+      
+      // Force app reload to ensure clean state
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    }
   }, []);
 
   const handleUpdateShelfSortCriteria = useCallback((shelfId: string, key: SortCriteria['key']) => {
@@ -2401,7 +2502,8 @@ const AppContent: React.FC = () => {
           const stateMap: Record<string, SupportedStates> = {
             'oklahoma': SupportedStates.OKLAHOMA,
             'michigan': SupportedStates.MICHIGAN,
-            'new_mexico': SupportedStates.NEW_MEXICO
+            'new_mexico': SupportedStates.NEW_MEXICO,
+            'new_york': SupportedStates.NEW_YORK
           };
           const newState = stateMap[data];
           if (newState) {
@@ -2482,6 +2584,16 @@ const AppContent: React.FC = () => {
         case 'toggle-dark-mode':
           const newTheme = data ? 'dark' : 'light';
           handleThemeChange(newTheme);
+          break;
+
+        case 'switch-menu-mode':
+          // Block mode switching if trying to switch to Bulk in New York
+          if (menuMode === MenuMode.PREPACKAGED && currentAppState === SupportedStates.NEW_YORK) {
+            alert('New York only supports Pre-Packaged mode. Bulk Flower mode is not available in this state.');
+            break;
+          }
+          const newMode = menuMode === MenuMode.BULK ? MenuMode.PREPACKAGED : MenuMode.BULK;
+          handleMenuModeChange(newMode);
           break;
 
         case 'jump-to-shelf':
@@ -2589,6 +2701,53 @@ const AppContent: React.FC = () => {
           handleManualCheckForUpdates();
           break;
 
+        case 'reset-app-data':
+          // Reset all app data with confirmation
+          const confirmReset = await showElectronConfirm(
+            'Reset App Data',
+            'This will clear all saved data including menus, settings, and preferences. The app will restart to show the Welcome screen. This action cannot be undone.\n\nDo you want to continue?'
+          );
+          if (confirmReset) {
+            // Clear ALL localStorage keys
+            const allKeysToRemove = [
+              'mango-selected-state',
+              'mango-oklahoma-menu-mode',
+              'mango-menu-mode',
+              'mango-imported-bulk-shelves',
+              'mango-fifty-percent-off-enabled',
+              'mango-imported-prepackaged-shelves',
+              'mango-theme',
+              'mango-has-seen-welcome',
+              'mango-whats-new-viewed-version'
+            ];
+            
+            allKeysToRemove.forEach(key => localStorage.removeItem(key));
+            
+            // Reset all React state to initial values
+            setCurrentAppState(SupportedStates.OKLAHOMA);
+            setMenuMode(MenuMode.BULK);
+            setBulkShelves(getDefaultShelves(SupportedStates.OKLAHOMA));
+            setPrePackagedShelves(getDefaultPrePackagedShelves(SupportedStates.OKLAHOMA));
+            setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
+            setTheme('dark');
+            setFiftyPercentOffEnabled(false);
+            setHasViewedWhatsNew(false);
+            setShelvesPanelWidth(DEFAULT_SHELVES_PANEL_WIDTH);
+            setExportFilename('mango-menu');
+            setIsExporting(false);
+            setExportAction(null);
+            setShowExportOverlay(false);
+            
+            // Show welcome modal (app fresh state)
+            setShowWelcomeModal(true);
+            
+            // Force app reload to ensure clean state
+            setTimeout(() => {
+              window.location.reload();
+            }, 100);
+          }
+          break;
+
         case 'clear-localstorage':
           // Clear all app-specific localStorage data for clean release builds
           const confirmClear = await showElectronConfirm(
@@ -2654,6 +2813,7 @@ const AppContent: React.FC = () => {
     currentAppState, 
     recordChange,
     handleManualCheckForUpdates,
+    handleResetAppData,
     menuMode,
     bulkShelves,
     prePackagedShelves,
@@ -2696,6 +2856,11 @@ const AppContent: React.FC = () => {
         hasSoldOutItems={hasSoldOutItems()}
         onToggleFiftyPercentOff={handleFiftyPercentOffToggle}
         fiftyPercentOffEnabled={fiftyPercentOffEnabled}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onResetZoom={handleResetZoom}
+        onFitToWindow={handleFitToWindow}
+        onResetAppData={handleResetAppData}
       />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}

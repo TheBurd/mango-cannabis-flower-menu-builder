@@ -43,6 +43,13 @@ interface HeaderProps {
   // Additional functionality
   onToggleFiftyPercentOff?: (enabled: boolean) => void;
   fiftyPercentOffEnabled?: boolean;
+  // Zoom functionality
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onResetZoom?: () => void;
+  onFitToWindow?: () => void;
+  // Reset functionality
+  onResetAppData?: () => void;
   // Header tabs control
   enableHeaderTabs?: boolean;
 }
@@ -77,6 +84,11 @@ export const Header: React.FC<HeaderProps> = ({
   hasSoldOutItems,
   onToggleFiftyPercentOff,
   fiftyPercentOffEnabled,
+  onZoomIn,
+  onZoomOut,
+  onResetZoom,
+  onFitToWindow,
+  onResetAppData,
   enableHeaderTabs = false
 }) => {
   const [isElectron, setIsElectron] = useState(false);
@@ -122,6 +134,11 @@ export const Header: React.FC<HeaderProps> = ({
         hasSoldOutItems={hasSoldOutItems}
         onToggleFiftyPercentOff={onToggleFiftyPercentOff}
         fiftyPercentOffEnabled={fiftyPercentOffEnabled}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+        onResetZoom={onResetZoom}
+        onFitToWindow={onFitToWindow}
+        onResetAppData={onResetAppData}
       />
     );
   }

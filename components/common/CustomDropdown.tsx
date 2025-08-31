@@ -143,7 +143,9 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             ? 'pl-2 pr-2 py-1 text-xs h-[28px] min-h-[28px]' 
             : 'pl-3 pr-8 py-2 text-sm'}
           ${variant === 'header' 
-            ? 'bg-white/20 text-white border-white/30 hover:bg-white/30' 
+            ? theme === 'dark'
+              ? 'bg-white/20 text-white border-white/30 hover:bg-white/30'
+              : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'
             : variant === 'compact'
               ? theme === 'dark'
                 ? 'bg-gray-600/80 border border-gray-500/80 text-gray-100 hover:bg-gray-500/80'
@@ -165,7 +167,9 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             <ChevronDownIcon 
               className={`w-4 h-4 transition-transform duration-150 ${
                 variant === 'header' 
-                  ? 'text-white' 
+                  ? theme === 'dark'
+                    ? 'text-white'
+                    : 'text-gray-500'
                   : theme === 'dark' 
                     ? 'text-gray-400' 
                     : 'text-gray-500'
@@ -179,7 +183,9 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         <div 
           className={`absolute z-50 mt-1 w-full rounded-md shadow-lg max-h-60 overflow-auto ${
             variant === 'header' 
-              ? 'bg-white border border-gray-300' 
+              ? theme === 'dark'
+                ? 'bg-gray-800 border border-gray-600'
+                : 'bg-white border border-gray-300'
               : theme === 'dark'
                 ? 'bg-gray-600 border border-gray-500'
                 : 'bg-white border border-gray-300'
@@ -199,12 +205,16 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     ? 'bg-orange-500 text-white font-medium' 
                     : highlightedIndex === index
                     ? variant === 'header' 
-                      ? 'bg-orange-100 text-gray-800' 
+                      ? theme === 'dark'
+                        ? 'bg-gray-700 text-gray-100'
+                        : 'bg-orange-100 text-gray-800'
                       : theme === 'dark'
                         ? 'bg-gray-500 text-gray-100'
                         : 'bg-gray-100 text-gray-900'
                     : variant === 'header' 
-                      ? 'text-gray-700 hover:bg-orange-50' 
+                      ? theme === 'dark'
+                        ? 'text-gray-200 hover:bg-gray-700'
+                        : 'text-gray-700 hover:bg-orange-50'
                       : theme === 'dark'
                         ? 'text-gray-200 hover:bg-gray-500 hover:text-gray-100'
                         : 'text-gray-700 hover:bg-gray-100'

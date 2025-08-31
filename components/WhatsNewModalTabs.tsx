@@ -144,6 +144,18 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
           </div>
 
           <div className={`p-4 rounded-lg ${
+            theme === 'dark' ? 'bg-yellow-900/20 border border-yellow-700' : 'bg-yellow-50 border border-yellow-300'
+          }`}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">🗽</span>
+              <h3 className="font-semibold text-yellow-600">New York Support</h3>
+            </div>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+              Complete New York state support with yellow triangular THC symbol, Pre-Packaged mode specialization, and regulatory compliance features.
+            </p>
+          </div>
+
+          <div className={`p-4 rounded-lg ${
             theme === 'dark' ? 'bg-red-900/20 border border-red-700' : 'bg-red-50 border border-red-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">

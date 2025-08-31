@@ -512,7 +512,8 @@ export const getIterativeAutoFormat = (
 
 /**
  * Overflow reduction format - used when Auto-Format is clicked while content is already overflowing
- * This reduces line height first (less impact), then font size (bigger impact) until overflow is resolved
+ * This reduces font size first (bigger impact), then line height (fine-tuning) until overflow is resolved
+ * Now follows same sequence as non-overflowed state for consistency
  */
 export const getOverflowReductionFormat = (
   currentSettings: PreviewSettings, 
@@ -521,9 +522,9 @@ export const getOverflowReductionFormat = (
 ): AutoFormatResult => {
   const { shelfCount, totalStrains, hasContentOverflow } = contentData;
   
-  // Initialize reduction state if not provided - start with line height (less impactful)
+  // Initialize reduction state if not provided - start with font size (consistent with expansion mode)
   const reductionState = state || {
-    phase: 'line-height',
+    phase: 'font-size',
     mode: 'reduction',
     isOptimizing: true,
     hitFontSizeCeiling: false,
@@ -534,78 +535,7 @@ export const getOverflowReductionFormat = (
   let message = '';
   let shouldContinue = false;
   
-  // Phase 1: Reduce line height first (less impact on readability)
-  if (reductionState.phase === 'line-height') {
-    const minSpacing = 0.1; // Match slider minimum
-    
-    if (hasContentOverflow) {
-      // Still overflowing - continue reducing line height
-      if (currentSettings.linePaddingMultiplier > minSpacing) {
-        // Calculate reduction based on content density
-        const currentColumns = currentSettings.columns;
-        let contentDensityScore: number;
-        
-        if (contentData.menuMode === 'prepackaged') {
-          contentDensityScore = calculatePrePackagedDensity(
-            contentData.shelfCount,
-            contentData.totalStrains,
-            currentColumns,
-            contentData.showTerpenes,
-            contentData.showInventoryStatus,
-            contentData.showNetWeight
-          );
-        } else {
-          contentDensityScore = contentData.totalStrains / currentColumns;
-        }
-        
-        let reduction = 0.05;
-        if (contentDensityScore > 30) {
-          reduction = 0.15; // Dense content - larger reductions
-        } else if (contentDensityScore > 20) {
-          reduction = 0.1;
-        } else if (contentDensityScore > 15) {
-          reduction = 0.05;
-        }
-        
-        const newSpacing = Math.max(minSpacing, currentSettings.linePaddingMultiplier - reduction);
-        optimizedSettings.linePaddingMultiplier = parseFloat(newSpacing.toFixed(2));
-        message = `Reducing line spacing to ${optimizedSettings.linePaddingMultiplier.toFixed(2)} to eliminate overflow...`;
-        shouldContinue = true;
-        
-        return {
-          success: true,
-          settings: optimizedSettings,
-          message,
-          shouldContinue,
-          optimizationPhase: 'line-height',
-          hitFontSizeCeiling: false,
-          hitLineHeightCeiling: false
-        };
-      } else {
-        // Hit minimum line height, move to font size reduction
-        return {
-          success: true,
-          settings: {},
-          message: `Line spacing at minimum (${minSpacing.toFixed(1)}), now reducing font size...`,
-          shouldContinue: true,
-          optimizationPhase: 'font-size',
-          hitFontSizeCeiling: false,
-          hitLineHeightCeiling: true
-        };
-      }
-    } else {
-      // Overflow resolved! Complete optimization
-      return {
-        success: true,
-        message: `Overflow eliminated! Line spacing optimized at ${currentSettings.linePaddingMultiplier.toFixed(2)} for ${currentSettings.columns} columns.`,
-        optimizationPhase: 'complete',
-        hitFontSizeCeiling: false,
-        hitLineHeightCeiling: false
-      };
-    }
-  }
-  
-  // Phase 2: Reduce font size (bigger impact on readability)
+  // Phase 1: Reduce font size first (consistent with expansion mode)
   if (reductionState.phase === 'font-size') {
     const minFontSize = 8; // Match slider minimum
     
@@ -650,10 +580,81 @@ export const getOverflowReductionFormat = (
           shouldContinue,
           optimizationPhase: 'font-size',
           hitFontSizeCeiling: false,
-          hitLineHeightCeiling: true
+          hitLineHeightCeiling: false
         };
       } else {
-        // Hit minimum font size - cannot reduce further
+        // Hit minimum font size, move to line height reduction
+        return {
+          success: true,
+          settings: {},
+          message: `Font size at minimum (${minFontSize}px), now reducing line spacing...`,
+          shouldContinue: true,
+          optimizationPhase: 'line-height',
+          hitFontSizeCeiling: true,
+          hitLineHeightCeiling: false
+        };
+      }
+    } else {
+      // Overflow resolved! Complete optimization
+      return {
+        success: true,
+        message: `Overflow eliminated! Font size optimized at ${currentSettings.baseFontSizePx}px for ${currentSettings.columns} columns.`,
+        optimizationPhase: 'complete',
+        hitFontSizeCeiling: false,
+        hitLineHeightCeiling: false
+      };
+    }
+  }
+  
+  // Phase 2: Reduce line height (fine-tuning after font size)
+  if (reductionState.phase === 'line-height') {
+    const minSpacing = 0.1; // Match slider minimum
+    
+    if (hasContentOverflow) {
+      // Still overflowing - continue reducing line height
+      if (currentSettings.linePaddingMultiplier > minSpacing) {
+        // Calculate reduction based on content density
+        const currentColumns = currentSettings.columns;
+        let contentDensityScore: number;
+        
+        if (contentData.menuMode === 'prepackaged') {
+          contentDensityScore = calculatePrePackagedDensity(
+            contentData.shelfCount,
+            contentData.totalStrains,
+            currentColumns,
+            contentData.showTerpenes,
+            contentData.showInventoryStatus,
+            contentData.showNetWeight
+          );
+        } else {
+          contentDensityScore = contentData.totalStrains / currentColumns;
+        }
+        
+        let reduction = 0.05;
+        if (contentDensityScore > 30) {
+          reduction = 0.15; // Dense content - larger reductions
+        } else if (contentDensityScore > 20) {
+          reduction = 0.1;
+        } else if (contentDensityScore > 15) {
+          reduction = 0.05;
+        }
+        
+        const newSpacing = Math.max(minSpacing, currentSettings.linePaddingMultiplier - reduction);
+        optimizedSettings.linePaddingMultiplier = parseFloat(newSpacing.toFixed(2));
+        message = `Reducing line spacing to ${optimizedSettings.linePaddingMultiplier.toFixed(2)} to eliminate overflow...`;
+        shouldContinue = true;
+        
+        return {
+          success: true,
+          settings: optimizedSettings,
+          message,
+          shouldContinue,
+          optimizationPhase: 'line-height',
+          hitFontSizeCeiling: true,
+          hitLineHeightCeiling: false
+        };
+      } else {
+        // Hit minimum line height - cannot reduce further
         return {
           success: false,
           message: `Cannot eliminate overflow: Font size and line spacing at minimum. Try increasing columns or reducing content.`,
@@ -666,10 +667,10 @@ export const getOverflowReductionFormat = (
       // Overflow resolved! Complete optimization
       return {
         success: true,
-        message: `Overflow eliminated! Font size optimized at ${currentSettings.baseFontSizePx}px for ${currentSettings.columns} columns.`,
+        message: `Overflow eliminated! Line spacing optimized at ${currentSettings.linePaddingMultiplier.toFixed(2)} for ${currentSettings.columns} columns.`,
         optimizationPhase: 'complete',
-        hitFontSizeCeiling: false,
-        hitLineHeightCeiling: true
+        hitFontSizeCeiling: true,
+        hitLineHeightCeiling: false
       };
     }
   }

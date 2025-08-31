@@ -155,6 +155,7 @@ export enum SupportedStates {
   OKLAHOMA = "Oklahoma",
   MICHIGAN = "Michigan",
   NEW_MEXICO = "New Mexico",
+  NEW_YORK = "New York",
 }
 
 export type Theme = 'light' | 'dark';

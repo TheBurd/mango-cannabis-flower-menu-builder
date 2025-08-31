@@ -2,7 +2,7 @@
 
 > **Professional flower menu creation tool for Mango Cannabis Management team**
 
-Create beautiful, compliant flower menus for in-store display and inventory logging across Oklahoma, Michigan, and New Mexico locations.
+Create beautiful, compliant flower menus for in-store display and inventory logging across Oklahoma, Michigan, New Mexico, and New York locations.
 
 ---
 
@@ -80,10 +80,11 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 ---
 
 ### **Step 2: Start Creating Menus!**
-1. Choose your state (Oklahoma, Michigan, New Mexico)
-2. Add strains to shelves using the **+ Add Strain** buttons
-3. Customize your menu layout using the controls on the right
-4. Export as PNG/JPEG for printing or digital display
+1. Choose your state (Oklahoma, Michigan, New Mexico, New York)
+2. Select your menu mode (Bulk Flower or Pre-Packaged products)
+3. Add strains/products to shelves using the **+ Add Strain** buttons
+4. Customize your menu layout using the controls on the right
+5. Export as PNG/JPEG for printing or digital display
 
 ---
 

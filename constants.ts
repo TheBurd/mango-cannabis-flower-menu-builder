@@ -43,11 +43,46 @@ export const NEW_MEXICO_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortC
   { name: "Shake", pricing: { g: 3, eighth: 5, quarter: 10, half: 20, oz: 30 }, color: "bg-lime-600", textColor: "text-lime-50" },
 ];
 
+export const NEW_YORK_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [
+  // New York supports Pre-Packaged mode only - no bulk flower pricing tiers
+];
+
 // OKLAHOMA PRE-PACKAGED PRICING HIERARCHIES
 // Organized by weight categories with separate Flower (orange gradient) and Shake (green gradient)
 // Team can assign their own specific prices within each weight category
 export const OKLAHOMA_PREPACKAGED_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [
   // FLOWER CATEGORIES - Orange Gradient (#FFA447 to #F46A4E)
+  // 28g Flower - Darkest Orange
+  { name: "28g Flower", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#F46A4E]", textColor: "text-white" },
+  
+  // 14g Flower - Mid-Dark Orange  
+  { name: "14g Flower", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#F7824A]", textColor: "text-white" },
+  
+  // 7g Flower - Mid-Light Orange
+  { name: "7g Flower", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#FA9B48]", textColor: "text-white" },
+  
+  // 3.5g Flower - Lightest Orange
+  { name: "3.5g Flower", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#FFA447]", textColor: "text-white" },
+  
+  // SHAKE CATEGORIES - Green Gradient (#79BC3F to #2A9016)
+  // 28g Shake - Darkest Green
+  { name: "28g Shake", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#2A9016]", textColor: "text-white" },
+  
+  // 14g Shake - Mid-Dark Green
+  { name: "14g Shake", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#3FA525]", textColor: "text-white" },
+  
+  // 7g Shake - Mid-Light Green  
+  { name: "7g Shake", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#55BA35]", textColor: "text-white" },
+  
+  // 3.5g Shake - Lightest Green
+  { name: "3.5g Shake", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#79BC3F]", textColor: "text-white" },
+];
+
+// NEW YORK PRE-PACKAGED PRICING HIERARCHIES
+// Organized by weight categories with separate Flower (orange gradient) and Shake (green gradient)
+// New York follows weight-based organization similar to Oklahoma but only supports Pre-Packaged mode
+export const NEW_YORK_PREPACKAGED_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [
+  // FLOWER CATEGORIES - Orange Gradient (same as other states)
   // 28g Flower - Darkest Orange
   { name: "28g Flower", pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 }, color: "bg-[#F46A4E]", textColor: "text-white" },
   
@@ -124,10 +159,23 @@ export const NEW_MEXICO_SHELF_HIERARCHY: Record<string, number> = {
   "Shake": 7,
 };
 
+export const NEW_YORK_SHELF_HIERARCHY: Record<string, number> = {
+  // New York supports Pre-Packaged mode only - no bulk flower shelf hierarchy
+};
+
 // Shelf hierarchy for pre-packaged products (organized by weight categories)
 // Simple weight-based organization - team assigns specific prices within each category
 export const OKLAHOMA_PREPACKAGED_SHELF_HIERARCHY: Record<string, number> = {
   // Organized by weight categories only
+  "28g Flower": 0,
+  "28g Shake": 1,
+  "14g Flower": 2,
+  "7g Flower": 3,
+  "3.5g Flower": 4,
+};
+
+export const NEW_YORK_PREPACKAGED_SHELF_HIERARCHY: Record<string, number> = {
+  // Organized by weight categories only - same structure as Oklahoma
   "28g Flower": 0,
   "28g Shake": 1,
   "14g Flower": 2,
@@ -144,6 +192,9 @@ export const getShelfHierarchy = (state: SupportedStates): Record<string, number
       return MICHIGAN_SHELF_HIERARCHY;
     case SupportedStates.NEW_MEXICO:
       return NEW_MEXICO_SHELF_HIERARCHY;
+    case SupportedStates.NEW_YORK:
+      // New York only supports Pre-Packaged mode, no bulk shelves
+      return {};
     default:
       return OKLAHOMA_SHELF_HIERARCHY;
   }
@@ -168,6 +219,9 @@ export const getDefaultShelves = (state: SupportedStates, includeFiftyPercentOff
       break;
     case SupportedStates.NEW_MEXICO:
       hierarchy = NEW_MEXICO_PRICING_HIERARCHY;
+      break;
+    case SupportedStates.NEW_YORK:
+      hierarchy = NEW_YORK_PRICING_HIERARCHY;
       break;
     default:
       hierarchy = OKLAHOMA_PRICING_HIERARCHY;
@@ -197,6 +251,8 @@ export const getShelfHierarchyPrepackaged = (state: SupportedStates): Record<str
     case SupportedStates.NEW_MEXICO:
       // TODO: Add New Mexico pre-packaged hierarchy when needed
       return OKLAHOMA_PREPACKAGED_SHELF_HIERARCHY;
+    case SupportedStates.NEW_YORK:
+      return NEW_YORK_PREPACKAGED_SHELF_HIERARCHY;
     default:
       return OKLAHOMA_PREPACKAGED_SHELF_HIERARCHY;
   }
@@ -231,6 +287,17 @@ export const getDefaultShelvesPrepackaged = (state: SupportedStates, includeFift
     case SupportedStates.NEW_MEXICO:
       // TODO: Add New Mexico pre-packaged hierarchy when needed
       hierarchy = OKLAHOMA_PREPACKAGED_PRICING_HIERARCHY.map(shelf => ({
+        name: shelf.name,
+        color: shelf.color,
+        textColor: shelf.textColor,
+        hidePricing: shelf.hidePricing,
+        brandEmphasis: true,
+        weightFilter: getWeightFilterFromShelfName(shelf.name),
+      }));
+      break;
+    case SupportedStates.NEW_YORK:
+      // Use New York specific pre-packaged hierarchy (blue gradient)
+      hierarchy = NEW_YORK_PREPACKAGED_PRICING_HIERARCHY.map(shelf => ({
         name: shelf.name,
         color: shelf.color,
         textColor: shelf.textColor,
@@ -488,6 +555,7 @@ export const STATE_THC_ICONS: Record<SupportedStates, string> = {
   [SupportedStates.OKLAHOMA]: getIconPath('thcSymbol_OK.svg'),
   [SupportedStates.MICHIGAN]: getIconPath('thcSymbol_MI.svg'),
   [SupportedStates.NEW_MEXICO]: getIconPath('thcSymbol_NM.svg'),
+  [SupportedStates.NEW_YORK]: getIconPath('thcSymbol_NY.svg'),
 };
 
 // Helper function to detect cross-state shelf conflicts
@@ -577,16 +645,30 @@ export const getDefaultPrePackagedShelves = (state: SupportedStates): PrePackage
   // All states now support Pre-Packaged mode with weight-based pricing hierarchy
   let hierarchy: Omit<PrePackagedShelf, 'products' | 'id' | 'sortCriteria'>[] = [];
   
-  // Use the pricing hierarchy for all states (weight-based organization)
-  // This provides a consistent experience across all states
-  hierarchy = OKLAHOMA_PREPACKAGED_PRICING_HIERARCHY.map(shelf => ({
-    name: shelf.name,
-    color: shelf.color,
-    textColor: shelf.textColor,
-    hidePricing: shelf.hidePricing,
-    brandEmphasis: true, // Enable brand emphasis for pre-packaged products
-    weightFilter: getWeightFilterFromShelfName(shelf.name),
-  }));
+  // Use state-specific pricing hierarchies for optimal organization
+  switch (state) {
+    case SupportedStates.NEW_YORK:
+      // New York uses blue gradient for flower categories
+      hierarchy = NEW_YORK_PREPACKAGED_PRICING_HIERARCHY.map(shelf => ({
+        name: shelf.name,
+        color: shelf.color,
+        textColor: shelf.textColor,
+        hidePricing: shelf.hidePricing,
+        brandEmphasis: true,
+        weightFilter: getWeightFilterFromShelfName(shelf.name),
+      }));
+      break;
+    default:
+      // Use the Oklahoma pricing hierarchy for all other states (weight-based organization)
+      hierarchy = OKLAHOMA_PREPACKAGED_PRICING_HIERARCHY.map(shelf => ({
+        name: shelf.name,
+        color: shelf.color,
+        textColor: shelf.textColor,
+        hidePricing: shelf.hidePricing,
+        brandEmphasis: true, // Enable brand emphasis for pre-packaged products
+        weightFilter: getWeightFilterFromShelfName(shelf.name),
+      }));
+  }
 
   return hierarchy.map(shelf => ({
     ...shelf,

@@ -69,6 +69,20 @@ Complete overhaul with guided workflows:
   - Template mode for blank CSV generation
 - **Context-Aware Help**: Visual CSV examples per mode
 
+### 🗺️ **Geographic Expansion** *(NEW)*
+Extended state support with specialized compliance features:
+
+- **New York State Support**: 
+  - **Pre-Packaged Mode Only**: Specialized for NY's regulatory requirements
+  - **Yellow Triangular THC Symbol**: NY-specific compliance branding
+  - **Weight-Based Organization**: Professional 3.5g, 7g, 14g, 28g categorization  
+  - **Crash Protection**: Multi-layer validation prevents invalid NY+Bulk combinations
+  - **Auto-Mode Switching**: Seamlessly switches to Pre-Packaged when selecting NY
+- **Enhanced State Management**:
+  - **Smart Mode Restrictions**: Automatically enforces state-specific limitations
+  - **Visual Feedback**: Disabled controls show why certain modes aren't available
+  - **Consistent Theming**: Orange gradient flower shelves across all states
+
 ### 🔔 **Toast Notification System**
 Interactive notifications with rich features:
 
@@ -135,6 +149,19 @@ Improved out-of-box experience:
 - Enhanced visual feedback
 - Improved error states
 - Better loading indicators
+
+### Keyboard Shortcuts & Controls *(ENHANCED)*
+- **Complete Keyboard Support**: 15+ shortcuts for all major functions
+- **Fixed Accelerators**: Resolved browser conflicts, all shortcuts now work
+- **Zoom Controls**: `Ctrl+=` (In), `Ctrl+-` (Out), `Ctrl+\` (Reset), `Ctrl+F` (Fit)
+- **File Operations**: `Ctrl+N` (New), `Ctrl+O` (Open), `Ctrl+M` (Switch Mode)
+- **Export Shortcuts**: `Ctrl+Shift+P/J/E` for PNG/JPEG/CSV export
+- **Developer Tools**: `Ctrl+Shift+R` (Reset App Data for testing)
+
+### Enhanced Theme Support *(IMPROVED)*
+- **Theme-Aware Headers**: Fixed contrast issues in light mode dropdowns
+- **Dynamic Menu Colors**: Proper text contrast for both light/dark themes
+- **Consistent Styling**: All components respect theme preferences
 
 ### Accessibility
 - Full keyboard navigation
@@ -227,7 +254,7 @@ New features are available but not required:
 
 ## 💡 Known Issues
 
-- Pre-Packaged mode currently only available for Oklahoma
+- New York state only supports Pre-Packaged mode (no bulk flower pricing tiers)
 - Some browsers may show performance warnings on first theme switch
 - CSV import of 1000+ items may take several seconds
 - Scroll overlay may briefly flicker on very fast scrolling

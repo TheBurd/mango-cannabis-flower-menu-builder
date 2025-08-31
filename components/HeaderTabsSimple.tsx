@@ -41,6 +41,13 @@ interface HeaderTabsSimpleProps {
   // Additional functionality
   onToggleFiftyPercentOff?: (enabled: boolean) => void;
   fiftyPercentOffEnabled?: boolean;
+  // Zoom functionality
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onResetZoom?: () => void;
+  onFitToWindow?: () => void;
+  // Reset functionality
+  onResetAppData?: () => void;
 }
 
 export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
@@ -73,7 +80,12 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
   hasUnsavedWork = false,
   hasSoldOutItems = false,
   onToggleFiftyPercentOff,
-  fiftyPercentOffEnabled = false
+  fiftyPercentOffEnabled = false,
+  onZoomIn,
+  onZoomOut,
+  onResetZoom,
+  onFitToWindow,
+  onResetAppData
 }) => {
   const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -113,6 +125,11 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
     }
   };
 
+  // Handler for reset app data - no confirmation here, App.tsx handles it
+  const handleResetAppData = () => {
+    onResetAppData?.();
+  };
+
   // Enhanced menu system based on user specifications
   const tabs = [
     {
@@ -124,7 +141,8 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
         { 
           label: `Switch to ${menuMode === MenuMode.BULK ? 'Pre-Pack' : 'Bulk Flower'} Mode`, 
           onClick: handleSwitchMode,
-          hotkey: 'Ctrl+M'
+          hotkey: 'Ctrl+M',
+          disabled: currentState === SupportedStates.NEW_YORK && menuMode === MenuMode.PREPACKAGED
         },
         { 
           label: 'Switch State', 
@@ -147,12 +165,17 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
       items: [
         { label: 'Add Strain', onClick: () => onAddStrain?.(), hotkey: 'Ctrl+Shift+A' },
         { type: 'separator' },
-        { label: 'Global Sort', submenu: [
-          { label: 'Sort by Name', onClick: () => onGlobalSort?.('name') },
-          { label: 'Sort by Price', onClick: () => onGlobalSort?.('price') },
-          { label: 'Sort by THC', onClick: () => onGlobalSort?.('thc') },
-          { label: 'Sort by CBD', onClick: () => onGlobalSort?.('cbd') },
-        ]},
+        { 
+          label: 'Global Sort', 
+          submenu: [
+            { label: 'Sort by Name', onClick: () => onGlobalSort?.('name') },
+            { label: 'Sort by Grower', onClick: () => onGlobalSort?.('grower') },
+            { label: 'Sort by Class', onClick: () => onGlobalSort?.('type') },
+            { label: 'Sort by THC%', onClick: () => onGlobalSort?.('thc') },
+            { label: `Sort by ${menuMode === MenuMode.PREPACKAGED ? 'Low Stock' : 'Last Jar'}`, onClick: () => onGlobalSort?.('isLastJar') },
+            { label: 'Sort by Sold Out', onClick: () => onGlobalSort?.('isSoldOut') },
+          ]
+        },
         { type: 'separator' },
         { 
           label: 'Clear All Shelves', 
@@ -163,11 +186,11 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
           )
         },
         { 
-          label: 'Clear All Last Jars', 
+          label: `Clear All ${menuMode === MenuMode.PREPACKAGED ? 'Low Stock' : 'Last Jars'}`, 
           onClick: () => handleClearWithConfirm(
             () => onClearAllLastJars?.(),
-            'Clear All Last Jars',
-            'This will remove the "Last Jar" indicator from all items. This action cannot be undone.'
+            `Clear All ${menuMode === MenuMode.PREPACKAGED ? 'Low Stock' : 'Last Jars'}`,
+            `This will remove the "${menuMode === MenuMode.PREPACKAGED ? 'Low Stock' : 'Last Jar'}" indicator from all items. This action cannot be undone.`
           )
         },
         { 
@@ -204,17 +227,19 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
           disabled: shelves.length === 0
         },
         { type: 'separator' },
-        { label: 'Zoom In', onClick: () => console.log('Zoom in'), hotkey: 'Ctrl++' },
-        { label: 'Zoom Out', onClick: () => console.log('Zoom out'), hotkey: 'Ctrl+-' },
-        { label: 'Reset Zoom', onClick: () => console.log('Reset zoom'), hotkey: 'Ctrl+0' },
+        { label: 'Zoom In', onClick: onZoomIn, hotkey: 'Ctrl++' },
+        { label: 'Zoom Out', onClick: onZoomOut, hotkey: 'Ctrl+-' },
+        { label: 'Reset Zoom', onClick: onResetZoom, hotkey: 'Ctrl+\\' },
         { type: 'separator' },
-        { label: 'Fit Menu to Window', onClick: () => console.log('Fit to window'), hotkey: 'Ctrl+F' },
+        { label: 'Fit Menu to Window', onClick: onFitToWindow, hotkey: 'Ctrl+F' },
       ]
     },
     {
       name: 'Help',
       items: [
         { label: 'Check for Updates', onClick: onCheckUpdates, hotkey: 'Ctrl+U' },
+        { type: 'separator' },
+        { label: 'Reset App Data', onClick: handleResetAppData, hotkey: 'Ctrl+Shift+R' },
         { type: 'separator' },
         { label: 'Instructions', onClick: onShowInstructions, hotkey: 'F1' },
         { label: 'About Mango Cannabis Flower Menu Builder', onClick: onShowWhatsNew },
@@ -395,6 +420,7 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
                 mode={menuMode}
                 onModeChange={onMenuModeChange}
                 theme={theme}
+                currentState={currentState}
               />
               
               {/* State Selector */}
@@ -413,6 +439,7 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
                   onChange={(value) => onStateChange(value as SupportedStates)}
                   className="min-w-[120px]"
                   variant="header"
+                  theme={theme}
                 />
               </div>
               
