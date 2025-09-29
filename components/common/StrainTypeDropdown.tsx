@@ -9,6 +9,7 @@ interface StrainTypeDropdownProps {
   disabled?: boolean;
   theme: Theme;
   className?: string;
+  onOpenChange?: (isOpen: boolean) => void; // Notify parent when dropdown opens/closes
 }
 
 export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
@@ -16,7 +17,8 @@ export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
   onChange,
   disabled = false,
   theme,
-  className = ''
+  className = '',
+  onOpenChange
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -27,6 +29,7 @@ export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setHighlightedIndex(-1);
+        onOpenChange?.(false); // Notify parent that dropdown is closed
       }
     };
 
@@ -41,8 +44,10 @@ export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
 
   const handleToggle = () => {
     if (!disabled) {
-      setIsOpen(!isOpen);
+      const newIsOpen = !isOpen;
+      setIsOpen(newIsOpen);
       setHighlightedIndex(-1);
+      onOpenChange?.(newIsOpen); // Notify parent of dropdown state change
     }
   };
 
@@ -50,6 +55,7 @@ export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
     onChange(type);
     setIsOpen(false);
     setHighlightedIndex(-1);
+    onOpenChange?.(false); // Notify parent that dropdown is closed
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -68,6 +74,7 @@ export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
       case 'Escape':
         setIsOpen(false);
         setHighlightedIndex(-1);
+        onOpenChange?.(false); // Notify parent that dropdown is closed
         break;
       case 'ArrowDown':
         event.preventDefault();
@@ -113,7 +120,7 @@ export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative ${className} ${isOpen ? 'z-[9999]' : ''}`} ref={dropdownRef}>
       <button
         type="button"
         onClick={handleToggle}
@@ -149,7 +156,7 @@ export const StrainTypeDropdown: React.FC<StrainTypeDropdownProps> = ({
 
       {isOpen && (
         <div 
-          className={`absolute z-[100] mt-1 w-full rounded-md shadow-lg border overflow-hidden ${
+          className={`absolute z-[9999] mt-1 w-full rounded-md shadow-lg border overflow-hidden ${
             theme === 'dark'
               ? 'bg-gray-600 border-gray-500'
               : 'bg-white border-gray-300'

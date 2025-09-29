@@ -15,6 +15,9 @@ interface ToolbarProps {
   onUpdateGlobalSortCriteria: (key: SortCriteria['key']) => void;
   theme: Theme;
   menuMode: MenuMode;
+  // Page-aware sorting
+  currentPageNumber: number;
+  pageManager: any; // Will be PageManager type
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -22,11 +25,14 @@ const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
 const SortButton: React.FC<{
   label: string;
   sortKey: SortCriteria['key'];
-  currentSortCriteria: SortCriteria | null;
+  currentPageNumber: number;
+  pageManager: any;
   onClick: () => void;
-}> = ({ label, sortKey, currentSortCriteria, onClick }) => {
-  const isActive = currentSortCriteria?.key === sortKey;
-  const direction = isActive ? currentSortCriteria.direction : null;
+}> = ({ label, sortKey, currentPageNumber, pageManager, onClick }) => {
+  // Get current page's global sort criteria
+  const currentPageSort = pageManager.getPageGlobalSort(currentPageNumber);
+  const isActive = currentPageSort?.key === sortKey;
+  const direction = isActive ? currentPageSort.direction : null;
   const buttonColor = isActive ? 'bg-orange-500 hover:bg-orange-600' : 'bg-gray-500 hover:bg-gray-400';
 
   return (
@@ -57,6 +63,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onUpdateGlobalSortCriteria,
   theme,
   menuMode,
+  currentPageNumber,
+  pageManager,
 }) => {
   const [confirmClearShelves, setConfirmClearShelves] = useState(false);
   const [confirmClearLastJars, setConfirmClearLastJars] = useState(false);
@@ -178,7 +186,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 key={opt.key}
                 label={opt.label}
                 sortKey={opt.key}
-                currentSortCriteria={globalSortCriteria}
+                currentPageNumber={currentPageNumber}
+                pageManager={pageManager}
                 onClick={() => onUpdateGlobalSortCriteria(opt.key)}
               />
           ))}
@@ -198,10 +207,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             size="sm"
             className="flex items-center space-x-2 bg-green-600 hover:bg-green-500 text-white"
             disabled={isExporting}
-            title="Import strains from CSV file"
+            title="Import CSV file(s) - supports single or multiple files"
           >
             <UploadIcon className="w-4 h-4" />
-            <span>{menuMode === MenuMode.BULK ? 'Import Bulk Flower CSV' : 'Import Pre-Pack CSV'}</span>
+            <span>{menuMode === MenuMode.BULK ? 'Import CSV(s)' : 'Import CSV(s)'}</span>
           </Button>
 
           <Button

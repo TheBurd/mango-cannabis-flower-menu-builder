@@ -29,9 +29,9 @@ interface MenuPreviewPanelProps {
   isControlsDisabled?: boolean;
   // Multi-page management
   onAddPage: () => void;
+  onDuplicatePage: () => void;
   onRemovePage: (pageNumber: number) => void;
   onGoToPage: (pageNumber: number) => void;
-  onToggleAutoPageBreaks: () => void;
 }
 
 export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
@@ -48,9 +48,9 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   isOptimizing,
   isControlsDisabled,
   onAddPage,
+  onDuplicatePage,
   onRemovePage,
   onGoToPage,
-  onToggleAutoPageBreaks,
 }) => {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -544,22 +544,20 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
               onAddPage={onAddPage}
               onRemovePage={onRemovePage}
               onGoToPage={onGoToPage}
-              onToggleAutoPageBreaks={onToggleAutoPageBreaks}
             />
           </div>
         </div>
 
-        {/* DEPRECATED: Multi-page functionality - hidden for now but preserved for future development
-            FloatingPageControls provided clean bottom-right navigation with page count, arrows, and auto toggle */}
-        {false && (
+        {/* Multi-page functionality - now enabled for v1.1.0
+            FloatingPageControls always visible for easy page management */}
+        {(
           <FloatingPageControls
             currentPage={settings.currentPage}
             totalPages={settings.pageCount}
             onAddPage={onAddPage}
+            onDuplicatePage={onDuplicatePage}
             onRemovePage={onRemovePage}
             onGoToPage={onGoToPage}
-            onToggleAutoPageBreaks={onToggleAutoPageBreaks}
-            autoPageBreaks={settings.autoPageBreaks}
             theme={theme}
           />
         )}

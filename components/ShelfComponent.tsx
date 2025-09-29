@@ -74,6 +74,9 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
 }) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
   const [confirmClear, setConfirmClear] = useState(false);
+  
+  // Track when any dropdown is open to prevent hover conflicts
+  const [isAnyDropdownOpen, setIsAnyDropdownOpen] = useState(false);
 
   const handleClearStrainsClick = useCallback(() => {
     if (confirmClear) {
@@ -181,9 +184,9 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
                 <h3 className="text-xl font-semibold">{shelf.name}</h3>
                 {!shelf.hidePricing && (
                   <p className="text-xs opacity-90">
-                    {shelf.isInfused && shelf.pricing.fiveG ? 
-                      `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.fiveG)}/5g` :
-                      `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.eighth)}/8th | ${formatPrice(shelf.pricing.quarter)}/Qtr | ${formatPrice(shelf.pricing.half)}/Half | ${formatPrice(shelf.pricing.oz)}/Oz`
+                    {shelf.isInfused && shelf.pricing?.fiveG ? 
+                      `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.fiveG || 0)}/5g` :
+                      `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.eighth || 0)}/8th | ${formatPrice(shelf.pricing?.quarter || 0)}/Qtr | ${formatPrice(shelf.pricing?.half || 0)}/Half | ${formatPrice(shelf.pricing?.oz || 0)}/Oz`
                     }
                   </p>
                 )}

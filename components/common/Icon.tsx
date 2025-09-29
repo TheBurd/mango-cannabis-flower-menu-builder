@@ -48,6 +48,20 @@ export const RefreshIcon: React.FC<IconSVGProps> = ({ title, ...props }) => (
   </svg>
 );
 
+export const AddPageIcon: React.FC<IconSVGProps> = ({ title, ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 800 800" fill="currentColor" {...props}>
+    {title && <title>{title}</title>}
+    <path fillRule="evenodd" d="M700 300H500V100C500 44.75 455.23 0 400 0S300 44.75 300 100v200H100C44.77 300 0 344.75 0 400s44.77 100 100 100h200v200c0 55.25 44.77 100 100 100s100-44.75 100-100V500h200c55.23 0 100-44.75 100-100s-44.77-100-100-100"/>
+  </svg>
+);
+
+export const DuplicatePageIcon: React.FC<IconSVGProps> = ({ title, ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 1" viewBox="0 0 800 800" fill="currentColor" {...props}>
+    {title && <title>{title}</title>}
+    <path fillRule="evenodd" d="M750 500c0 27.6-22.4 50-50 50H300c-27.6 0-50-22.4-50-50V100c0-27.6 22.4-50 50-50h400c27.6 0 50 22.4 50 50v400ZM700 0H300c-55.22 0-100 44.78-100 100v400c0 55.22 44.78 100 100 100h400c55.22 0 100-44.78 100-100V100C800 44.78 755.22 0 700 0ZM550 700c0 27.6-22.4 50-50 50H100c-27.6 0-50-22.4-50-50V300c0-27.6 22.4-50 50-50h50v-50h-50C44.78 200 0 244.78 0 300v400c0 55.22 44.78 100 100 100h400c55.22 0 100-44.78 100-100v-50h-50v50Z"/>
+  </svg>
+);
+
 export const SparklesIcon: React.FC<IconSVGProps> = ({ title, ...props }) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
     {title && <title>{title}</title>}

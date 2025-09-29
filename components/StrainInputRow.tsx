@@ -26,6 +26,9 @@ interface StrainInputRowProps {
   availableShelves?: Shelf[]; // Available shelves for original shelf selection
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isInfused?: boolean; // Whether this strain is in an infused flower shelf
+  // Dropdown conflict prevention
+  isAnyDropdownOpen?: boolean; // Whether any dropdown in this shelf is open
+  onDropdownOpenChange?: (isOpen: boolean) => void; // Callback when dropdown state changes
 }
 
 export const StrainInputRow = React.memo<StrainInputRowProps>(({
@@ -45,6 +48,8 @@ export const StrainInputRow = React.memo<StrainInputRowProps>(({
   availableShelves = [],
   currentState,
   isInfused = false,
+  isAnyDropdownOpen = false,
+  onDropdownOpenChange,
 }) => {
   // Auto-focus is now handled by the DebouncedInput component
 
@@ -112,7 +117,7 @@ export const StrainInputRow = React.memo<StrainInputRowProps>(({
         theme === 'dark' 
           ? `bg-gray-600 text-gray-200 ${strain.isLastJar ? 'bg-opacity-80 border-l-2 border-orange-400' : ''}` 
           : `bg-white text-gray-800 ${strain.isLastJar ? 'border-l-2 border-orange-400' : ''}`
-      } ${'hover:shadow-lg hover:scale-[1.005]'} ${isInfused ? 'infused-pattern' : ''}`}
+      } ${!isAnyDropdownOpen ? 'hover:shadow-lg hover:scale-[1.005]' : ''} ${isInfused ? 'infused-pattern' : ''}`}
       style={{
         position: 'relative',
       }}

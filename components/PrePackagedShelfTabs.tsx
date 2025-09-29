@@ -72,9 +72,10 @@ export const PrePackagedShelfTabs: React.FC<PrePackagedShelfTabsProps> = ({
       <div className="flex items-end w-full">
         {shelves.map((shelf, index) => {
           const isHovered = hoveredTab === shelf.id;
+          const productCount = shelf.products?.length || 0;
           const displayName = isHovered ? 
-            `${shelf.name} (${shelf.products.length})` : 
-            truncateShelfName(shelf.name, shelf.products.length);
+            `${shelf.name} (${productCount})` : 
+            truncateShelfName(shelf.name, productCount);
           
           return (
             <div

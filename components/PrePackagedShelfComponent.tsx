@@ -40,6 +40,9 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
   isControlsDisabled,
 }) => {
   const shelfRef = useRef<HTMLDivElement>(null);
+  
+  // Track when any dropdown is open to prevent hover conflicts
+  const [isAnyDropdownOpen, setIsAnyDropdownOpen] = useState(false);
 
   // Auto-scroll to newly added product
   useEffect(() => {
@@ -77,7 +80,7 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
       <div className={`rounded-md p-3 mb-4 ${shelf.color}`}>
         <div className="flex items-center justify-between">
           <h3 className={`text-lg font-bold ${shelf.textColor}`}>
-            {shelf.name} ({shelf.products.length})
+            {shelf.name} ({shelf.products?.length || 0})
           </h3>
           <div className="flex items-center gap-2">
             {/* Sort Dropdown */}
@@ -91,7 +94,7 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
             />
             
             {/* Clear Products Button */}
-            {shelf.products.length > 0 && (
+            {(shelf.products?.length || 0) > 0 && (
               <button
                 onClick={onClearProducts}
                 disabled={isControlsDisabled}
@@ -112,7 +115,7 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
 
       {/* Products List */}
       <div className="space-y-2">
-        {shelf.products.map((product, index) => (
+        {(shelf.products || []).map((product, index) => (
           <PrePackagedProductInputRow
             key={product.id}
             product={product}
@@ -131,6 +134,8 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
             isLast={index === shelf.products.length - 1}
             isControlsDisabled={isControlsDisabled}
             shelfColor={shelf.color}
+            isAnyDropdownOpen={isAnyDropdownOpen}
+            onDropdownOpenChange={setIsAnyDropdownOpen}
           />
         ))}
       </div>

@@ -71,7 +71,7 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
   const adaptedShelves = React.useMemo(() => {
     return shelves.map(shelf => ({
       ...shelf,
-      strains: shelf.products.map(product => ({
+      strains: (shelf.products || []).map(product => ({
         id: product.id,
         name: product.name,
         grower: product.brand,

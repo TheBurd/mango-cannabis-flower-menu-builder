@@ -9,7 +9,14 @@ interface CsvImportModalProps {
   theme: Theme;
   menuMode: MenuMode;
   onImport: (data: ImportData[], mappingConfig: ColumnMapping) => void;
+  onMultiImport?: (files: MultiFileImportData[], shouldSplitIntoPages: boolean) => void;
   onModeSwitch?: (newMode: MenuMode) => void;
+}
+
+interface MultiFileImportData {
+  filename: string;
+  data: ImportData[];
+  mappingConfig: ColumnMapping;
 }
 
 interface ImportData {
@@ -47,8 +54,8 @@ const PREPACKAGED_FIELDS: MappingField[] = [
   { key: 'terpenes', label: 'Terpenes %', required: false, description: 'Terpenes percentage', aliases: ['terpenes', 'terp', 'terp%', 'terpene'] },
   { key: 'type', label: 'Strain Type', required: false, description: 'Strain classification', aliases: ['class', 'type', 'strain type'] },
   { key: 'price', label: 'Price', required: true, description: 'Product price', aliases: ['price', 'cost', 'amount'] },
-  { key: 'isLowStock', label: 'Low Stock', required: false, description: 'Low stock status', aliases: ['low stock', 'lowstock', 'stock status', 'inventory', 'last 5 units', 'last5units', 'last 5', 'last5', 'final units', 'remaining units', 'low inventory', 'last few', 'limited stock'] },
-  { key: 'soldOut', label: 'Sold Out', required: false, description: 'Sold out indicator', aliases: ['sold out', 'soldout', 'out of stock', 'unavailable', 'empty', 'stock status', 'availability', 'in stock', 'available', 'status', 'stock', 'out', 'oos'] },
+  { key: 'isLowStock', label: 'Low Stock', required: false, description: 'Low stock status', aliases: ['low stock', 'lowstock', 'low inventory', 'last 5 units', 'last5units', 'last 5', 'last5', 'final units', 'remaining units', 'last few', 'limited stock', 'limited inventory'] },
+  { key: 'soldOut', label: 'Sold Out', required: false, description: 'Sold out indicator', aliases: ['sold out', 'soldout', 'out of stock', 'unavailable', 'empty', 'availability', 'in stock', 'available', 'out', 'oos', 'stock out', 'stockout'] },
   { key: 'notes', label: 'Notes', required: false, description: 'Additional notes', aliases: ['notes', 'comments', 'remarks', 'description'] },
 ];
 
@@ -229,6 +236,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
   theme,
   menuMode,
   onImport,
+  onMultiImport,
   onModeSwitch,
 }) => {
   const [stage, setStage] = useState<ImportStage>('upload');
@@ -239,6 +247,11 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
   const [detectedMode, setDetectedMode] = useState<MenuMode | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [delimiter, setDelimiter] = useState<string>(',');
+  // Multi-file support
+  const [isMultiFileMode, setIsMultiFileMode] = useState<boolean>(false);
+  const [splitIntoPages, setSplitIntoPages] = useState<boolean>(true);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [allFilesData, setAllFilesData] = useState<Array<{filename: string, data: ImportData[], headers: string[]}>>([]);
 
   const mappingFields = useMemo(() => 
     menuMode === MenuMode.BULK ? BULK_FIELDS : PREPACKAGED_FIELDS, 
@@ -317,10 +330,11 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
     return null; // Ambiguous
   }, []);
 
-  // Auto-suggest column mappings
+  // Enhanced auto-suggest column mappings with content-based inference
   const suggestMappings = useCallback((headers: string[]) => {
     const suggestions: ColumnMapping = {};
     
+    // First pass: Header name matching
     mappingFields.forEach(field => {
       const matchingHeader = headers.find(header => {
         const normalizedHeader = header.toLowerCase().trim();
@@ -345,45 +359,202 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
       }
     });
 
-    return suggestions;
-  }, [mappingFields]);
-
-  // Handle file upload
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      if (!content) return;
-
-      setCsvData(content);
-      const detectedDelim = detectDelimiter(content);
-      setDelimiter(detectedDelim);
-
-      const { headers, lowercaseHeaders, data } = parseCsvData(content, detectedDelim);
-      setCsvHeaders(headers);
-      setParsedData(data);
-
-      const format = detectCsvFormat(lowercaseHeaders);
-      setDetectedMode(format);
-
-      const suggestions = suggestMappings(lowercaseHeaders);
+    // Second pass: Content-based inference for unmapped columns
+    const unmappedHeaders = headers.filter(header => !suggestions[header]);
+    const sampleRowCount = Math.min(5, parsedData.length);
+    
+    unmappedHeaders.forEach(header => {
+      // Analyze sample data from this column
+      const sampleData = parsedData.slice(0, sampleRowCount)
+        .map(row => (row[header] || '').toString().toLowerCase().trim())
+        .filter(val => val && val !== '-' && val !== 'n/a');
       
-      // Convert suggestions to use original header names as keys
-      const originalSuggestions: ColumnMapping = {};
-      Object.entries(suggestions).forEach(([lowercaseHeader, appField]) => {
-        const originalHeader = headers[lowercaseHeaders.indexOf(lowercaseHeader)];
-        if (originalHeader) {
-          originalSuggestions[originalHeader] = appField;
+      if (sampleData.length === 0) return;
+      
+      // Content-based pattern matching
+      const hasNumericData = sampleData.some(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0);
+      const hasPercentage = sampleData.some(val => val.includes('%') || (!isNaN(parseFloat(val)) && parseFloat(val) <= 100));
+      const hasPriceData = sampleData.some(val => val.includes('$') || val.includes('.') && !isNaN(parseFloat(val.replace('$', ''))));
+      const hasBooleanData = sampleData.some(val => ['yes', 'no', 'true', 'false', '1', '0', 'sold out', 'available', 'out of stock', 'in stock', 'lastjar', 'last jar'].includes(val));
+      const hasStrainTypes = sampleData.some(val => ['s', 'sativa', 'i', 'indica', 'h', 'hybrid', 'sativa-hybrid', 'indica-hybrid'].includes(val));
+      const hasWeightData = sampleData.some(val => val.includes('g') || val.includes('oz') || ['1g', '3.5g', '7g', '14g', '28g'].some(w => val.includes(w.replace('g', ''))));
+      
+      // Try to infer field based on content patterns
+      if (!suggestions[header]) {
+        // THC/Terpenes detection
+        if (hasPercentage && hasNumericData) {
+          const avgValue = sampleData
+            .filter(val => !isNaN(parseFloat(val.replace('%', ''))))
+            .reduce((sum, val, _, arr) => sum + parseFloat(val.replace('%', '')) / arr.length, 0);
+          
+          // If average is > 1, likely THC; if < 5, likely terpenes
+          if (avgValue > 1 && avgValue < 50 && !Object.values(suggestions).includes('thc')) {
+            suggestions[header] = 'thc';
+          } else if (avgValue <= 5 && !Object.values(suggestions).includes('terpenes')) {
+            suggestions[header] = 'terpenes';
+          }
         }
-      });
-      setColumnMapping(originalSuggestions);
+        
+        // Price detection
+        else if (hasPriceData && hasNumericData && !Object.values(suggestions).includes('price')) {
+          suggestions[header] = 'price';
+        }
+        
+        // Strain type detection
+        else if (hasStrainTypes && !Object.values(suggestions).includes('type')) {
+          suggestions[header] = 'type';
+        }
+        
+        // Boolean field detection (sold out, last jar, low stock)
+        else if (hasBooleanData) {
+          const soldOutTerms = sampleData.filter(val => 
+            ['sold out', 'soldout', 'out of stock', 'unavailable', 'no', 'false', '0'].includes(val) ||
+            ['available', 'in stock', 'yes', 'true', '1'].includes(val)
+          );
+          const lastJarTerms = sampleData.filter(val => 
+            ['last jar', 'lastjar', 'final', 'last', 'remaining'].includes(val)
+          );
+          const lowStockTerms = sampleData.filter(val => 
+            ['low stock', 'lowstock', 'last 5', 'limited'].includes(val)
+          );
+          
+          if (soldOutTerms.length > 0 && !Object.values(suggestions).includes('soldOut')) {
+            suggestions[header] = 'soldOut';
+          } else if (lastJarTerms.length > 0 && !Object.values(suggestions).includes('lastJar')) {
+            suggestions[header] = 'lastJar';
+          } else if (lowStockTerms.length > 0 && !Object.values(suggestions).includes('isLowStock')) {
+            suggestions[header] = 'isLowStock';
+          }
+        }
+        
+        // Weight/Category detection for pre-packaged
+        else if (hasWeightData && menuMode === MenuMode.PREPACKAGED && !Object.values(suggestions).includes('shelf')) {
+          suggestions[header] = 'shelf';
+        }
+        
+        // Fallback: If first column and no better match, assume it's category/shelf
+        else if (headers.indexOf(header) === 0 && !Object.values(suggestions).includes('shelf')) {
+          // Only if it's not clearly a name field
+          const hasNameLikeData = sampleData.some(val => 
+            val.split(' ').length >= 2 && // Multi-word entries
+            !val.includes('flower') && !val.includes('shake') && !val.includes('premium') && !val.includes('value')
+          );
+          if (!hasNameLikeData) {
+            suggestions[header] = 'shelf';
+          }
+        }
+      }
+    });
 
-      setStage('mapping');
-    };
-    reader.readAsText(file);
+    return suggestions;
+  }, [mappingFields, parsedData, menuMode]);
+
+  // Handle file upload - now supports multiple files
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    // Automatically detect single vs multi-file mode
+    const isMultiFile = files.length > 1;
+    setIsMultiFileMode(isMultiFile);
+    setUploadedFiles(files);
+
+    if (isMultiFile) {
+      // Multi-file mode: Process all files and store their data
+      const processAllFiles = async () => {
+        const filesData: Array<{filename: string, data: ImportData[], headers: string[]}> = [];
+        let commonHeaders: string[] = [];
+        let totalRows = 0;
+        
+        for (const file of files) {
+          try {
+            const content = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.onerror = reject;
+              reader.readAsText(file);
+            });
+
+            const detectedDelim = detectDelimiter(content);
+            const { headers, lowercaseHeaders, data } = parseCsvData(content, detectedDelim);
+            
+            // Store data for each file
+            filesData.push({
+              filename: file.name,
+              data: data,
+              headers: headers
+            });
+            
+            totalRows += data.length;
+            
+            // Use first file's headers for mapping
+            if (commonHeaders.length === 0) {
+              commonHeaders = headers;
+              setCsvHeaders(headers);
+              setParsedData(data); // Show first file's data for preview
+              
+              const format = detectCsvFormat(lowercaseHeaders);
+              setDetectedMode(format);
+
+              const suggestions = suggestMappings(lowercaseHeaders);
+              
+              // Convert suggestions to use original header names as keys
+              const originalSuggestions: ColumnMapping = {};
+              Object.entries(suggestions).forEach(([lowercaseHeader, appField]) => {
+                const originalHeader = headers[lowercaseHeaders.indexOf(lowercaseHeader)];
+                if (originalHeader) {
+                  originalSuggestions[originalHeader] = appField;
+                }
+              });
+              setColumnMapping(originalSuggestions);
+            }
+          } catch (error) {
+            console.error(`Failed to process file ${file.name}:`, error);
+          }
+        }
+        
+        // Store all files data for validation and import
+        setAllFilesData(filesData);
+        setCsvData(`Total rows across ${files.length} files: ${totalRows}`);
+        setStage('mapping');
+      };
+      
+      processAllFiles();
+    } else {
+      // Single file mode: Original logic
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        if (!content) return;
+
+        setCsvData(content);
+        const detectedDelim = detectDelimiter(content);
+        setDelimiter(detectedDelim);
+
+        const { headers, lowercaseHeaders, data } = parseCsvData(content, detectedDelim);
+        setCsvHeaders(headers);
+        setParsedData(data);
+
+        const format = detectCsvFormat(lowercaseHeaders);
+        setDetectedMode(format);
+
+        const suggestions = suggestMappings(lowercaseHeaders);
+        
+        // Convert suggestions to use original header names as keys
+        const originalSuggestions: ColumnMapping = {};
+        Object.entries(suggestions).forEach(([lowercaseHeader, appField]) => {
+          const originalHeader = headers[lowercaseHeaders.indexOf(lowercaseHeader)];
+          if (originalHeader) {
+            originalSuggestions[originalHeader] = appField;
+          }
+        });
+        setColumnMapping(originalSuggestions);
+
+        setStage('mapping');
+      };
+      reader.readAsText(file);
+    }
   }, [detectDelimiter, parseCsvData, detectCsvFormat, suggestMappings]);
 
   // Handle column mapping change
@@ -478,11 +649,30 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
     setDelimiter(',');
   }, []);
 
-  // Handle import
-  const handleImport = useCallback(() => {
+  // Handle import - process single or multiple files
+  const handleImport = useCallback(async () => {
     if (validationErrors.length > 0) return;
     
-    onImport(parsedData, columnMapping);
+    if (isMultiFileMode && allFilesData.length > 1) {
+      // Use the already processed files data
+      const filesForImport = allFilesData.map(fileData => ({
+        filename: fileData.filename,
+        data: fileData.data,
+        mappingConfig: columnMapping
+      }));
+      
+      // Use the multi-CSV import handler
+      if (onMultiImport) {
+        onMultiImport(filesForImport, splitIntoPages);
+      } else {
+        // Fallback: use regular import for first file
+        onImport(parsedData, columnMapping);
+      }
+    } else {
+      // Single file import (existing logic)
+      onImport(parsedData, columnMapping);
+    }
+    
     setStage('complete');
     
     // Close modal after short delay
@@ -490,7 +680,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
       resetModal();
       onClose();
     }, 1500);
-  }, [validationErrors, parsedData, columnMapping, onImport, onClose, resetModal]);
+  }, [validationErrors, parsedData, columnMapping, onImport, onClose, resetModal, isMultiFileMode, uploadedFiles, splitIntoPages, detectDelimiter, parseCsvData]);
 
   const handleClose = useCallback(() => {
     resetModal();
@@ -572,11 +762,12 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
               </div>
               <h3 className="text-lg font-medium mb-2">Choose CSV File</h3>
               <p className={`mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Select a CSV file to import {menuMode === MenuMode.BULK ? 'bulk flower' : 'pre-packaged'} data
+                Select CSV file(s) to import {menuMode === MenuMode.BULK ? 'bulk flower' : 'pre-packaged'} data
               </p>
               <input
                 type="file"
                 accept=".csv"
+                multiple
                 onChange={handleFileUpload}
                 className="hidden"
                 id="csv-file-input"
@@ -592,7 +783,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Select CSV File
+                Select CSV File(s)
               </label>
             </div>
           )}
@@ -600,6 +791,43 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
           {/* Stage 2: Mapping */}
           {stage === 'mapping' && (
             <div>
+              {/* Multi-file indicator */}
+              {isMultiFileMode && (
+                <div className={`p-4 rounded-lg border mb-6 ${
+                  theme === 'dark' 
+                    ? 'bg-blue-900/20 border-blue-600 text-blue-200' 
+                    : 'bg-blue-50 border-blue-300 text-blue-800'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Multiple Files Detected</h4>
+                      <p className="text-sm mt-1">
+                        {uploadedFiles.length} CSV files uploaded. Configure import settings below.
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={splitIntoPages}
+                          onChange={(e) => setSplitIntoPages(e.target.checked)}
+                          className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium">Split into separate pages</span>
+                      </label>
+                    </div>
+                  </div>
+                  <p className={`text-xs mt-2 ${
+                    theme === 'dark' ? 'text-blue-300' : 'text-blue-700'
+                  }`}>
+                    {splitIntoPages 
+                      ? `Each CSV will create a new page (${uploadedFiles.length} pages total)`
+                      : 'All CSV data will be combined into the current page'
+                    }
+                  </p>
+                </div>
+              )}
+
               {/* Format Detection */}
               {detectedMode && detectedMode !== menuMode && onModeSwitch && (
                 <div className={`p-4 rounded-lg border mb-6 ${
@@ -749,7 +977,18 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                     <h4 className="font-medium">Validation Passed</h4>
                   </div>
                   <p className="text-sm mt-1">
-                    Ready to import {parsedData.length} rows of data
+                    {isMultiFileMode 
+                      ? `Ready to import ${allFilesData.reduce((total, file) => total + file.data.length, 0)} rows from ${allFilesData.length} files`
+                      : `Ready to import ${parsedData.length} rows of data`
+                    }
+                    {isMultiFileMode && (
+                      <><br />
+                        {splitIntoPages 
+                          ? `Will create ${allFilesData.length} separate pages`
+                          : 'Will combine all data into current page'
+                        }
+                      </>
+                    )}
                   </p>
                 </div>
               )}

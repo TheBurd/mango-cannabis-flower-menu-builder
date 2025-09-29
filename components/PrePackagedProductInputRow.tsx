@@ -23,6 +23,9 @@ interface PrePackagedProductInputRowProps {
   isLast: boolean;
   isControlsDisabled?: boolean;
   shelfColor: string; // Added for low stock highlighting
+  // Dropdown conflict prevention
+  isAnyDropdownOpen?: boolean; // Whether any dropdown in this shelf is open
+  onDropdownOpenChange?: (isOpen: boolean) => void; // Callback when dropdown state changes
 }
 
 export const PrePackagedProductInputRow: React.FC<PrePackagedProductInputRowProps> = ({
@@ -42,6 +45,8 @@ export const PrePackagedProductInputRow: React.FC<PrePackagedProductInputRowProp
   isLast,
   isControlsDisabled,
   shelfColor,
+  isAnyDropdownOpen = false,
+  onDropdownOpenChange,
 }) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [showMoveOptions, setShowMoveOptions] = useState(false);
@@ -95,7 +100,7 @@ export const PrePackagedProductInputRow: React.FC<PrePackagedProductInputRowProp
         theme === 'dark' 
           ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-700/95' 
           : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50/50'
-      } ${'hover:shadow-lg hover:border-orange-300/60 hover:-translate-y-0.5'
+      } ${!isAnyDropdownOpen ? 'hover:shadow-lg hover:border-orange-300/60 hover:-translate-y-0.5' : ''
       } ${isNewlyAdded ? 'ring-2 ring-orange-500 ring-opacity-50' : ''} ${isControlsDisabled ? 'opacity-50 pointer-events-none' : ''}`}
       style={{
         ...lowStockBackgroundStyle,
@@ -191,6 +196,7 @@ export const PrePackagedProductInputRow: React.FC<PrePackagedProductInputRowProp
               theme={theme}
               className="w-full"
               disabled={isControlsDisabled}
+              onOpenChange={onDropdownOpenChange}
             />
           </div>
 

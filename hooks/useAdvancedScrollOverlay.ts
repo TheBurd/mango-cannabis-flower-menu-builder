@@ -134,7 +134,10 @@ export const useAdvancedScrollOverlay = ({
     metrics.lastPerformanceCheck = now;
     
     // Calculate current strain count
-    const strainCount = shelves.reduce((count, shelf) => count + shelf.strains.length, 0);
+    const strainCount = shelves.reduce((count, shelf) => {
+      const items = 'strains' in shelf ? shelf.strains : shelf.products || [];
+      return count + items.length;
+    }, 0);
     
     // Calculate current FPS from frame history
     if (metrics.frameHistory.length > 10) {
@@ -236,8 +239,10 @@ export const useAdvancedScrollOverlay = ({
       strainsInventory.push(headerVisibility);
       visibilityMap.current.set(`${shelf.id}-header`, headerVisibility);
       
-      // Add ALL strains in the shelf - no limiting at data level
-      shelf.strains.forEach(strain => {
+      // Add ALL strains/products in the shelf - handle both shelf types with extra safety
+      const items = ('strains' in shelf ? shelf.strains : shelf.products) || [];
+      if (items && Array.isArray(items)) {
+        items.forEach(strain => {
         const visibility: StrainVisibility = {
           shelfId: shelf.id,
           strainId: strain.id,
@@ -252,7 +257,8 @@ export const useAdvancedScrollOverlay = ({
         };
         strainsInventory.push(visibility);
         visibilityMap.current.set(strain.id, visibility);
-      });
+        });
+      }
     });
     
     return strainsInventory;

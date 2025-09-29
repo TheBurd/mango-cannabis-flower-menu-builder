@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { Theme } from '../types';
-import { Icon } from './common/Icon';
+import { Icon, AddPageIcon, DuplicatePageIcon } from './common/Icon';
 
 interface FloatingPageControlsProps {
   currentPage: number;
   totalPages: number;
   onAddPage: () => void;
+  onDuplicatePage: () => void;
   onRemovePage: (pageNumber: number) => void;
   onGoToPage: (pageNumber: number) => void;
-  onToggleAutoPageBreaks: () => void;
-  autoPageBreaks: boolean;
   theme: Theme;
   className?: string;
 }
@@ -18,10 +17,9 @@ export const FloatingPageControls: React.FC<FloatingPageControlsProps> = ({
   currentPage,
   totalPages,
   onAddPage,
+  onDuplicatePage,
   onRemovePage,
   onGoToPage,
-  onToggleAutoPageBreaks,
-  autoPageBreaks,
   theme,
   className = ''
 }) => {
@@ -40,29 +38,6 @@ export const FloatingPageControls: React.FC<FloatingPageControlsProps> = ({
 
   return (
     <div className={`absolute bottom-4 right-4 flex items-center space-x-3 z-40 ${className}`}>
-      {/* Auto Toggle */}
-      <button
-        onClick={onToggleAutoPageBreaks}
-        className={`
-          flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors text-sm
-          ${theme === 'dark' 
-            ? 'bg-gray-800/90 border border-gray-700 text-gray-300 hover:bg-gray-700/90' 
-            : 'bg-white/90 border border-gray-300 text-gray-700 hover:bg-gray-50'
-          }
-        `}
-        title={`${autoPageBreaks ? 'Disable' : 'Enable'} automatic page breaks`}
-      >
-        <div className={`
-          w-2 h-2 rounded-full transition-colors
-          ${autoPageBreaks 
-            ? 'bg-blue-500' 
-            : theme === 'dark' 
-              ? 'bg-gray-500' 
-              : 'bg-gray-400'
-          }
-        `} />
-        <span>Auto</span>
-      </button>
 
       {/* Page Navigation */}
       <div className={`
@@ -132,21 +107,40 @@ export const FloatingPageControls: React.FC<FloatingPageControlsProps> = ({
         )}
       </div>
 
-      {/* Add Page Button */}
-      <button
-        onClick={onAddPage}
-        className={`
-          w-10 h-10 rounded-full transition-all duration-200
-          ${theme === 'dark' 
-            ? 'bg-gray-800/90 hover:bg-gray-700/90 border border-gray-700 text-gray-300 hover:text-white' 
-            : 'bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800'
-          }
-          hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-        `}
-        title="Add new page"
-      >
-        <Icon name="plus" className="w-5 h-5" />
-      </button>
+      {/* Page Management Buttons */}
+      <div className="flex items-center space-x-2">
+        {/* Add Fresh Page Button */}
+        <button
+          onClick={onAddPage}
+          className={`
+            w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center
+            ${theme === 'dark' 
+              ? 'bg-green-800/90 hover:bg-green-700/90 border border-green-700 text-green-300 hover:text-white' 
+              : 'bg-green-100/90 hover:bg-green-200 border border-green-300 text-green-700 hover:text-green-800'
+            }
+            hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
+          `}
+          title="Add new empty page"
+        >
+          <AddPageIcon className="w-4 h-4" />
+        </button>
+
+        {/* Duplicate Current Page Button */}
+        <button
+          onClick={onDuplicatePage}
+          className={`
+            w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center
+            ${theme === 'dark' 
+              ? 'bg-blue-800/90 hover:bg-blue-700/90 border border-blue-700 text-blue-300 hover:text-white' 
+              : 'bg-blue-100/90 hover:bg-blue-200 border border-blue-300 text-blue-700 hover:text-blue-800'
+            }
+            hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          `}
+          title="Duplicate current page"
+        >
+          <DuplicatePageIcon className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 };

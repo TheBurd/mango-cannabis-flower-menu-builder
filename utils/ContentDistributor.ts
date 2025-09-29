@@ -2,11 +2,11 @@ import { AnyShelf, PreviewSettings, ContentDistribution, PagedContent, ArtboardS
 import { ARTBOARD_DIMENSIONS_MAP } from '../constants';
 
 /**
- * ContentDistributor - DEPRECATED: Multi-page functionality temporarily disabled
+ * ContentDistributor - Enhanced multi-page content distribution
  * 
- * This class was designed for CSS column-based pagination, where content flows naturally
+ * This class handles CSS column-based pagination where content flows naturally
  * through columns and pages represent different "viewports" of the same continuous layout.
- * Currently returns no-op values to support single-page layout.
+ * Now supports true multi-page functionality with intelligent content distribution.
  */
 export class ContentDistributor {
   private settings: PreviewSettings;
@@ -18,8 +18,7 @@ export class ContentDistributor {
   }
 
   /**
-   * DEPRECATED: Calculates column-based pagination info
-   * Multi-page functionality disabled - returns single-page values
+   * Calculates column-based pagination info with multi-page support
    */
   public calculateColumnPagination(): {
     columnsPerPage: number;
@@ -28,39 +27,33 @@ export class ContentDistributor {
     columnWidth: number;
     columnGap: number;
   } {
-    const { columns } = this.settings;
+    const { columns, pageCount } = this.settings;
     
-    // Calculate column dimensions for single-page layout
+    // Calculate column dimensions
     const contentWidth = this.calculateAvailableContentWidth();
     const columnGap = Math.max(8, this.settings.baseFontSizePx * 1.5);
     const totalGapWidth = (columns - 1) * columnGap;
     const availableColumnSpace = contentWidth - totalGapWidth;
     const columnWidth = availableColumnSpace / columns;
 
-    // DISABLED: Always return single-page values
+    // Multi-page support enabled
     return {
       columnsPerPage: columns,
-      totalPages: 1, // Always single page
-      hasOverflow: false, // No multi-page overflow
+      totalPages: pageCount || 1,
+      hasOverflow: pageCount > 1,
       columnWidth,
       columnGap
     };
   }
 
   /**
-   * DEPRECATED: Gets the CSS transform for a specific page
-   * Multi-page functionality disabled - returns no-op transform for single-page layout
+   * Gets the CSS transform for a specific page with multi-page support
    */
   public getColumnTransformForPage(pageNumber: number): {
     transform: string;
     clipPath?: string;
   } {
-    // DISABLED: Always return no transform for single-page layout
-    return { transform: 'none' };
-    
-    // PRESERVED FOR FUTURE: Multi-page transform logic
-    /*
-    if (pageNumber <= 1) {
+    if (pageNumber <= 1 || !this.settings.pageCount || this.settings.pageCount <= 1) {
       return { transform: 'none' };
     }
 
@@ -73,7 +66,6 @@ export class ContentDistributor {
     return {
       transform: `translateX(-${horizontalOffset}px)`,
     };
-    */
   }
 
   /**
@@ -122,6 +114,29 @@ export class ContentDistributor {
   }
 
   /**
+   * Estimates content height for a set of shelves
+   */
+  private estimateContentHeight(shelves: AnyShelf[]): number {
+    if (shelves.length === 0) return 0;
+
+    // Rough estimation: shelf header + products/strains
+    const estimatedShelfHeaderHeight = 60; // Title and spacing
+    const estimatedItemHeight = 40; // Average height per strain/product
+
+    let totalHeight = 0;
+    shelves.forEach(shelf => {
+      totalHeight += estimatedShelfHeaderHeight;
+      if (isPrePackagedShelf(shelf)) {
+        totalHeight += shelf.products.length * estimatedItemHeight;
+      } else {
+        totalHeight += shelf.strains.length * estimatedItemHeight;
+      }
+    });
+
+    return totalHeight;
+  }
+
+  /**
    * Calculates available content height considering header images and padding
    */
   private calculateAvailableContentHeight(): number {
@@ -162,20 +177,45 @@ export class ContentDistributor {
   }
 
   /**
-   * DEPRECATED: Legacy method for backward compatibility
-   * Multi-page functionality disabled - always returns single page
+   * Distributes content across multiple pages intelligently
    */
   public distributeContent(shelves: AnyShelf[]): ContentDistribution {
-    const allShelves = this.getAllShelvesForPage(shelves);
-    
+    const filteredShelves = this.getAllShelvesForPage(shelves);
+    const { pageCount = 1 } = this.settings;
+
+    if (pageCount <= 1) {
+      // Single page mode
+      return {
+        pages: [{
+          pageNumber: 1,
+          shelves: filteredShelves,
+          estimatedHeight: this.estimateContentHeight(filteredShelves)
+        }],
+        totalPages: 1,
+        hasOverflow: false
+      };
+    }
+
+    // Multi-page distribution
+    const pages: PagedContent[] = [];
+    const shelvesPerPage = Math.ceil(filteredShelves.length / pageCount);
+
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+      const startIndex = (pageNum - 1) * shelvesPerPage;
+      const endIndex = Math.min(startIndex + shelvesPerPage, filteredShelves.length);
+      const pageShelves = filteredShelves.slice(startIndex, endIndex);
+
+      pages.push({
+        pageNumber: pageNum,
+        shelves: pageShelves,
+        estimatedHeight: this.estimateContentHeight(pageShelves)
+      });
+    }
+
     return {
-      pages: [{
-        pageNumber: 1,
-        shelves: allShelves,
-        estimatedHeight: 0
-      }],
-      totalPages: 1, // Always single page
-      hasOverflow: false // No multi-page overflow
+      pages,
+      totalPages: pageCount,
+      hasOverflow: pageCount > 1
     };
   }
 

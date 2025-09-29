@@ -67,9 +67,10 @@ export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, 
       <div className="flex items-end w-full">
         {shelves.map((shelf, index) => {
           const isHovered = hoveredTab === shelf.id;
+          const strainCount = shelf.strains?.length || 0;
           const displayName = isHovered ? 
-            `${shelf.name} (${shelf.strains.length})` : 
-            truncateShelfName(shelf.name, shelf.strains.length);
+            `${shelf.name} (${strainCount})` : 
+            truncateShelfName(shelf.name, strainCount);
           
           return (
             <div

@@ -89,6 +89,8 @@ import {
   getDefaultPrePackagedShelves
 } from './constants';
 import { getOverflowDrivenAutoFormat, AutoFormatState } from './utils/autoFormat';
+import { PageManager } from './utils/PageManager';
+import { ZipExporter, SequentialExporter } from './utils/ZipExporter';
 
 
 
@@ -128,12 +130,12 @@ const sortStrains = (strains: Strain[], criteria: SortCriteria | null, currentSt
         valB = b.thc === null ? -Infinity : b.thc;
         break;
       case 'isLastJar':
-        valA = a.isLastJar;
-        valB = b.isLastJar;
+        valA = a.isLastJar ? 1 : 0;
+        valB = b.isLastJar ? 1 : 0;
         break;
       case 'isSoldOut':
-        valA = a.isSoldOut;
-        valB = b.isSoldOut;
+        valA = a.isSoldOut ? 1 : 0;
+        valB = b.isSoldOut ? 1 : 0;
         break;
       case 'originalShelf':
         if (currentState) {
@@ -198,17 +200,18 @@ const sortPrePackagedProducts = (products: PrePackagedProduct[], criteria: PrePa
         break;
       case 'isLowStock':
         // Sort low stock items first when sorting asc, last when sorting desc
-        valA = a.isLowStock ? '1' : '0';
-        valB = b.isLowStock ? '1' : '0';
+        valA = a.isLowStock ? 1 : 0;
+        valB = b.isLowStock ? 1 : 0;
         break;
       case 'isLastJar':
         // Map isLastJar key to isLowStock field for pre-packaged products (UI consistency)
-        valA = a.isLowStock ? '1' : '0';
-        valB = b.isLowStock ? '1' : '0';
+        valA = a.isLowStock ? 1 : 0;
+        valB = b.isLowStock ? 1 : 0;
         break;
       case 'isSoldOut':
-        valA = a.isSoldOut;
-        valB = b.isSoldOut;
+        // Sort sold out items properly (use boolean directly)
+        valA = a.isSoldOut ? 1 : 0;
+        valB = b.isSoldOut ? 1 : 0;
         break;
       default:
         return 0;
@@ -296,20 +299,73 @@ const AppContent: React.FC = () => {
     return defaultShelves;
   });
 
-  // Current active shelves based on mode - this maintains backward compatibility
-  const shelves = useMemo(() => {
-    return menuMode === MenuMode.BULK ? bulkShelves : prePackagedShelves as unknown as Shelf[];
-  }, [menuMode, bulkShelves, prePackagedShelves]);
+  // Page manager for multi-page functionality - initialized before shelves useMemo
+  const [pageManager] = useState(() => new PageManager());
+  
+  // Force re-render trigger for page changes
+  const [pageChangeCounter, setPageChangeCounter] = useState(0);
+  const forcePageUpdate = useCallback(() => {
+    setPageChangeCounter(prev => prev + 1);
+  }, []);
 
-  // Setter for current shelves based on mode
-  const setShelves = useCallback((updater: React.SetStateAction<Shelf[]> | React.SetStateAction<PrePackagedShelf[]>) => {
-    if (menuMode === MenuMode.BULK) {
-      setBulkShelves(updater as React.SetStateAction<Shelf[]>);
-    } else {
-      setPrePackagedShelves(updater as React.SetStateAction<PrePackagedShelf[]>);
+  // Current active shelves based on current page - always maintain consistent structure
+  const shelves = useMemo(() => {
+    const currentPage = pageManager.getCurrentPage();
+    if (currentPage && currentPage.shelves.length > 0) {
+      // Use page-specific shelves if they exist and have content
+      return currentPage.shelves;
     }
-  }, [menuMode]);
-  const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(INITIAL_PREVIEW_SETTINGS);
+    // Always return default shelf structure to maintain consistent hooks
+    // Empty pages have default shelves with no content, not no shelves
+    return menuMode === MenuMode.BULK ? bulkShelves : prePackagedShelves as unknown as Shelf[];
+  }, [pageManager, pageChangeCounter, menuMode, bulkShelves, prePackagedShelves]);
+
+  // Setter for current shelves - PageManager as single source of truth
+  const setShelves = useCallback((updater: React.SetStateAction<Shelf[]> | React.SetStateAction<PrePackagedShelf[]>) => {
+    const currentPageNumber = pageManager.getCurrentPageNumber();
+    
+    // Calculate new shelves value
+    let newShelves: Shelf[] | PrePackagedShelf[];
+    if (typeof updater === 'function') {
+      const currentShelves = shelves;
+      newShelves = (updater as (prev: any[]) => any[])(currentShelves);
+    } else {
+      newShelves = updater;
+    }
+
+    // Update PageManager only - single source of truth
+    pageManager.updatePageShelves(currentPageNumber, newShelves);
+    
+    // Force re-render to update UI
+    forcePageUpdate();
+  }, [pageManager, shelves, forcePageUpdate]);
+  
+  // Global default settings for new pages
+  const [globalDefaultSettings] = useState<PreviewSettings>(INITIAL_PREVIEW_SETTINGS);
+  
+  // Current page settings from PageManager
+  const previewSettings = useMemo(() => {
+    return pageManager.getPageSettings(pageManager.getCurrentPageNumber(), globalDefaultSettings);
+  }, [pageManager, globalDefaultSettings, pageChangeCounter]);
+  
+  // Set preview settings for current page only
+  const setPreviewSettings = useCallback((updater: React.SetStateAction<PreviewSettings> | Partial<PreviewSettings>) => {
+    const currentPageNumber = pageManager.getCurrentPageNumber();
+    
+    let newSettings: Partial<PreviewSettings>;
+    if (typeof updater === 'function') {
+      const currentSettings = pageManager.getPageSettings(currentPageNumber, globalDefaultSettings);
+      newSettings = (updater as (prev: PreviewSettings) => PreviewSettings)(currentSettings);
+    } else {
+      newSettings = updater;
+    }
+    
+    // Save settings to current page only
+    pageManager.updatePageSettings(currentPageNumber, newSettings);
+    
+    // Force re-render to update UI controls
+    forcePageUpdate();
+  }, [pageManager, globalDefaultSettings, forcePageUpdate]);
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('mango-theme');
     return savedTheme === 'light' ? 'light' : 'dark';
@@ -352,6 +408,16 @@ const AppContent: React.FC = () => {
 
   // Global sort criteria state - moved here to prevent initialization order issues
   const [globalSortCriteria, setGlobalSortCriteria] = useState<SortCriteria | null>(null);
+
+  // Initialize PageManager with current shelves and settings on first load
+  useEffect(() => {
+    const initialShelves = menuMode === MenuMode.BULK ? bulkShelves : prePackagedShelves as unknown as Shelf[];
+    // Initialize page 1 with both content and default settings
+    pageManager.updatePageShelves(1, initialShelves);
+    pageManager.updatePageSettings(1, globalDefaultSettings);
+    // Force re-render to show the initialized content
+    forcePageUpdate();
+  }, [menuMode, bulkShelves, prePackagedShelves, pageManager, globalDefaultSettings, forcePageUpdate]); // Re-run when data changes
 
   // DEPRECATED: Multi-page auto creation logic - disabled but preserved for future development
   useEffect(() => {
@@ -411,11 +477,24 @@ const AppContent: React.FC = () => {
       if (!confirm(confirmMessage)) {
         return; // User cancelled, don't change mode
       }
+      
+      // User confirmed - immediately clear the old content to free memory
+      if (menuMode === MenuMode.BULK) {
+        setBulkShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+      } else {
+        setPrePackagedShelves(getDefaultPrePackagedShelves(currentAppState));
+      }
     }
+    
+    // CRITICAL: Clear PageManager to prevent type mixing during mode switch
+    pageManager.setMode(newMode);
     
     setMenuMode(newMode);
     localStorage.setItem('mango-oklahoma-menu-mode', newMode);
-  }, [menuMode, bulkShelves, prePackagedShelves]);
+    
+    // Force re-render to initialize with clean state for new mode
+    forcePageUpdate();
+  }, [menuMode, bulkShelves, prePackagedShelves, pageManager, forcePageUpdate]);
 
   // Instructions modal handler
   const handleShowInstructions = useCallback(() => {
@@ -984,61 +1063,53 @@ const AppContent: React.FC = () => {
     const newItemId = crypto.randomUUID();
     handleShelfInteraction(shelfId); // Track interaction
     recordChange(() => {
-      if (menuMode === MenuMode.BULK) {
-        // Add strain to bulk shelf
-        setBulkShelves(prevShelves =>
-          prevShelves.map(shelf =>
-            shelf.id === shelfId
-              ? {
-                  ...shelf,
-                  strains: [
-                    ...shelf.strains,
-                    {
-                      id: newItemId,
-                      name: '',
-                      grower: '',
-                      thc: null,
-                      type: StrainType.HYBRID,
-                      isLastJar: false,
-                      isSoldOut: false,
-                    },
-                  ],
-                  sortCriteria: null // Reset sort criteria when adding strain
-                }
-              : shelf
-          )
-        );
-      } else {
-        // Add product to pre-packaged shelf
-        setPrePackagedShelves(prevShelves =>
-          prevShelves.map(shelf =>
-            shelf.id === shelfId
-              ? {
-                  ...shelf,
-                  products: [
-                    ...shelf.products,
-                    {
-                      id: newItemId,
-                      name: '',
-                      brand: '',
-                      type: StrainType.HYBRID,
-                      thc: null,
-                      terpenes: null,
-                      // weight: removed - now handled at shelf level
-                      price: 0,
-                      isLowStock: false,
-                      isSoldOut: false,
-                    },
-                  ],
-                  sortCriteria: null // Reset sort criteria when adding product
-                }
-              : shelf
-          )
-        );
-      }
+      // Use setShelves (PageManager) instead of global state
+      setShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (shelf.id !== shelfId) return shelf;
+          
+          if (menuMode === MenuMode.BULK) {
+            return {
+              ...shelf,
+              strains: [
+                ...shelf.strains,
+                {
+                  id: newItemId,
+                  name: '',
+                  grower: '',
+                  thc: null,
+                  type: StrainType.HYBRID,
+                  isLastJar: false,
+                  isSoldOut: false,
+                },
+              ],
+              sortCriteria: null // Reset sort criteria when adding strain
+            };
+          } else {
+            return {
+              ...shelf,
+              products: [
+                ...shelf.products,
+                {
+                  id: newItemId,
+                  name: '',
+                  brand: '',
+                  type: StrainType.HYBRID,
+                  thc: null,
+                  terpenes: null,
+                  price: 0,
+                  isLowStock: false,
+                  isSoldOut: false,
+                },
+              ],
+              sortCriteria: null // Reset sort criteria when adding product
+            };
+          }
+        })
+      );
     });
     setNewlyAddedStrainId(newItemId);
-  }, [handleShelfInteraction, menuMode]);
+  }, [handleShelfInteraction, setShelves, menuMode]);
 
   // Backward compatibility alias for existing code
   const handleAddStrain = handleAddItem;
@@ -1087,35 +1158,28 @@ const AppContent: React.FC = () => {
   // Generic item removal handler that works for both modes
   const handleRemoveItem = useCallback((shelfId: string, itemId: string) => {
     recordChange(() => {
-      if (menuMode === MenuMode.BULK) {
-        // Remove strain from bulk shelf
-        setBulkShelves(prevShelves =>
-          prevShelves.map(shelf =>
-            shelf.id === shelfId
-              ? { 
-                  ...shelf, 
-                  strains: shelf.strains.filter(s => s.id !== itemId),
-                  sortCriteria: null // Reset sort criteria when removing strain
-                }
-              : shelf
-          )
-        );
-      } else {
-        // Remove product from pre-packaged shelf
-        setPrePackagedShelves(prevShelves =>
-          prevShelves.map(shelf =>
-            shelf.id === shelfId
-              ? { 
-                  ...shelf, 
-                  products: shelf.products.filter(p => p.id !== itemId),
-                  sortCriteria: null // Reset sort criteria when removing product
-                }
-              : shelf
-          )
-        );
-      }
+      // Use setShelves (PageManager) instead of global state
+      setShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (shelf.id !== shelfId) return shelf;
+          
+          if (menuMode === MenuMode.BULK) {
+            return { 
+              ...shelf, 
+              strains: shelf.strains.filter(s => s.id !== itemId),
+              sortCriteria: null // Reset sort criteria when removing strain
+            };
+          } else {
+            return { 
+              ...shelf, 
+              products: shelf.products.filter(p => p.id !== itemId),
+              sortCriteria: null // Reset sort criteria when removing product
+            };
+          }
+        })
+      );
     });
-  }, [menuMode]);
+  }, [setShelves, menuMode]);
 
   // Backward compatibility alias for existing code
   const handleRemoveStrain = useCallback((shelfId: string, strainId: string) => {
@@ -1191,35 +1255,28 @@ const AppContent: React.FC = () => {
   // Generic shelf clearing handler that works for both modes
   const handleClearShelfItems = useCallback((shelfId: string) => {
     recordChange(() => {
-      if (menuMode === MenuMode.BULK) {
-        // Clear strains from bulk shelf
-        setBulkShelves(prevShelves =>
-          prevShelves.map(shelf =>
-            shelf.id === shelfId 
-              ? { 
-                  ...shelf, 
-                  strains: [],
-                  sortCriteria: null // Reset sort criteria when clearing shelf
-                } 
-              : shelf
-          )
-        );
-      } else {
-        // Clear products from pre-packaged shelf
-        setPrePackagedShelves(prevShelves =>
-          prevShelves.map(shelf =>
-            shelf.id === shelfId 
-              ? { 
-                  ...shelf, 
-                  products: [],
-                  sortCriteria: null // Reset sort criteria when clearing shelf
-                } 
-              : shelf
-          )
-        );
-      }
+      // Use setShelves (PageManager) instead of global state
+      setShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (shelf.id !== shelfId) return shelf;
+          
+          if (menuMode === MenuMode.BULK) {
+            return { 
+              ...shelf, 
+              strains: [],
+              sortCriteria: null // Reset sort criteria when clearing shelf
+            };
+          } else {
+            return { 
+              ...shelf, 
+              products: [],
+              sortCriteria: null // Reset sort criteria when clearing shelf
+            };
+          }
+        })
+      );
     });
-  }, [menuMode]);
+  }, [setShelves, menuMode]);
 
   // Backward compatibility alias for existing code
   const handleClearShelfStrains = useCallback((shelfId: string) => {
@@ -1441,77 +1498,74 @@ const AppContent: React.FC = () => {
   // Generic clear all shelves handler that works for both modes
   const handleClearAllShelves = useCallback(() => {
     recordChange(() => {
-      if (menuMode === MenuMode.BULK) {
-        // Clear all strains from bulk shelves
-        setBulkShelves(prevShelves =>
-          prevShelves.map(shelf => ({ 
-            ...shelf, 
-            strains: [],
-            sortCriteria: null // Reset sort criteria when clearing all shelves
-          }))
-        );
-      } else {
-        // Clear all products from pre-packaged shelves
-        setPrePackagedShelves(prevShelves =>
-          prevShelves.map(shelf => ({ 
-            ...shelf, 
-            products: [],
-            sortCriteria: null // Reset sort criteria when clearing all shelves
-          }))
-        );
-      }
+      // Clear all content from current page only
+      setShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (menuMode === MenuMode.BULK) {
+            return {
+              ...shelf,
+              strains: [],
+              sortCriteria: null // Reset sort criteria when clearing all shelves
+            };
+          } else {
+            return {
+              ...shelf,
+              products: [],
+              sortCriteria: null // Reset sort criteria when clearing all shelves
+            };
+          }
+        })
+      );
     });
-  }, [menuMode]);
+  }, [setShelves, menuMode]);
 
   // Generic clear all last jars handler that works for both modes
   const handleClearAllLastJars = useCallback(() => {
     recordChange(() => {
-      if (menuMode === MenuMode.BULK) {
-        // Clear all last jar flags from bulk shelves
-        setBulkShelves(prevShelves =>
-          prevShelves.map(shelf => ({
-            ...shelf,
-            strains: shelf.strains.map(strain => ({ ...strain, isLastJar: false })),
-            sortCriteria: null // Reset sort criteria when clearing last jars
-          }))
-        );
-      } else {
-        // Clear all last jar flags from pre-packaged shelves
-        setPrePackagedShelves(prevShelves =>
-          prevShelves.map(shelf => ({
-            ...shelf,
-            products: shelf.products.map(product => ({ ...product, isLastJar: false })),
-            sortCriteria: null // Reset sort criteria when clearing last jars
-          }))
-        );
-      }
+      // Clear all last jar/low stock flags from current page only
+      setShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (menuMode === MenuMode.BULK) {
+            return {
+              ...shelf,
+              strains: shelf.strains.map(strain => ({ ...strain, isLastJar: false })),
+              sortCriteria: null // Reset sort criteria when clearing last jars
+            };
+          } else {
+            return {
+              ...shelf,
+              products: shelf.products.map(product => ({ ...product, isLowStock: false })),
+              sortCriteria: null // Reset sort criteria when clearing low stock
+            };
+          }
+        })
+      );
     });
-  }, [menuMode]);
+  }, [setShelves, menuMode]);
 
   // Generic clear all sold out handler that works for both modes
   const handleClearAllSoldOut = useCallback(() => {
     recordChange(() => {
-      if (menuMode === MenuMode.BULK) {
-        // Clear all sold out flags from bulk shelves
-        setBulkShelves(prevShelves =>
-          prevShelves.map(shelf => ({
-            ...shelf,
-            strains: shelf.strains.map(strain => ({ ...strain, isSoldOut: false })),
-            sortCriteria: null // Reset sort criteria when clearing sold out
-          }))
-        );
-      } else {
-        // Clear all sold out flags from pre-packaged shelves
-        setPrePackagedShelves(prevShelves =>
-          prevShelves.map(shelf => ({
-            ...shelf,
-            products: shelf.products.map(product => ({ ...product, isSoldOut: false })),
-            sortCriteria: null // Reset sort criteria when clearing sold out
-          }))
-        );
-      }
+      // Clear all sold out flags from current page only
+      setShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (menuMode === MenuMode.BULK) {
+            return {
+              ...shelf,
+              strains: shelf.strains.map(strain => ({ ...strain, isSoldOut: false })),
+              sortCriteria: null // Reset sort criteria when clearing sold out
+            };
+          } else {
+            return {
+              ...shelf,
+              products: shelf.products.map(product => ({ ...product, isSoldOut: false })),
+              sortCriteria: null // Reset sort criteria when clearing sold out
+            };
+          }
+        })
+      );
     });
-  }, [menuMode]);
+  }, [setShelves, menuMode]);
   
   const handleUpdatePreviewSettings = useCallback((newSettings: Partial<PreviewSettings>) => {
      // For preview settings, we don't want to reset sorts, so don't use recordChange
@@ -1519,33 +1573,86 @@ const AppContent: React.FC = () => {
   }, []);
 
   // Multi-page management helpers
+  // Add fresh new page (empty content + default settings)
   const handleAddPage = useCallback(() => {
     setIsUpdatingPageCount(true);
-    setPreviewSettings(prev => ({
-      ...prev,
-      pageCount: prev.pageCount + 1
-    }));
+    
+    // Save current page complete state (content + settings) before switching
+    const currentPageNumber = pageManager.getCurrentPageNumber();
+    pageManager.updatePageShelves(currentPageNumber, shelves);
+    pageManager.updatePageSettings(currentPageNumber, previewSettings);
+    
+    // Create new page
+    const newPageNumber = pageManager.addPage();
+    
+    // Initialize new page with empty shelves (proper structure) and default settings
+    const emptyShelvesForMode = menuMode === MenuMode.BULK 
+      ? getDefaultShelves(currentAppState, fiftyPercentOffEnabled).map(shelf => ({ ...shelf, strains: [] }))
+      : getDefaultPrePackagedShelves(currentAppState).map(shelf => ({ ...shelf, products: [] }));
+    pageManager.updatePageShelves(newPageNumber, emptyShelvesForMode);
+    // Don't set custom settings - let it use defaults
+    
+    // Navigate to the new empty page
+    pageManager.goToPage(newPageNumber);
+    
+    // Force re-render to show new empty page with default settings
+    forcePageUpdate();
+    
     // Clear the flag after a short delay to allow UI to stabilize
     setTimeout(() => setIsUpdatingPageCount(false), 500);
-  }, []);
+  }, [pageManager, shelves, previewSettings, forcePageUpdate, menuMode]);
+  
+  // Duplicate current page (copy content + settings)
+  const handleDuplicatePage = useCallback(() => {
+    setIsUpdatingPageCount(true);
+    
+    // Save current page complete state
+    const currentPageNumber = pageManager.getCurrentPageNumber();
+    pageManager.updatePageShelves(currentPageNumber, shelves);
+    pageManager.updatePageSettings(currentPageNumber, previewSettings);
+    
+    // Clone the current page
+    const newPageNumber = pageManager.clonePage(currentPageNumber);
+    if (newPageNumber) {
+      // Switch to the duplicated page
+      pageManager.goToPage(newPageNumber);
+      forcePageUpdate();
+    }
+    
+    // Clear the flag after a short delay to allow UI to stabilize
+    setTimeout(() => setIsUpdatingPageCount(false), 500);
+  }, [pageManager, shelves, previewSettings, forcePageUpdate]);
 
   const handleRemovePage = useCallback((pageNumber: number) => {
     setIsUpdatingPageCount(true);
-    setPreviewSettings(prev => ({
-      ...prev,
-      pageCount: Math.max(1, prev.pageCount - 1),
-      currentPage: prev.currentPage > prev.pageCount - 1 ? prev.pageCount - 1 : prev.currentPage
-    }));
+    const success = pageManager.removePage(pageNumber);
+    if (success) {
+      setPreviewSettings(prev => ({
+        ...prev,
+        pageCount: pageManager.getPageCount(),
+        currentPage: pageManager.getCurrentPageNumber()
+      }));
+      
+      // Force re-render to update UI after page deletion
+      forcePageUpdate();
+    }
     // Clear the flag after a short delay to allow UI to stabilize
     setTimeout(() => setIsUpdatingPageCount(false), 500);
-  }, []);
+  }, [pageManager, forcePageUpdate]);
 
   const handleGoToPage = useCallback((pageNumber: number) => {
-    setPreviewSettings(prev => ({
-      ...prev,
-      currentPage: Math.max(1, Math.min(pageNumber, prev.pageCount))
-    }));
-  }, []);
+    // Save current page complete state (content + settings) before switching
+    const currentPageNumber = pageManager.getCurrentPageNumber();
+    pageManager.updatePageShelves(currentPageNumber, shelves);
+    pageManager.updatePageSettings(currentPageNumber, previewSettings);
+    
+    // Navigate to target page
+    const success = pageManager.goToPage(pageNumber);
+    if (success) {
+      // Force re-render to load target page's content and settings
+      forcePageUpdate();
+    }
+  }, [pageManager, shelves, previewSettings, forcePageUpdate]);
 
   const handleToggleAutoPageBreaks = useCallback(() => {
     setIsUpdatingPageCount(true);
@@ -1558,20 +1665,31 @@ const AppContent: React.FC = () => {
   }, []);
 
   const handleUpdateGlobalSortCriteria = useCallback((key: SortCriteria['key']) => {
-    // Applying a global sort will reset shelf-specific sorts and any previous global sort.
-    // It does not use recordChange directly to avoid double-resetting sorts.
-    setGlobalSortCriteria(prevCriteria => {
-      if (prevCriteria && prevCriteria.key === key) {
-        return { ...prevCriteria, direction: prevCriteria.direction === 'asc' ? 'desc' : 'asc' };
-      }
-      let defaultDirection: 'asc' | 'desc' = 'asc';
-      if (key === 'thc' || key === 'isLastJar') {
-        defaultDirection = 'desc';
-      }
-      return { key, direction: defaultDirection };
-    });
-    setShelves(prevShelves => prevShelves.map(s => ({ ...s, sortCriteria: null })));
-  }, []);
+    const currentPageNumber = pageManager.getCurrentPageNumber();
+    const currentSort = pageManager.getPageGlobalSort(currentPageNumber);
+    
+    // Calculate new sort criteria with direction toggle
+    let newCriteria: AnySortCriteria | null = null;
+    if (currentSort && currentSort.key === key) {
+      // Toggle direction or clear if clicking third time
+      newCriteria = currentSort.direction === 'asc' 
+        ? { key, direction: 'desc' }
+        : null; // Third click clears sort
+    } else {
+      // New sort - default to desc for THC and Last Jar/Low Stock
+      const defaultDirection = (key === 'thc' || key === 'isLastJar' || key === 'isLowStock') ? 'desc' : 'asc';
+      newCriteria = { key, direction: defaultDirection };
+    }
+    
+    // Update current page's global sort
+    pageManager.updatePageGlobalSort(currentPageNumber, newCriteria);
+    
+    // Clear shelf-specific sorts on current page when applying global sort
+    setShelves(prevShelves => prevShelves.map(shelf => ({ ...shelf, sortCriteria: null })));
+    
+    // Force re-render to show updated sort
+    forcePageUpdate();
+  }, [pageManager, setShelves, forcePageUpdate]);
 
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
@@ -1732,6 +1850,281 @@ const AppContent: React.FC = () => {
       timestamp: Date.now(),
     });
   }, [isExporting, exportFilename, previewSettings.artboardSize]);
+
+  // Multi-page batch export handlers (ZIP format)
+  const handleExportPNGBatch = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setShowExportOverlay(true);
+    
+    try {
+      const pageData = pageManager.getExportData(previewSettings);
+      const getPageElement = async (pageNumber: number): Promise<HTMLElement> => {
+        // Navigate to page if needed
+        if (pageManager.getCurrentPageNumber() !== pageNumber) {
+          pageManager.goToPage(pageNumber);
+          forcePageUpdate();
+          // Wait for page content to load
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        // Try multiple selectors to find the artboard element
+        const selectors = [
+          '.print-artboard-outer',
+          '[data-testid*="artboard"]', 
+          '[class*="artboard"]',
+          '.preview-container',
+          '[class*="preview"]'
+        ];
+        
+        for (const selector of selectors) {
+          const element = document.querySelector(selector) as HTMLElement;
+          if (element && element.offsetWidth > 0 && element.offsetHeight > 0) {
+            return element;
+          }
+        }
+        
+        // Fallback: Use the main preview area
+        const mainPreview = document.querySelector('main > div') as HTMLElement;
+        return mainPreview || document.body;
+      };
+      
+      await ZipExporter.exportPagesToZip(
+        pageData,
+        exportFilename || 'mango-menu',
+        'png',
+        getPageElement
+      );
+    } catch (error) {
+      console.error('PNG batch export failed:', error);
+      alert('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setShowExportOverlay(false);
+    }
+  }, [isExporting, pageManager, previewSettings, exportFilename]);
+
+  const handleExportJPEGBatch = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setShowExportOverlay(true);
+    
+    try {
+      const pageData = pageManager.getExportData(previewSettings);
+      const getPageElement = (pageNumber: number) => {
+        // Navigate to page and return artboard element
+        if (pageManager.getCurrentPageNumber() !== pageNumber) {
+          pageManager.goToPage(pageNumber);
+          forcePageUpdate();
+          return new Promise<HTMLElement>((resolve) => {
+            setTimeout(() => {
+              const artboard = document.querySelector('.print-artboard-outer, [data-testid*="artboard"], [class*="artboard"], .preview-container') as HTMLElement;
+              resolve(artboard || document.body);
+            }, 100);
+          });
+        }
+        const artboard = document.querySelector('[class*="artboard"], [class*="preview-artboard"], .preview-container') as HTMLElement;
+        return artboard || document.body;
+      };
+      
+      await ZipExporter.exportPagesToZip(
+        pageData,
+        exportFilename || 'mango-menu',
+        'jpeg',
+        getPageElement
+      );
+    } catch (error) {
+      console.error('JPEG batch export failed:', error);
+      alert('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setShowExportOverlay(false);
+    }
+  }, [isExporting, pageManager, previewSettings, exportFilename]);
+
+  // Multi-page sequential export handlers (individual files)
+  const handleExportPNGSequential = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setShowExportOverlay(true);
+    
+    try {
+      const pageData = pageManager.getExportData(previewSettings);
+      const getPageElement = (pageNumber: number) => {
+        // Navigate to page and return artboard element
+        if (pageManager.getCurrentPageNumber() !== pageNumber) {
+          pageManager.goToPage(pageNumber);
+          forcePageUpdate();
+          return new Promise<HTMLElement>((resolve) => {
+            setTimeout(() => {
+              const artboard = document.querySelector('.print-artboard-outer, [data-testid*="artboard"], [class*="artboard"], .preview-container') as HTMLElement;
+              resolve(artboard || document.body);
+            }, 100);
+          });
+        }
+        const artboard = document.querySelector('[class*="artboard"], [class*="preview-artboard"], .preview-container') as HTMLElement;
+        return artboard || document.body;
+      };
+      
+      await SequentialExporter.exportPagesSequentially(
+        pageData,
+        exportFilename || 'mango-menu',
+        'png',
+        getPageElement
+      );
+    } catch (error) {
+      console.error('PNG sequential export failed:', error);
+      alert('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setShowExportOverlay(false);
+    }
+  }, [isExporting, pageManager, previewSettings, exportFilename]);
+
+  const handleExportJPEGSequential = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setShowExportOverlay(true);
+    
+    try {
+      const pageData = pageManager.getExportData(previewSettings);
+      const getPageElement = (pageNumber: number) => {
+        // Navigate to page and return artboard element
+        if (pageManager.getCurrentPageNumber() !== pageNumber) {
+          pageManager.goToPage(pageNumber);
+          forcePageUpdate();
+          return new Promise<HTMLElement>((resolve) => {
+            setTimeout(() => {
+              const artboard = document.querySelector('.print-artboard-outer, [data-testid*="artboard"], [class*="artboard"], .preview-container') as HTMLElement;
+              resolve(artboard || document.body);
+            }, 100);
+          });
+        }
+        const artboard = document.querySelector('[class*="artboard"], [class*="preview-artboard"], .preview-container') as HTMLElement;
+        return artboard || document.body;
+      };
+      
+      await SequentialExporter.exportPagesSequentially(
+        pageData,
+        exportFilename || 'mango-menu',
+        'jpeg',
+        getPageElement
+      );
+    } catch (error) {
+      console.error('JPEG sequential export failed:', error);
+      alert('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setShowExportOverlay(false);
+    }
+  }, [isExporting, pageManager, previewSettings, exportFilename]);
+
+  // Helper function to generate CSV content for a specific page
+  const generateCSVContentForPage = useCallback((page: any, mode: MenuMode, state: any) => {
+    // Extract shelves from page data
+    const pageShelves = page.shelves || [];
+    
+    if (mode === MenuMode.BULK) {
+      // Generate bulk flower CSV
+      const header = ["Category", "Strain Name", "Grower/Brand", "THC %", "Class", "Last Jar", "Sold Out", "Original Shelf"];
+      const rows: string[][] = [];
+      
+      pageShelves.forEach((shelf: any) => {
+        shelf.strains?.forEach((strain: any) => {
+          rows.push([
+            shelf.name,
+            strain.name || "",
+            strain.grower || "",
+            strain.thc ? strain.thc.toString() : "",
+            strain.type ? APP_STRAIN_TYPE_TO_CSV_SUFFIX[strain.type] || strain.type : "",
+            strain.isLastJar ? "TRUE" : "FALSE",
+            strain.isSoldOut ? "TRUE" : "FALSE",
+            strain.originalShelf || ""
+          ].map(field => `"${String(field).replace(/"/g, '""')}"`));
+        });
+      });
+      
+      return [header.join(','), ...rows.map(row => row.join(','))].join('\r\n');
+    } else {
+      // Generate pre-packaged CSV
+      const header = ["Category", "Product Name", "Brand", "Price", "THC %", "Terpenes %", "Class", "Net Weight", "Low Stock", "Sold Out", "Notes", "Original Shelf"];
+      const rows: string[][] = [];
+      
+      pageShelves.forEach((shelf: any) => {
+        shelf.products?.forEach((product: any) => {
+          rows.push([
+            shelf.name,
+            product.name || "",
+            product.brand || "",
+            product.price ? product.price.toString() : "0",
+            product.thc ? product.thc.toString() : "",
+            product.terpenes ? product.terpenes.toString() : "",
+            product.type ? APP_STRAIN_TYPE_TO_CSV_SUFFIX[product.type] || product.type : "",
+            product.netWeight || "",
+            product.isLowStock ? "TRUE" : "FALSE",
+            product.isSoldOut ? "TRUE" : "FALSE",
+            product.notes || "",
+            product.originalShelf || ""
+          ].map(field => `"${String(field).replace(/"/g, '""')}"`));
+        });
+      });
+      
+      return [header.join(','), ...rows.map(row => row.join(','))].join('\r\n');
+    }
+  }, []);
+
+  // Multi-page CSV export handlers
+  const handleExportCSVBatch = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setShowExportOverlay(true);
+    
+    try {
+      const pageData = pageManager.getExportData(previewSettings);
+      const generateCSVForPage = (page: any) => {
+        return generateCSVContentForPage(page, menuMode, currentAppState);
+      };
+      
+      await ZipExporter.exportPagesAsCSVZip(
+        pageData,
+        exportFilename || 'mango-menu',
+        generateCSVForPage
+      );
+    } catch (error) {
+      console.error('CSV batch export failed:', error);
+      alert('CSV export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setShowExportOverlay(false);
+    }
+  }, [isExporting, pageManager, previewSettings, exportFilename, menuMode, currentAppState, generateCSVContentForPage]);
+
+  const handleExportCSVSequential = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setShowExportOverlay(true);
+    
+    try {
+      const pageData = pageManager.getExportData(previewSettings);
+      const generateCSVForPage = (page: any) => {
+        return generateCSVContentForPage(page, menuMode, currentAppState);
+      };
+      
+      await SequentialExporter.exportPagesSequentially(
+        pageData,
+        exportFilename || 'mango-menu',
+        'csv',
+        undefined, // No page element needed for CSV
+        generateCSVForPage
+      );
+    } catch (error) {
+      console.error('CSV sequential export failed:', error);
+      alert('CSV export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setShowExportOverlay(false);
+    }
+  }, [isExporting, pageManager, previewSettings, exportFilename, menuMode, currentAppState, generateCSVContentForPage]);
 
   const handleOpenExportModal = useCallback(() => {
     setShowUnifiedExportModal(true);
@@ -2381,6 +2774,132 @@ const AppContent: React.FC = () => {
     recordChange(() => {});
   }, [menuMode, bulkShelves, prePackagedShelves, recordChange]);
 
+  // Helper function to process CSV data into clean shelf structures
+  const processCSVIntoShelves = useCallback((data: any[], mapping: any, baseShelves: any[]) => {
+    const fieldToColumn: Record<string, string> = {};
+    Object.entries(mapping).forEach(([csvColumn, appField]) => {
+      fieldToColumn[appField as string] = csvColumn;
+    });
+
+    const resultShelves = baseShelves.map(shelf => ({ 
+      ...shelf, 
+      strains: [], 
+      products: [],
+      sortCriteria: null // Ensure no sorting is applied to imported shelves
+    }));
+    const shelfNameMap = new Map(baseShelves.map(s => [s.name.toLowerCase(), s.id]));
+
+    data.forEach((row, index) => {
+      try {
+        const shelfName = fieldToColumn.shelf ? row[fieldToColumn.shelf] : '';
+        const itemName = fieldToColumn.name ? row[fieldToColumn.name] : '';
+        
+        if (!shelfName || !itemName) return;
+
+        const targetShelfId = shelfNameMap.get(shelfName.toLowerCase());
+        const targetShelf = resultShelves.find(s => s.id === targetShelfId);
+        if (!targetShelf) return;
+
+        if (menuMode === MenuMode.BULK) {
+          // Create strain
+          const newStrain = {
+            id: crypto.randomUUID(),
+            name: itemName,
+            grower: fieldToColumn.grower ? row[fieldToColumn.grower] || '' : '',
+            thc: fieldToColumn.thc && row[fieldToColumn.thc] ? parseFloat(row[fieldToColumn.thc]) : null,
+            type: fieldToColumn.type ? (CSV_STRAIN_TYPE_MAP[row[fieldToColumn.type]?.toUpperCase()?.replace(/[\s-./]/g, '')] || StrainType.HYBRID) : StrainType.HYBRID,
+            isLastJar: fieldToColumn.lastJar ? ['true', 'yes', '1', 'lastjar', 'last jar'].includes(row[fieldToColumn.lastJar]?.toLowerCase()) : false,
+            isSoldOut: fieldToColumn.soldOut ? ['true', 'yes', '1', 'soldout', 'sold out', 'unavailable'].includes(row[fieldToColumn.soldOut]?.toLowerCase()) : false,
+            originalShelf: fieldToColumn.originalShelf ? row[fieldToColumn.originalShelf] || undefined : undefined
+          };
+          targetShelf.strains.push(newStrain);
+        } else {
+          // Create product
+          const newProduct = {
+            id: crypto.randomUUID(),
+            name: itemName,
+            brand: fieldToColumn.brand ? row[fieldToColumn.brand] || '' : '',
+            thc: fieldToColumn.thc && row[fieldToColumn.thc] ? parseFloat(row[fieldToColumn.thc]) : null,
+            terpenes: fieldToColumn.terpenes && row[fieldToColumn.terpenes] ? parseFloat(row[fieldToColumn.terpenes]) : null,
+            type: fieldToColumn.type ? (CSV_STRAIN_TYPE_MAP[row[fieldToColumn.type]?.toUpperCase()?.replace(/[\s-./]/g, '')] || StrainType.HYBRID) : StrainType.HYBRID,
+            price: fieldToColumn.price && row[fieldToColumn.price] ? parseFloat(row[fieldToColumn.price].replace(/[$,]/g, '')) : 0,
+            isLowStock: fieldToColumn.isLowStock ? ['true', 'yes', '1', 'lowstock', 'low stock'].includes(row[fieldToColumn.isLowStock]?.toLowerCase()) : false,
+            isSoldOut: fieldToColumn.soldOut ? ['true', 'yes', '1', 'soldout', 'sold out', 'unavailable'].includes(row[fieldToColumn.soldOut]?.toLowerCase()) : false,
+            notes: fieldToColumn.notes ? row[fieldToColumn.notes] || undefined : undefined,
+            originalShelf: fieldToColumn.originalShelf ? row[fieldToColumn.originalShelf] || undefined : undefined
+          };
+          targetShelf.products.push(newProduct);
+        }
+      } catch (error) {
+        console.warn(`Error processing row ${index + 2}:`, error);
+      }
+    });
+
+    return resultShelves;
+  }, [menuMode, currentAppState, fiftyPercentOffEnabled]);
+
+  // Multi-CSV import handler
+  const handleMultiCsvImport = useCallback((files: any[], shouldSplitIntoPages: boolean) => {
+    try {
+      if (shouldSplitIntoPages) {
+        // Create a separate page for each CSV file
+        files.forEach((fileData, index) => {
+          // Get fresh default shelves for this CSV
+          const defaultShelves = menuMode === MenuMode.BULK 
+            ? getDefaultShelves(currentAppState, fiftyPercentOffEnabled)
+            : getDefaultPrePackagedShelves(currentAppState);
+          
+          if (index === 0) {
+            // Use current page for first file
+            const currentPageNumber = pageManager.getCurrentPageNumber();
+            // Process CSV data into fresh shelves
+            const processedShelves = processCSVIntoShelves(fileData.data, fileData.mappingConfig, defaultShelves);
+            pageManager.updatePageShelves(currentPageNumber, processedShelves);
+            // Clear any sort criteria for this page to ensure natural order
+            pageManager.updatePageGlobalSort(currentPageNumber, null);
+          } else {
+            // Create new page for subsequent files  
+            const newPageNumber = pageManager.addPage();
+            // Process CSV data into fresh shelves for this page
+            const processedShelves = processCSVIntoShelves(fileData.data, fileData.mappingConfig, defaultShelves);
+            pageManager.updatePageShelves(newPageNumber, processedShelves);
+            // Clear any sort criteria for this page to ensure natural order
+            pageManager.updatePageGlobalSort(newPageNumber, null);
+            
+            // Update the global preview settings to reflect new page count
+            setPreviewSettings(prev => ({
+              ...prev,
+              pageCount: pageManager.getPageCount()
+            }));
+          }
+        });
+      } else {
+        // Flatten all CSV data into current page
+        // Combine all file data and import as single dataset
+        let allData: any[] = [];
+        files.forEach(fileData => {
+          allData = [...allData, ...fileData.data];
+        });
+        // Clear current page first, then import combined data
+        const currentPageNumber = pageManager.getCurrentPageNumber();
+        pageManager.updatePageShelves(currentPageNumber, []);
+        handleCsvImport(allData, files[0].mappingConfig);
+      }
+      
+      forcePageUpdate();
+      addToast({
+        message: `Successfully imported ${files.length} CSV file${files.length > 1 ? 's' : ''}`,
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Multi-CSV import failed:', error);
+      addToast({
+        message: 'Import failed. Please check your CSV files and try again.',
+        type: 'error'
+      });
+    }
+  }, [handleCsvImport, pageManager, setPreviewSettings, forcePageUpdate, addToast]);
+
   const handleCsvExport = useCallback((csvContent: string, columns: string[]) => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -2432,28 +2951,32 @@ const AppContent: React.FC = () => {
   }, [shelves, theme, fiftyPercentOffEnabled]);
 
   const processedShelves = useMemo(() => {
+    // Use page-specific shelves and sort criteria from PageManager
+    const currentPageNumber = pageManager.getCurrentPageNumber();
+    const currentPageShelves = shelves; // This comes from PageManager
+    
     if (menuMode === MenuMode.BULK) {
-      // Process bulk flower shelves with strain sorting
-      return bulkShelves.map(shelf => {
-        // If sortCriteria is explicitly null (from manual reordering), don't sort
-        const activeSortCriteria = shelf.sortCriteria === null ? null : (shelf.sortCriteria || globalSortCriteria);
+      // Process current page's bulk flower shelves with page-specific sorting
+      return currentPageShelves.map(shelf => {
+        // Get effective sort criteria for this shelf on current page
+        const activeSortCriteria = pageManager.getEffectiveShelfSort(currentPageNumber, shelf.id);
         return {
           ...shelf,
           strains: sortStrains(shelf.strains, activeSortCriteria, currentAppState) 
         };
       });
     } else {
-      // Process pre-packaged shelves with product sorting
-      return prePackagedShelves.map(shelf => {
-        // If sortCriteria is explicitly null (from manual reordering), don't sort
-        const activeSortCriteria = shelf.sortCriteria === null ? null : (shelf.sortCriteria || globalSortCriteria);
+      // Process current page's pre-packaged shelves with page-specific sorting
+      return currentPageShelves.map(shelf => {
+        // Get effective sort criteria for this shelf on current page
+        const activeSortCriteria = pageManager.getEffectiveShelfSort(currentPageNumber, shelf.id);
         return {
           ...shelf,
           products: sortPrePackagedProducts(shelf.products, activeSortCriteria, currentAppState) 
         };
       }) as unknown as Shelf[]; // Type assertion for backward compatibility
     }
-  }, [menuMode, bulkShelves, prePackagedShelves, globalSortCriteria, currentAppState]);
+  }, [shelves, menuMode, currentAppState, pageChangeCounter, pageManager]);
 
   // Update dynamic menus when shelves or theme changes
   useEffect(() => {
@@ -2874,6 +3397,8 @@ const AppContent: React.FC = () => {
         onUpdateGlobalSortCriteria={handleUpdateGlobalSortCriteria}
         theme={theme}
         menuMode={menuMode}
+        currentPageNumber={pageManager.getCurrentPageNumber()}
+        pageManager={pageManager}
       />
       <main ref={mainContainerRef} className={`flex flex-1 overflow-hidden pt-2 px-2 pb-2 ${
         theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
@@ -2958,9 +3483,9 @@ const AppContent: React.FC = () => {
             hasContentOverflow={hasContentOverflow}
             isOptimizing={autoFormatState?.isOptimizing || false}
             onAddPage={handleAddPage}
+            onDuplicatePage={handleDuplicatePage}
             onRemovePage={handleRemovePage}
             onGoToPage={handleGoToPage}
-            onToggleAutoPageBreaks={handleToggleAutoPageBreaks}
             isControlsDisabled={autoFormatState?.isOptimizing || false}
           />
         </div>
@@ -3017,8 +3542,10 @@ const AppContent: React.FC = () => {
           theme={theme}
           menuMode={menuMode}
           onImport={handleCsvImport}
+          onMultiImport={handleMultiCsvImport}
           onModeSwitch={handleMenuModeSwitch}
         />
+
         
         {/* Skipped Rows Modal */}
         {showSkippedModal && (
@@ -3228,6 +3755,13 @@ const AppContent: React.FC = () => {
           onExportJPEG={() => triggerImageExport('jpeg')}
           onExportCSV={handleExportCSV}
           isExporting={isExporting}
+          totalPages={pageManager.getPageCount()}
+          onExportPNGBatch={handleExportPNGBatch}
+          onExportJPEGBatch={handleExportJPEGBatch}
+          onExportCSVBatch={handleExportCSVBatch}
+          onExportPNGSequential={handleExportPNGSequential}
+          onExportJPEGSequential={handleExportJPEGSequential}
+          onExportCSVSequential={handleExportCSVSequential}
         />
         {!updateDismissed && (
           <UpdateNotification

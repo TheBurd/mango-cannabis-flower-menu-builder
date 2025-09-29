@@ -14,7 +14,6 @@ interface MultiPageArtboardContainerProps {
   onAddPage: () => void;
   onRemovePage: (pageNumber: number) => void;
   onGoToPage: (pageNumber: number) => void;
-  onToggleAutoPageBreaks: () => void;
 }
 
 export const MultiPageArtboardContainer = forwardRef<HTMLDivElement, MultiPageArtboardContainerProps>(
@@ -27,8 +26,7 @@ export const MultiPageArtboardContainer = forwardRef<HTMLDivElement, MultiPageAr
     onSettingsChange,
     onAddPage,
     onRemovePage,
-    onGoToPage,
-    onToggleAutoPageBreaks
+    onGoToPage
   }, ref) => {
     const [contentDistributor] = useState(() => new ContentDistributor(settings));
     
