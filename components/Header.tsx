@@ -3,7 +3,7 @@ import { SupportedStates, Theme, MenuMode } from '../types';
 import { MANGO_MAIN_ORANGE, MANGO_SUPPORT_ORANGE, STATE_THC_ICONS } from '../constants';
 import { CustomDropdown } from './common/CustomDropdown';
 import { ModeToggle } from './common/ModeToggle';
-import { SunIcon, MoonIcon, QuestionMarkCircleIcon } from './common/Icon';
+import { SunIcon, MoonIcon, QuestionMarkCircleIcon, MangoIcon } from './common/Icon';
 import { getLogoPath } from '../utils/assets';
 // Testing just the import without usage
 // import { HeaderTabs } from './HeaderTabs';
@@ -28,6 +28,8 @@ interface HeaderProps {
   onNewMenu?: () => void;
   onOpenCSV?: () => void;
   onAutoFormat?: () => void;
+  // Hamburger menu functionality
+  onShowProjectMenu?: () => void;
   onClearAll?: () => void;
   onGlobalSort?: (criteria: string) => void;
   // Additional enhanced menu props
@@ -79,6 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
   onAddStrain,
   onCheckUpdates,
   onJumpToShelf,
+  onShowProjectMenu,
   shelves,
   hasUnsavedWork,
   hasSoldOutItems,
@@ -163,19 +166,25 @@ export const Header: React.FC<HeaderProps> = ({
           style={{ background: `linear-gradient(90deg, ${MANGO_MAIN_ORANGE}, ${MANGO_SUPPORT_ORANGE})`}}
       >
       <div className="flex items-center space-x-4">
-        <img 
-          src={getLogoPath()} 
-          alt="Logo"
-          className="h-12 w-auto"
-          style={{ 
-            filter: 'brightness(0) invert(1)',
-            height: '2.5rem',
-            marginBottom: '0.5rem'
-          }}
-        />
-        <h1 className="text-3xl font-bold tracking-tight" style={{fontFamily: "'Poppins', sans-serif"}}>
-          {appName} v1.1.0
-        </h1>
+        <div className="flex items-center space-x-3">
+          {/* Hamburger Menu */}
+          {onShowProjectMenu && (
+            <button
+              onClick={onShowProjectMenu}
+              className="p-2 rounded-lg transition-colors hover:bg-white/10 text-white/80 hover:text-white"
+              title="Project menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
+          
+          <h1 className="text-3xl font-bold tracking-tight flex items-center" style={{fontFamily: "'Poppins', sans-serif"}}>
+            <MangoIcon className="w-10 h-10 mr-3 text-white" />
+            {appName} v1.1.1
+          </h1>
+        </div>
         <button
           onClick={onShowWhatsNew}
           className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 text-white/80 hover:text-white ${
@@ -185,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
             boxShadow: '0 0 15px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.1)',
             animation: 'subtle-glow 2s ease-in-out infinite alternate'
           } : undefined}
-                      title="See what's new in v1.1.0"
+                      title="See what's new in v1.1.1"
         >
           What's New
         </button>

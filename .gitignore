@@ -114,6 +114,15 @@ Thumbs.db
 Desktop.ini
 Icon?
 
+# Screenshots and temporary files
+Screenshots/
+*.png
+*.jpg
+*.jpeg
+**/Screenshots/
+**/Pictures/Screenshots/
+C:/Users/*/Pictures/Screenshots/
+
 # Windows specific
 $RECYCLE.BIN/
 

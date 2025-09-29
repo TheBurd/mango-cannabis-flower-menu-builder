@@ -64,6 +64,7 @@ import { WelcomeModal } from './components/WelcomeModal';
 import { WhatsNewModalTabs } from './components/WhatsNewModalTabs';
 import { CsvImportModal } from './components/CsvImportModal';
 import { CsvExportModal } from './components/CsvExportModal';
+import { HeaderMenuModal } from './components/HeaderMenuModal';
 import { UnifiedExportModal } from './components/UnifiedExportModal';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
@@ -91,6 +92,7 @@ import {
 import { getOverflowDrivenAutoFormat, AutoFormatState } from './utils/autoFormat';
 import { PageManager } from './utils/PageManager';
 import { ZipExporter, SequentialExporter } from './utils/ZipExporter';
+import { SessionManager, ProjectData, ProjectState } from './utils/SessionManager';
 
 
 
@@ -302,6 +304,23 @@ const AppContent: React.FC = () => {
   // Page manager for multi-page functionality - initialized before shelves useMemo
   const [pageManager] = useState(() => new PageManager());
   
+  // Session manager for project persistence and auto-save
+  const [sessionManager] = useState(() => new SessionManager());
+  
+  // Auto-save state
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(true);
+  
+  // Project state management
+  const [projectState, setProjectState] = useState<ProjectState>(() => ({
+    currentProjectPath: null,
+    currentProjectName: 'Untitled Project',
+    hasUnsavedChanges: false,
+    lastSaveTime: null,
+    lastAutoSaveTime: null,
+    isNewProject: true
+  }));
+  
   // Force re-render trigger for page changes
   const [pageChangeCounter, setPageChangeCounter] = useState(0);
   const forcePageUpdate = useCallback(() => {
@@ -336,9 +355,13 @@ const AppContent: React.FC = () => {
     // Update PageManager only - single source of truth
     pageManager.updatePageShelves(currentPageNumber, newShelves);
     
+    // Mark project as having unsaved changes
+    sessionManager.markDirty();
+    setProjectState(sessionManager.getProjectState());
+    
     // Force re-render to update UI
     forcePageUpdate();
-  }, [pageManager, shelves, forcePageUpdate]);
+  }, [pageManager, shelves, sessionManager, forcePageUpdate]);
   
   // Global default settings for new pages
   const [globalDefaultSettings] = useState<PreviewSettings>(INITIAL_PREVIEW_SETTINGS);
@@ -363,9 +386,13 @@ const AppContent: React.FC = () => {
     // Save settings to current page only
     pageManager.updatePageSettings(currentPageNumber, newSettings);
     
+    // Mark project as having unsaved changes
+    sessionManager.markDirty();
+    setProjectState(sessionManager.getProjectState());
+    
     // Force re-render to update UI controls
     forcePageUpdate();
-  }, [pageManager, globalDefaultSettings, forcePageUpdate]);
+  }, [pageManager, globalDefaultSettings, sessionManager, forcePageUpdate]);
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('mango-theme');
     return savedTheme === 'light' ? 'light' : 'dark';
@@ -397,9 +424,10 @@ const AppContent: React.FC = () => {
   const [showCsvImportModal, setShowCsvImportModal] = useState<boolean>(false);
   const [showCsvExportModal, setShowCsvExportModal] = useState<boolean>(false);
   const [showUnifiedExportModal, setShowUnifiedExportModal] = useState<boolean>(false);
+  const [showHeaderMenu, setShowHeaderMenu] = useState<boolean>(false);
   const [hasViewedWhatsNew, setHasViewedWhatsNew] = useState<boolean>(() => {
     const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
-    return viewedVersion === '1.0.2'; // Check if current version has been viewed
+    return viewedVersion === '1.1.1'; // Check if current version has been viewed
   });
   const [hasContentOverflow, setHasContentOverflow] = useState<boolean>(false);
   const [autoFormatState, setAutoFormatState] = useState<AutoFormatState | null>(null);
@@ -418,6 +446,61 @@ const AppContent: React.FC = () => {
     // Force re-render to show the initialized content
     forcePageUpdate();
   }, [menuMode, bulkShelves, prePackagedShelves, pageManager, globalDefaultSettings, forcePageUpdate]); // Re-run when data changes
+
+  // Auto-save effect - saves project data every 30 seconds
+  useEffect(() => {
+    if (!autoSaveEnabled) return;
+
+    const autoSaveInterval = setInterval(() => {
+      try {
+        const projectData = sessionManager.createProjectData(
+          pageManager,
+          previewSettings,
+          menuMode,
+          currentAppState,
+          theme,
+          'Auto-saved Project'
+        );
+        
+        sessionManager.autoSave(projectData);
+        setLastSaveTime(new Date());
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [autoSaveEnabled, sessionManager, pageManager, previewSettings, menuMode, currentAppState, theme]);
+
+  // Session recovery on app startup
+  useEffect(() => {
+    // Check for auto-saved session on startup
+    if (sessionManager.hasAutoSave()) {
+      const autoSaveInfo = sessionManager.getAutoSaveInfo();
+      if (autoSaveInfo && autoSaveInfo.hasData) {
+        // Show recovery notification
+        const shouldRecover = confirm(
+          `Auto-saved session found from ${new Date(autoSaveInfo.timestamp).toLocaleString()}.\n\n` +
+          'Would you like to recover your previous work?'
+        );
+        
+        if (shouldRecover) {
+          const recoveredData = sessionManager.loadAutoSave();
+          if (recoveredData) {
+            // Restore the session
+            restoreProjectData(recoveredData);
+            addToast({
+              message: 'Session recovered successfully',
+              type: 'success'
+            });
+          }
+        } else {
+          // User declined recovery, clear auto-save
+          sessionManager.clearAutoSave();
+        }
+      }
+    }
+  }, [sessionManager]); // Only run once on startup
 
   // DEPRECATED: Multi-page auto creation logic - disabled but preserved for future development
   useEffect(() => {
@@ -2126,6 +2209,314 @@ const AppContent: React.FC = () => {
     }
   }, [isExporting, pageManager, previewSettings, exportFilename, menuMode, currentAppState, generateCSVContentForPage]);
 
+  // Session management functions
+  const handleQuickSave = useCallback(() => {
+    try {
+      const projectData = sessionManager.createProjectData(
+        pageManager,
+        previewSettings,
+        menuMode,
+        currentAppState,
+        theme,
+        'Quick Save'
+      );
+      
+      sessionManager.autoSave(projectData);
+      setLastSaveTime(new Date());
+      
+      addToast({
+        message: 'Project saved successfully',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Quick save failed:', error);
+      addToast({
+        message: 'Save failed. Please try again.',
+        type: 'error'
+      });
+    }
+  }, [sessionManager, pageManager, previewSettings, menuMode, currentAppState, theme, addToast]);
+
+  const handleExportProject = useCallback(() => {
+    try {
+      const projectData = sessionManager.createProjectData(
+        pageManager,
+        previewSettings,
+        menuMode,
+        currentAppState,
+        theme,
+        exportFilename || 'Mango Menu Project'
+      );
+      
+      sessionManager.exportProjectJSON(projectData, `${exportFilename || 'mango-menu-project'}.json`);
+      
+      addToast({
+        message: 'Project exported successfully',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Project export failed:', error);
+      addToast({
+        message: 'Export failed. Please try again.',
+        type: 'error'
+      });
+    }
+  }, [sessionManager, pageManager, previewSettings, menuMode, currentAppState, theme, exportFilename, addToast]);
+
+  // Restore complete project data (defined early to avoid initialization order issues)
+  const restoreProjectData = useCallback((projectData: ProjectData) => {
+    try {
+      // Restore menu mode and state
+      if (projectData.metadata.menuMode !== menuMode) {
+        setMenuMode(projectData.metadata.menuMode);
+      }
+      if (projectData.metadata.currentState !== currentAppState) {
+        setCurrentAppState(projectData.metadata.currentState);
+      }
+      
+      // Restore theme
+      if (projectData.userPreferences?.theme && projectData.userPreferences.theme !== theme) {
+        setTheme(projectData.userPreferences.theme);
+      }
+      
+      // Restore pages to PageManager
+      pageManager.importPages(projectData.pages.map(page => ({
+        shelves: page.shelves,
+        settings: page.settings || undefined
+      })));
+      
+      // Restore preview settings
+      if (projectData.globalSettings) {
+        setPreviewSettings(projectData.globalSettings);
+      }
+      
+      // Force re-render to show restored content
+      forcePageUpdate();
+      
+      // Clear auto-save since we've loaded fresh content
+      sessionManager.clearAutoSave();
+      
+      console.log('Project data restored successfully');
+    } catch (error) {
+      console.error('Failed to restore project data:', error);
+      addToast({
+        message: 'Failed to restore session. Starting fresh.',
+        type: 'error'
+      });
+    }
+  }, [menuMode, currentAppState, theme, pageManager, setMenuMode, setCurrentAppState, setTheme, setPreviewSettings, forcePageUpdate, addToast]);
+
+  // Enhanced session management handlers
+  const handleSaveAs = useCallback(async () => {
+    try {
+      // Generate default project name
+      const defaultName = projectState.currentProjectName === 'Untitled Project' 
+        ? `${menuMode} Menu - ${new Date().toLocaleDateString()}`
+        : projectState.currentProjectName;
+
+      const projectData = sessionManager.createProjectData(
+        pageManager,
+        previewSettings,
+        menuMode,
+        currentAppState,
+        theme,
+        defaultName
+      );
+      
+      // Create JSON content
+      const exportData = {
+        version: '1.1.1',
+        exported: new Date().toISOString(),
+        project: projectData
+      };
+      const jsonString = JSON.stringify(exportData, null, 2);
+      
+      // Use File System Access API if available, otherwise use download fallback
+      if ('showSaveFilePicker' in window) {
+        // Modern browsers with File System Access API
+        try {
+          const fileHandle = await (window as any).showSaveFilePicker({
+            suggestedName: `${defaultName}.json`,
+            types: [{
+              description: 'JSON files',
+              accept: { 'application/json': ['.json'] }
+            }]
+          });
+          
+          const writable = await fileHandle.createWritable();
+          await writable.write(jsonString);
+          await writable.close();
+          
+          // Update project state with actual file name
+          sessionManager.setCurrentProject(fileHandle.name, defaultName);
+        } catch (error) {
+          if (error.name !== 'AbortError') {
+            throw error;
+          }
+          return; // User cancelled
+        }
+      } else {
+        // Fallback for older browsers - use simple download
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${defaultName}.json`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Update project state
+        sessionManager.setCurrentProject(`${defaultName}.json`, defaultName);
+      }
+      
+      // Update project state after successful save
+      sessionManager.markClean();
+      sessionManager.addToRecentProjects(projectData, `${defaultName}.json`);
+      
+      setProjectState(sessionManager.getProjectState());
+      setLastSaveTime(new Date());
+      
+      addToast({
+        message: `Project saved as "${defaultName}"`,
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Save As failed:', error);
+      addToast({
+        message: 'Save As failed. Please try again.',
+        type: 'error'
+      });
+    }
+  }, [sessionManager, pageManager, previewSettings, menuMode, currentAppState, theme, projectState, addToast]);
+
+  const handleLoadProject = useCallback(() => {
+    // Create file input for loading JSON projects
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const jsonString = event.target?.result as string;
+          const projectData = sessionManager.importProjectJSON(jsonString);
+          
+          if (projectData) {
+            // Restore the loaded project
+            restoreProjectData(projectData);
+            
+            // Update project state
+            sessionManager.setCurrentProject(file.name, projectData.metadata.name);
+            sessionManager.markClean();
+            sessionManager.addToRecentProjects(projectData, file.name);
+            
+            // Clear auto-save since we've loaded a new project
+            sessionManager.clearAutoSave();
+            
+            setProjectState(sessionManager.getProjectState());
+            
+            addToast({
+              message: `Project "${projectData.metadata.name}" loaded successfully`,
+              type: 'success'
+            });
+          } else {
+            throw new Error('Invalid project file');
+          }
+        } catch (error) {
+          console.error('Load project failed:', error);
+          addToast({
+            message: 'Failed to load project file. Please check the file format.',
+            type: 'error'
+          });
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }, [sessionManager, restoreProjectData, addToast]);
+
+  const handleLoadRecentProject = useCallback((projectPath: string, projectName: string) => {
+    try {
+      // Load project data instantly from stored recent projects data
+      const projectData = sessionManager.loadRecentProject(projectPath);
+      
+      if (projectData) {
+        // Restore the project data
+        restoreProjectData(projectData);
+        
+        // Update project state
+        sessionManager.setCurrentProject(projectPath, projectName);
+        sessionManager.markClean();
+        
+        // Clear auto-save since we've loaded a recent project
+        sessionManager.clearAutoSave();
+        
+        setProjectState(sessionManager.getProjectState());
+        
+        addToast({
+          message: `Project "${projectName}" loaded successfully`,
+          type: 'success'
+        });
+      } else {
+        throw new Error('Project data not found');
+      }
+    } catch (error) {
+      console.error('Load recent project failed:', error);
+      
+      // Remove broken project from recent projects
+      sessionManager.removeFromRecentProjects(projectPath);
+      
+      addToast({
+        message: `Failed to load "${projectName}". Project removed from recent list.`,
+        type: 'error'
+      });
+    }
+  }, [sessionManager, restoreProjectData, addToast]);
+
+  const handleQuickSaveUpdated = useCallback(() => {
+    if (projectState.isNewProject) {
+      // If new project, act like Save As
+      handleSaveAs();
+    } else {
+      // Save to current project file
+      try {
+        const projectData = sessionManager.createProjectData(
+          pageManager,
+          previewSettings,
+          menuMode,
+          currentAppState,
+          theme,
+          projectState.currentProjectName
+        );
+        
+        // For now, we'll update the "file" (in reality, just update recent projects)
+        sessionManager.addToRecentProjects(projectData, projectState.currentProjectPath);
+        sessionManager.markClean();
+        
+        setProjectState(sessionManager.getProjectState());
+        setLastSaveTime(new Date());
+        
+        addToast({
+          message: 'Project saved',
+          type: 'success'
+        });
+      } catch (error) {
+        console.error('Quick save failed:', error);
+        addToast({
+          message: 'Save failed. Please try again.',
+          type: 'error'
+        });
+      }
+    }
+  }, [projectState, sessionManager, pageManager, previewSettings, menuMode, currentAppState, theme, handleSaveAs, addToast]);
+
+
   const handleOpenExportModal = useCallback(() => {
     setShowUnifiedExportModal(true);
   }, []);
@@ -2216,6 +2607,10 @@ const AppContent: React.FC = () => {
 
   const handleImportCSVRequest = useCallback(() => {
     setShowCsvImportModal(true);
+  }, []);
+
+  const handleShowProjectMenu = useCallback(() => {
+    setShowHeaderMenu(true);
   }, []);
 
   const handleNewMenu = useCallback(() => {
@@ -2771,6 +3166,10 @@ const AppContent: React.FC = () => {
     }
 
     setShowCsvImportModal(false);
+    
+    // Clear auto-save since we've imported new content
+    sessionManager.clearAutoSave();
+    
     recordChange(() => {});
   }, [menuMode, bulkShelves, prePackagedShelves, recordChange]);
 
@@ -2885,6 +3284,9 @@ const AppContent: React.FC = () => {
         pageManager.updatePageShelves(currentPageNumber, []);
         handleCsvImport(allData, files[0].mappingConfig);
       }
+      
+      // Clear auto-save since we've imported new content
+      sessionManager.clearAutoSave();
       
       forcePageUpdate();
       addToast({
@@ -3212,7 +3614,7 @@ const AppContent: React.FC = () => {
           break;
 
         case 'show-about':
-          alert('🥭 Mango Cannabis Flower Menu Builder v1.1.0\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
+          alert('🥭 Mango Cannabis Flower Menu Builder v1.1.1\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
           break;
 
         case 'reset-welcome':
@@ -3384,6 +3786,7 @@ const AppContent: React.FC = () => {
         onResetZoom={handleResetZoom}
         onFitToWindow={handleFitToWindow}
         onResetAppData={handleResetAppData}
+        onShowProjectMenu={handleShowProjectMenu}
       />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}
@@ -3399,6 +3802,12 @@ const AppContent: React.FC = () => {
         menuMode={menuMode}
         currentPageNumber={pageManager.getCurrentPageNumber()}
         pageManager={pageManager}
+        onQuickSave={handleQuickSaveUpdated}
+        onLoadProject={handleLoadProject}
+        onSaveAs={handleSaveAs}
+        lastSaveTime={lastSaveTime}
+        hasUnsavedChanges={projectState.hasUnsavedChanges}
+        isNewProject={projectState.isNewProject}
       />
       <main ref={mainContainerRef} className={`flex flex-1 overflow-hidden pt-2 px-2 pb-2 ${
         theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
@@ -3763,6 +4172,33 @@ const AppContent: React.FC = () => {
           onExportJPEGSequential={handleExportJPEGSequential}
           onExportCSVSequential={handleExportCSVSequential}
         />
+
+        <HeaderMenuModal
+          isOpen={showHeaderMenu}
+          onClose={() => setShowHeaderMenu(false)}
+          theme={theme}
+          projectState={projectState}
+          recentProjects={sessionManager.getRecentProjects()}
+          autoSaveAvailable={sessionManager.hasAutoSave()}
+          onQuickSave={handleQuickSaveUpdated}
+          onSaveAs={handleSaveAs}
+          onLoadProject={handleLoadProject}
+          onLoadRecentProject={handleLoadRecentProject}
+          onExportProject={handleExportProject}
+          onRecoverAutoSave={() => {
+            const recoveredData = sessionManager.loadAutoSave();
+            if (recoveredData) {
+              restoreProjectData(recoveredData);
+              setShowHeaderMenu(false);
+            }
+          }}
+          onExport={handleOpenExportModal}
+          onImportCSV={handleImportCSVRequest}
+          currentState={currentAppState}
+          menuMode={menuMode}
+          lastSaveTime={lastSaveTime}
+        />
+
         {!updateDismissed && (
           <UpdateNotification
             onUpdateDismissed={handleUpdateDismissed}

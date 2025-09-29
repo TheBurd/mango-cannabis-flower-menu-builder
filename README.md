@@ -1,39 +1,36 @@
-# 🥭 Mango Cannabis Flower Menu Builder
+# Mango Cannabis Flower Menu Builder
 
-> **Professional flower menu creation tool for Mango Cannabis Management team**
+**Professional multi-page menu creation tool for cannabis dispensaries**
 
-Create beautiful, compliant flower menus for in-store display and inventory logging across Oklahoma, Michigan, New Mexico, and New York locations.
+Create professional, compliant flower menus for in-store display and inventory management across Oklahoma, Michigan, New Mexico, and New York locations. Features multi-page document management, professional project saving, and team collaboration capabilities.
 
 ---
 
-## 📥 **Download & Install** (Start Here!)
+## Download & Install
 
-### **Step 1: Choose Your Platform**
+### Choose Your Platform
 1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
-2. Find the latest version (v1.1.0)
+2. Find the latest version (v1.1.1)
 3. Choose your operating system below:
 
 ---
 
-## 🪟 **Windows Installation**
+## Windows Installation
 
-#### **🎯 Recommended: Full Installer**
-- **`Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.0.2-x64.exe`** *(~81 MB)*
-- **Best choice for most users** - Creates Start menu shortcuts, handles updates automatically
-- Just double-click to install, then launch from Start menu
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.1.0-x64.exe)
+#### Recommended: Full Installer
+- `Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.1.1-x64.exe`
+- Best choice for most users - Creates Start menu shortcuts, handles updates automatically
+- Double-click to install, then launch from Start menu
 
-#### **⚡ Alternative: Portable App**
-- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.exe`** *(~81 MB)*
-- **No installation required** - Just download and run directly
-- Good for testing or if you can't install software on your computer
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.0-x64.exe)
+#### Alternative: Portable App
+- `Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.1-x64.exe`
+- No installation required - Download and run directly
+- Good for testing or if you can't install software
 
-#### **📦 ZIP Archive**
-- **`Mango-Cannabis-Flower-Menu-Builder-WIN-1.0.2-x64.zip`** *(~110 MB)*
+#### ZIP Archive
+- `Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.1-x64.zip`
 - Contains the portable app in a compressed archive
-- Extract and run the `.exe` file inside
-- [Download Link](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases/download/v1.1.0/Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.0-x64.zip)
+- Extract and run the .exe file inside
 
 **Installation Steps:**
 - **Installer**: Double-click the Setup file → Follow prompts → Launch from Start menu
@@ -138,18 +135,26 @@ Create beautiful, compliant flower menus for in-store display and inventory logg
 
 ---
 
-## 🆕 **What's New in v1.1.0** - MASSIVE FEATURE RELEASE!
+## What's New in v1.1.1
 
-### **📦 Complete Pre-Packaged Menu System**
-Entire parallel menu system designed specifically for pre-packaged cannabis products
+### Multi-Page Menu System
+Create unlimited independent menu pages. Each page maintains its own content, settings, and sorting preferences.
 
-- Weight-Based Organization: Categorization by 3.5g (Eighths), 7g (Quarters), 14g (Half), 28g (Ounces)
-- Table Layout: Multi-column product tables with responsive design and visual hierarchy
-- Product Management: Brand emphasis, low stock indicators, terpene percentages, net weight specifications
-- Zoom & Pan Canvas: Identical navigation to Bulk mode with mouse controls and precision positioning
-- Auto-Format Integration: Full optimization support for tabular layouts with precision tolerance
+- **Page Management**: Add fresh pages or duplicate existing ones
+- **Independent Content**: Each page works like a separate document
+- **Page Navigation**: Navigate between pages using controls in bottom-right corner
+- **Page-Specific Actions**: All toolbar functions work on current page only
 
-### **🏗️ Weight-Based Organization System**
+### Professional Project Management
+Microsoft Word-style project management with enterprise-grade features.
+
+- **Save System**: Save, Load, and Save As functionality
+- **Auto-Save**: Automatic saving every 30 seconds
+- **Recent Projects**: Quick access to previous work via hamburger menu
+- **Session Recovery**: Restore work after unexpected closures
+- **Project Sharing**: Export/import complete projects as JSON files
+
+### Advanced Import & Export
 Menu organization engine with multiple modes and grouping options
 
 - Weight Categories: Automatic organization by standard cannabis weights with visual headers

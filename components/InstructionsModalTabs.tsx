@@ -2,6 +2,7 @@ import React, { useCallback, useState, useRef } from 'react';
 import { Theme, MenuMode, SupportedStates } from '../types';
 import { TabContainer, TabItem } from './common/TabContainer';
 import { FeedbackPopup } from './FeedbackPopup';
+import { HamburgerMenuIcon } from './common/Icon';
 
 interface InstructionsModalTabsProps {
   isOpen: boolean;
@@ -53,14 +54,15 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
         <div className={`p-4 rounded-lg ${
           theme === 'dark' ? 'bg-orange-900/20 border border-orange-700' : 'bg-orange-50 border border-orange-200'
         }`}>
-          <h3 className="font-semibold mb-3 text-orange-600">NEW in v1.1.0:</h3>
+          <h3 className="font-semibold mb-3 text-orange-600">NEW in v1.1.1:</h3>
           <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            <li>✨ Pre-Packaged mode now available for all states</li>
-            <li>✨ Dynamic scroll overlay with performance monitoring</li>
-            <li>✨ Enhanced CSV export modal with better layout</li>
-            <li>✨ Improved strain/product reordering with up/down arrows</li>
-            <li>✨ Real-time performance metrics and tooltips</li>
-            <li>✨ Smart performance optimization based on menu size</li>
+            <li>• Create unlimited menu pages - each page works independently</li>
+            <li>• Professional Save/Load system like Microsoft Word</li>
+            <li>• Auto-save every 30 seconds protects your work automatically</li>
+            <li>• Import multiple CSV files and split them into separate pages</li>
+            <li>• Export with custom file naming and batch options</li>
+            <li>• Hamburger menu for quick access to project functions</li>
+            <li>• Recent projects list for fast access to previous work</li>
           </ul>
         </div>
 
@@ -219,9 +221,35 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
         </div>
 
         <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-green-900/20 border border-green-700' : 'bg-green-50 border border-green-200'
+        }`}>
+          <h3 className="font-semibold mb-3 text-green-600">🆕 Multi-Page Features:</h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• <strong>Create Pages:</strong> Green + button adds empty pages</li>
+            <li>• <strong>Duplicate Pages:</strong> Blue duplicate button copies current page</li>
+            <li>• <strong>Page Navigation:</strong> Use arrows in bottom-right corner</li>
+            <li>• <strong>Multi-CSV Import:</strong> Upload multiple files to create separate pages</li>
+            <li>• <strong>Advanced Export:</strong> Export all pages as ZIP or individual files</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-purple-900/20 border border-purple-700' : 'bg-purple-50 border border-purple-200'
+        }`}>
+          <h3 className="font-semibold mb-3 text-purple-600">💾 Project Management:</h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• <strong>Hamburger Menu:</strong> Click the <HamburgerMenuIcon className="inline w-4 h-4 mx-1" /> icon next to the logo</li>
+            <li>• <strong>Auto-Save:</strong> Your work is saved every 30 seconds automatically</li>
+            <li>• <strong>Save As:</strong> Create new project files (.json format)</li>
+            <li>• <strong>Load:</strong> Open existing project files</li>
+            <li>• <strong>Recent Projects:</strong> Quick access to recent work</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
           theme === 'dark' ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'
         }`}>
-          <h3 className="font-semibold mb-3 text-blue-600">🆕 Import Wizard Process:</h3>
+          <h3 className="font-semibold mb-3 text-blue-600">📋 Import Process:</h3>
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
               <span className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs">1</span>
@@ -563,7 +591,7 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
               <div className={`text-sm ${
                 theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
               }`}>
-                🥭 Mango Cannabis Flower Menu Builder v1.1.0
+                🥭 Mango Cannabis Flower Menu Builder v1.1.1
               </div>
               <button
                 ref={feedbackButtonRef}

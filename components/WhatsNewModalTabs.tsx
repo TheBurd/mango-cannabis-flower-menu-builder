@@ -2,6 +2,7 @@ import React, { useCallback, useState, useRef } from 'react';
 import { Theme } from '../types';
 import { TabContainer, TabItem } from './common/TabContainer';
 import { FeedbackPopup } from './FeedbackPopup';
+import { HamburgerMenuIcon } from './common/Icon';
 
 interface WhatsNewModalTabsProps {
   isOpen: boolean;
@@ -40,9 +41,9 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
     }`}>
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">🎉 What's New in v1.1.0</h2>
+          <h2 className="text-2xl font-bold mb-2">What's New in v1.1.1</h2>
           <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-            Complete Pre-Packaged Menu System, Enhanced CSV Workflows & Improved UX
+            Multi-Page Menus, Professional Project Management & Team Collaboration
           </p>
         </div>
 
@@ -51,11 +52,11 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             theme === 'dark' ? 'bg-orange-900/20 border border-orange-700' : 'bg-orange-50 border border-orange-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">📦</span>
-              <h3 className="font-semibold text-orange-600">Pre-Packaged System</h3>
+              <span className="text-2xl">📄</span>
+              <h3 className="font-semibold text-orange-600">Multi-Page Menus</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Complete parallel menu system for pre-packaged products with weight-based organization (3.5g, 7g, 14g, 28g).
+              Create unlimited menu pages with independent content and settings. Each page works like a separate document.
             </p>
           </div>
 
@@ -63,11 +64,11 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             theme === 'dark' ? 'bg-purple-900/20 border border-purple-700' : 'bg-purple-50 border border-purple-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🏗️</span>
-              <h3 className="font-semibold text-purple-600">Weight Organization</h3>
+              <span className="text-2xl">💾</span>
+              <h3 className="font-semibold text-purple-600">Professional Saving</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Weight categorization with brand grouping, product separation, and visual hierarchy.
+              Save, Load, and Save As buttons work like Microsoft Word. Auto-save every 30 seconds protects your work.
             </p>
           </div>
 
@@ -75,11 +76,11 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             theme === 'dark' ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">📋</span>
-              <h3 className="font-semibold text-blue-600">Advanced CSV System</h3>
+              <span className="text-2xl">🕐</span>
+              <h3 className="font-semibold text-blue-600">Recent Projects</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Complete rebuild: 4-stage wizard, smart field mapping, real-time validation, and enhanced export.
+              Quick access to your recent work. Click the hamburger menu <HamburgerMenuIcon className="inline w-4 h-4 mx-1" /> next to the logo, then go to the Recent tab to see your recent projects.
             </p>
           </div>
 
@@ -87,11 +88,11 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             theme === 'dark' ? 'bg-green-900/20 border border-green-700' : 'bg-green-50 border border-green-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🔔</span>
-              <h3 className="font-semibold text-green-600">Toast Notifications</h3>
+              <span className="text-2xl">📊</span>
+              <h3 className="font-semibold text-green-600">Smart CSV Import</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Notifications with stacking animations, action buttons, and theming.
+              Upload multiple CSV files at once. Choose to split into separate pages or combine into one page.
             </p>
           </div>
 
@@ -99,11 +100,11 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             theme === 'dark' ? 'bg-indigo-900/20 border border-indigo-700' : 'bg-indigo-50 border border-indigo-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">❓</span>
-              <h3 className="font-semibold text-indigo-600">Smart Help System</h3>
+              <span className="text-2xl">📁</span>
+              <h3 className="font-semibold text-indigo-600">Advanced Export</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Context-aware tooltips with mode-sensitive content, visual examples, and auto-positioning.
+              Export all pages as individual files, ZIP archives, or custom-named batches. Works for PNG, JPEG, and CSV.
             </p>
           </div>
 
@@ -111,11 +112,11 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             theme === 'dark' ? 'bg-pink-900/20 border border-pink-700' : 'bg-pink-50 border border-pink-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">📑</span>
-              <h3 className="font-semibold text-pink-600">Tab Navigation</h3>
+              <span className="text-2xl">🔧</span>
+              <h3 className="font-semibold text-pink-600">Better Dropdowns</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Complete modal overhaul with tab-based organization, smooth animations, and keyboard navigation.
+              Fixed strain type dropdowns that were getting stuck behind other items. Now they always appear on top.
             </p>
           </div>
 
@@ -123,11 +124,11 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             theme === 'dark' ? 'bg-teal-900/20 border border-teal-700' : 'bg-teal-50 border border-teal-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🔄</span>
-              <h3 className="font-semibold text-teal-600">Smart Reordering</h3>
+              <span className="text-2xl">🍔</span>
+              <h3 className="font-semibold text-teal-600">Hamburger Menu</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Simple up/down arrows replace drag & drop. No more duplication bugs - just click to move items up or down in both Bulk and Pre-Packaged modes.
+              Click the hamburger menu <HamburgerMenuIcon className="inline w-4 h-4 mx-1" /> next to the logo for quick access to save, load, recent projects, and export functions.
             </p>
           </div>
 
@@ -135,35 +136,11 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
             theme === 'dark' ? 'bg-amber-900/20 border border-amber-700' : 'bg-amber-50 border border-amber-300'
           }`}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🧭</span>
-              <h3 className="font-semibold text-amber-600">Scroll Navigator</h3>
+              <span className="text-2xl">🎯</span>
+              <h3 className="font-semibold text-amber-600">Page-Specific Actions</h3>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Smart overlay shows magnified strain names while scrolling. Includes shelf headers with visual breakpoints for easy navigation through large menus.
-            </p>
-          </div>
-
-          <div className={`p-4 rounded-lg ${
-            theme === 'dark' ? 'bg-yellow-900/20 border border-yellow-700' : 'bg-yellow-50 border border-yellow-300'
-          }`}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🗽</span>
-              <h3 className="font-semibold text-yellow-600">New York Support</h3>
-            </div>
-            <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Complete New York state support with yellow triangular THC symbol, Pre-Packaged mode specialization, and regulatory compliance features.
-            </p>
-          </div>
-
-          <div className={`p-4 rounded-lg ${
-            theme === 'dark' ? 'bg-red-900/20 border border-red-700' : 'bg-red-50 border border-red-300'
-          }`}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🚀</span>
-              <h3 className="font-semibold text-red-600">Performance Mode</h3>
-            </div>
-            <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              70% faster theme transitions for lower-spec PCs. Optimized with React.memo, CSS variables, and minimized re-renders for smooth 60fps operation.
+              All toolbar actions (Clear All, Sort, etc.) now work on the current page only. Each page maintains its own independent state.
             </p>
           </div>
         </div>
@@ -465,6 +442,21 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
         </div>
 
         <div className={`p-4 rounded-lg ${
+          theme === 'dark' ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'
+        }`}>
+          <h3 className="font-semibold mb-2">v1.1.0 - Complete Pre-Packaged System</h3>
+          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <li>• Complete pre-packaged menu system with weight categories</li>
+            <li>• Enhanced CSV import with 4-stage wizard and smart mapping</li>
+            <li>• New York state support with regulatory compliance</li>
+            <li>• Toast notification system with animations</li>
+            <li>• Smart reordering with up/down arrows</li>
+            <li>• Advanced scroll navigation overlay</li>
+            <li>• Performance optimizations for large menus</li>
+          </ul>
+        </div>
+
+        <div className={`p-4 rounded-lg ${
           theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
         }`}>
           <h3 className="font-semibold mb-2">v1.0.3 - Auto-Format & Enhanced Features</h3>
@@ -505,7 +497,7 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
   const tabs: TabItem[] = [
     {
       id: 'highlights',
-      label: 'v1.1.0 Highlights',
+      label: 'v1.1.1 Highlights',
       icon: <span className="text-lg">🎉</span>,
       content: <HighlightsTab />
     },
@@ -542,7 +534,7 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
           <h1 className="text-xl font-semibold">
-            What's New in v1.1.0
+            What's New in v1.1.1
           </h1>
           <button
             onClick={onClose}
@@ -575,7 +567,7 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
               <div className={`text-sm ${
                 theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
               }`}>
-                🥭 Flower Menu Builder v1.1.0
+                🥭 Flower Menu Builder v1.1.1
               </div>
               <button
                 ref={feedbackButtonRef}
