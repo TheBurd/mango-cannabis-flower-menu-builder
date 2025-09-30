@@ -29,7 +29,7 @@ export const HeaderTabsDebug: React.FC<HeaderTabsDebugProps> = ({
           <span className={`text-sm font-medium ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
-            Mango Cannabis Menu Builder v1.1.0 - DEBUG MODE
+            Mango Cannabis Menu Builder v1.1.1 - DEBUG MODE
           </span>
           <span className={`text-xs px-2 py-0.5 rounded ${
             theme === 'dark' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-800'

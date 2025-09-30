@@ -30,6 +30,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke('read-file', filePath);
   },
   
+  // Show save dialog and write file
+  showSaveDialog: (options) => {
+    return ipcRenderer.invoke('show-save-dialog', options);
+  },
+  
+  // Show open dialog
+  showOpenDialog: (options) => {
+    return ipcRenderer.invoke('show-open-dialog', options);
+  },
+  
+  // Write file to disk
+  writeFile: (filePath, content) => {
+    return ipcRenderer.invoke('write-file', filePath, content);
+  },
+  
+  // Read file from disk
+  readFileContent: (filePath) => {
+    return ipcRenderer.invoke('read-file-content', filePath);
+  },
+  
   // Update dynamic menu items (shelves for Add Strain and Jump to Shelf)
   updateDynamicMenus: (menuData) => {
     return ipcRenderer.invoke('update-dynamic-menus', menuData);

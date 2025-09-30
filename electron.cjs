@@ -62,6 +62,8 @@ function createWindow() {
   } else {
     const indexPath = path.join(__dirname, 'dist/index.html');
     console.log('📁 Loading file:', indexPath);
+    // Disable cache for production to ensure latest changes are loaded
+    mainWindow.webContents.session.clearCache();
     mainWindow.loadFile(indexPath);
   }
 
@@ -450,6 +452,66 @@ ipcMain.handle('read-file', async (event, filePath) => {
     return data;
   } catch (error) {
     console.error('Error reading file:', error);
+    throw error;
+  }
+});
+
+// Show save dialog
+ipcMain.handle('show-save-dialog', async (event, options) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: options.title || 'Save Project',
+      defaultPath: options.suggestedName || 'project.json',
+      filters: options.filters || [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+    return result;
+  } catch (error) {
+    console.error('Error showing save dialog:', error);
+    throw error;
+  }
+});
+
+// Show open dialog
+ipcMain.handle('show-open-dialog', async (event, options) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: options.title || 'Open Project',
+      filters: options.filters || [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    });
+    return result;
+  } catch (error) {
+    console.error('Error showing open dialog:', error);
+    throw error;
+  }
+});
+
+// Write file to disk
+ipcMain.handle('write-file', async (event, filePath, content) => {
+  try {
+    const fs = require('fs');
+    fs.writeFileSync(filePath, content, 'utf8');
+    return { success: true };
+  } catch (error) {
+    console.error('Error writing file:', error);
+    throw error;
+  }
+});
+
+// Read file content from disk
+ipcMain.handle('read-file-content', async (event, filePath) => {
+  try {
+    const fs = require('fs');
+    const data = fs.readFileSync(filePath, 'utf8');
+    return data;
+  } catch (error) {
+    console.error('Error reading file content:', error);
     throw error;
   }
 });

@@ -462,8 +462,11 @@ const AppContent: React.FC = () => {
           'Auto-saved Project'
         );
         
-        sessionManager.autoSave(projectData);
-        setLastSaveTime(new Date());
+        // Only auto-save if the project has actual content (strains/products)
+        if (projectData.metadata.totalItems > 0) {
+          sessionManager.autoSave(projectData);
+          setLastSaveTime(new Date());
+        }
       } catch (error) {
         console.error('Auto-save failed:', error);
       }
@@ -1200,38 +1203,35 @@ const AppContent: React.FC = () => {
   // Generic item update handler that works for both modes
   const handleUpdateItem = useCallback((shelfId: string, itemId: string, updatedItem: Partial<Strain> | Partial<PrePackagedProduct>) => {
     // Input changes should be immediate and not use recordChange to avoid disrupting input flow
-    if (menuMode === MenuMode.BULK) {
-      // Update strain in bulk shelf
-      setBulkShelves(prevShelves =>
-        prevShelves.map(shelf =>
-          shelf.id === shelfId
-            ? {
-                ...shelf,
-                strains: shelf.strains.map(strain =>
-                  strain.id === itemId ? { ...strain, ...updatedItem } : strain
-                ),
-                sortCriteria: null // Reset sort criteria when updating strain
-              }
-            : shelf
-        )
-      );
-    } else {
-      // Update product in pre-packaged shelf
-      setPrePackagedShelves(prevShelves =>
-        prevShelves.map(shelf =>
-          shelf.id === shelfId
-            ? {
-                ...shelf,
-                products: shelf.products.map(product =>
-                  product.id === itemId ? { ...product, ...updatedItem } : product
-                ),
-                sortCriteria: null // Reset sort criteria when updating product
-              }
-            : shelf
-        )
-      );
-    }
-  }, [menuMode]);
+    // Use setShelves (PageManager) to persist changes properly
+    setShelves(prevShelves =>
+      prevShelves.map(shelf => {
+        if (shelf.id !== shelfId) return shelf;
+        
+        if (menuMode === MenuMode.BULK) {
+          return {
+            ...shelf,
+            strains: (shelf as Shelf).strains.map(strain =>
+              strain.id === itemId ? { ...strain, ...updatedItem } : strain
+            ),
+            sortCriteria: null // Reset sort criteria when updating strain
+          };
+        } else {
+          return {
+            ...shelf,
+            products: (shelf as PrePackagedShelf).products.map(product =>
+              product.id === itemId ? { ...product, ...updatedItem } : product
+            ),
+            sortCriteria: null // Reset sort criteria when updating product
+          };
+        }
+      })
+    );
+    
+    // Mark project as having unsaved changes
+    sessionManager.markDirty();
+    setProjectState(sessionManager.getProjectState());
+  }, [menuMode, sessionManager, setShelves]);
 
   // Backward compatibility alias for existing code
   const handleUpdateStrain = useCallback((shelfId: string, strainId: string, updatedStrain: Partial<Strain>) => {
@@ -2331,8 +2331,30 @@ const AppContent: React.FC = () => {
       };
       const jsonString = JSON.stringify(exportData, null, 2);
       
-      // Use File System Access API if available, otherwise use download fallback
-      if ('showSaveFilePicker' in window) {
+      // Use Electron dialog if available, otherwise use browser API
+      if (window.electronAPI?.showSaveDialog) {
+        // Electron - use native save dialog
+        try {
+          const result = await window.electronAPI.showSaveDialog({
+            title: 'Save Project',
+            suggestedName: `${defaultName}.json`,
+            filters: [
+              { name: 'JSON Files', extensions: ['json'] },
+              { name: 'All Files', extensions: ['*'] }
+            ]
+          });
+          
+          if (result.canceled) return; // User cancelled
+          
+          await window.electronAPI.writeFile(result.filePath, jsonString);
+          
+          // Update project state with actual file name
+          const fileName = result.filePath.split(/[\\\/]/).pop() || `${defaultName}.json`;
+          sessionManager.setCurrentProject(result.filePath, defaultName);
+        } catch (error) {
+          throw error;
+        }
+      } else if ('showSaveFilePicker' in window) {
         // Modern browsers with File System Access API
         try {
           const fileHandle = await (window as any).showSaveFilePicker({
@@ -2392,53 +2414,102 @@ const AppContent: React.FC = () => {
     }
   }, [sessionManager, pageManager, previewSettings, menuMode, currentAppState, theme, projectState, addToast]);
 
-  const handleLoadProject = useCallback(() => {
-    // Create file input for loading JSON projects
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const jsonString = event.target?.result as string;
-          const projectData = sessionManager.importProjectJSON(jsonString);
+  const handleLoadProject = useCallback(async () => {
+    // Use Electron dialog if available, otherwise use browser file input
+    if (window.electronAPI?.showOpenDialog) {
+      // Electron - use native open dialog
+      try {
+        const result = await window.electronAPI.showOpenDialog({
+          title: 'Open Project',
+          filters: [
+            { name: 'JSON Files', extensions: ['json'] },
+            { name: 'All Files', extensions: ['*'] }
+          ]
+        });
+        
+        if (result.canceled || !result.filePaths || result.filePaths.length === 0) return;
+        
+        const filePath = result.filePaths[0];
+        const jsonString = await window.electronAPI.readFileContent(filePath);
+        const projectData = sessionManager.importProjectJSON(jsonString);
+        
+        if (projectData) {
+          // Restore the loaded project
+          restoreProjectData(projectData);
           
-          if (projectData) {
-            // Restore the loaded project
-            restoreProjectData(projectData);
-            
-            // Update project state
-            sessionManager.setCurrentProject(file.name, projectData.metadata.name);
-            sessionManager.markClean();
-            sessionManager.addToRecentProjects(projectData, file.name);
-            
-            // Clear auto-save since we've loaded a new project
-            sessionManager.clearAutoSave();
-            
-            setProjectState(sessionManager.getProjectState());
-            
-            addToast({
-              message: `Project "${projectData.metadata.name}" loaded successfully`,
-              type: 'success'
-            });
-          } else {
-            throw new Error('Invalid project file');
-          }
-        } catch (error) {
-          console.error('Load project failed:', error);
+          // Update project state
+          const fileName = filePath.split(/[\\\\\\/]/).pop() || 'project.json';
+          sessionManager.setCurrentProject(filePath, projectData.metadata.name);
+          sessionManager.markClean();
+          sessionManager.addToRecentProjects(projectData, fileName);
+          
+          // Clear auto-save since we've loaded a new project
+          sessionManager.clearAutoSave();
+          
+          setProjectState(sessionManager.getProjectState());
+          
           addToast({
-            message: 'Failed to load project file. Please check the file format.',
-            type: 'error'
+            message: `Project "${projectData.metadata.name}" loaded successfully`,
+            type: 'success'
           });
+        } else {
+          throw new Error('Invalid project file');
         }
+      } catch (error) {
+        console.error('Load project failed:', error);
+        addToast({
+          message: 'Failed to load project file. Please check the file format.',
+          type: 'error'
+        });
+      }
+    } else {
+      // Browser - use file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const jsonString = event.target?.result as string;
+            const projectData = sessionManager.importProjectJSON(jsonString);
+            
+            if (projectData) {
+              // Restore the loaded project
+              restoreProjectData(projectData);
+              
+              // Update project state
+              sessionManager.setCurrentProject(file.name, projectData.metadata.name);
+              sessionManager.markClean();
+              sessionManager.addToRecentProjects(projectData, file.name);
+              
+              // Clear auto-save since we've loaded a new project
+              sessionManager.clearAutoSave();
+              
+              setProjectState(sessionManager.getProjectState());
+              
+              addToast({
+                message: `Project "${projectData.metadata.name}" loaded successfully`,
+                type: 'success'
+              });
+            } else {
+              throw new Error('Invalid project file');
+            }
+          } catch (error) {
+            console.error('Load project failed:', error);
+            addToast({
+              message: 'Failed to load project file. Please check the file format.',
+              type: 'error'
+            });
+          }
+        };
+        reader.readAsText(file);
       };
-      reader.readAsText(file);
-    };
-    input.click();
+      input.click();
+    }
   }, [sessionManager, restoreProjectData, addToast]);
 
   const handleLoadRecentProject = useCallback((projectPath: string, projectName: string) => {
@@ -2479,7 +2550,7 @@ const AppContent: React.FC = () => {
     }
   }, [sessionManager, restoreProjectData, addToast]);
 
-  const handleQuickSaveUpdated = useCallback(() => {
+  const handleQuickSaveUpdated = useCallback(async () => {
     if (projectState.isNewProject) {
       // If new project, act like Save As
       handleSaveAs();
@@ -2495,7 +2566,21 @@ const AppContent: React.FC = () => {
           projectState.currentProjectName
         );
         
-        // For now, we'll update the "file" (in reality, just update recent projects)
+        // Create JSON content
+        const exportData = {
+          version: '1.1.1',
+          exported: new Date().toISOString(),
+          project: projectData
+        };
+        const jsonString = JSON.stringify(exportData, null, 2);
+        
+        // Write to file if we have a file path (Electron) or update recent projects (browser)
+        if (window.electronAPI?.writeFile && projectState.currentProjectPath) {
+          // Electron - write to the actual file
+          await window.electronAPI.writeFile(projectState.currentProjectPath, jsonString);
+        }
+        
+        // Update recent projects and mark as clean
         sessionManager.addToRecentProjects(projectData, projectState.currentProjectPath);
         sessionManager.markClean();
         
@@ -3776,6 +3861,7 @@ const AppContent: React.FC = () => {
         onAddStrain={handleAddStrain}
         onCheckUpdates={handleManualCheckForUpdates}
         onJumpToShelf={handleScrollToShelf}
+        onShowProjectMenu={handleShowProjectMenu}
         shelves={processedShelves.map(shelf => ({ id: shelf.id, name: shelf.name }))}
         hasUnsavedWork={hasMenuContent()}
         hasSoldOutItems={hasSoldOutItems()}

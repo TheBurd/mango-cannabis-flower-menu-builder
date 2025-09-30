@@ -48,7 +48,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         <div className={`px-6 py-4 border-b flex items-center justify-between ${
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
-          <h2 className="text-2xl font-bold text-orange-500">🎉 What's New in v1.1.0</h2>
+          <h2 className="text-2xl font-bold text-orange-500">🎉 What's New in v1.1.1</h2>
           <button
             onClick={onClose}
             className={`p-2 rounded-lg hover:bg-opacity-80 transition-colors ${
@@ -204,7 +204,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         }`}>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
-              🥭 Flower Menu Builder v1.1.0
+              🥭 Flower Menu Builder v1.1.1
             </div>
             <button
               ref={feedbackButtonRef}

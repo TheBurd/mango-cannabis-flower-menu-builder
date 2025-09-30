@@ -142,6 +142,7 @@ export const Header: React.FC<HeaderProps> = ({
         onResetZoom={onResetZoom}
         onFitToWindow={onFitToWindow}
         onResetAppData={onResetAppData}
+        onShowProjectMenu={onShowProjectMenu}
       />
     );
   }

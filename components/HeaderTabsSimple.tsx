@@ -3,7 +3,7 @@ import { Theme, MenuMode, SupportedStates } from '../types';
 import { MANGO_MAIN_ORANGE, MANGO_SUPPORT_ORANGE, STATE_THC_ICONS } from '../constants';
 import { CustomDropdown } from './common/CustomDropdown';
 import { ModeToggle } from './common/ModeToggle';
-import { SunIcon, MoonIcon, QuestionMarkCircleIcon } from './common/Icon';
+import { SunIcon, MoonIcon, QuestionMarkCircleIcon, HamburgerMenuIcon, MangoIcon } from './common/Icon';
 import { getLogoPath } from '../utils/assets';
 
 interface HeaderTabsSimpleProps {
@@ -48,6 +48,8 @@ interface HeaderTabsSimpleProps {
   onFitToWindow?: () => void;
   // Reset functionality
   onResetAppData?: () => void;
+  // Project menu
+  onShowProjectMenu?: () => void;
 }
 
 export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
@@ -85,11 +87,18 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
   onZoomOut,
   onResetZoom,
   onFitToWindow,
-  onResetAppData
+  onResetAppData,
+  onShowProjectMenu
 }) => {
   const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [isElectron, setIsElectron] = useState(false);
   const stateOptions = Object.values(SupportedStates).map(s => ({ value: s, label: s }));
+
+  // Detect if running in Electron
+  React.useEffect(() => {
+    setIsElectron(typeof window !== 'undefined' && !!window.electronAPI);
+  }, []);
 
   // Handler for new menu with unsaved work warning
   const handleNewMenu = async () => {
@@ -135,9 +144,6 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
     {
       name: 'File',
       items: [
-        { label: 'New Menu', onClick: handleNewMenu, hotkey: 'Ctrl+N' },
-        { label: 'Open From CSV', onClick: onOpenCSV, hotkey: 'Ctrl+O' },
-        { type: 'separator' },
         { 
           label: `Switch to ${menuMode === MenuMode.BULK ? 'Pre-Pack' : 'Bulk Flower'} Mode`, 
           onClick: handleSwitchMode,
@@ -156,7 +162,6 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
         { label: 'Export Menu', submenu: [
           { label: 'Export as PNG', onClick: onExportPNG, hotkey: 'Ctrl+Shift+P' },
           { label: 'Export as JPEG', onClick: onExportJPEG, hotkey: 'Ctrl+Shift+J' },
-          { label: 'Export as CSV', onClick: onExportCSV, hotkey: 'Ctrl+Shift+E' },
         ]}
       ]
     },
@@ -374,8 +379,25 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
         {/* Enhanced tab bar positioned above orange header */}
         <div className={`relative border-b ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
           <div className="flex justify-between items-center">
-            {/* Left side - Tab buttons */}
-            <div className="flex space-x-1 px-4">
+            {/* Left side - Hamburger menu + Tab buttons */}
+            <div className="flex items-center space-x-1 px-4">
+              {/* Hamburger Menu Button - Only show in Electron (production) */}
+              {onShowProjectMenu && isElectron && (
+                <button
+                  onClick={onShowProjectMenu}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDark 
+                      ? 'hover:bg-gray-800 text-gray-400 hover:text-gray-200' 
+                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                  }`}
+                  title="Project menu"
+                  style={{ WebkitAppRegion: 'no-drag' }}
+                >
+                  <HamburgerMenuIcon className="w-5 h-5" />
+                </button>
+              )}
+              
+              {/* Tab buttons */}
               {tabs.map((tab) => (
                 <div key={tab.name} className="relative">
                   <button
@@ -485,19 +507,23 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
           }}
         >
           <div className="flex items-center space-x-4">
-            <img 
-              src={getLogoPath()} 
-              alt="Logo"
-              className="h-12 w-auto"
-              style={{ 
-                filter: 'brightness(0) invert(1)',
-                height: '2.5rem',
-                marginBottom: '0.5rem'
-              }}
-            />
-            <h1 className="text-3xl font-bold tracking-tight" style={{fontFamily: "'Poppins', sans-serif"}}>
-              {appName} v1.1.0
-            </h1>
+            <div className="flex items-center space-x-3">
+              {/* Hamburger Menu Button - Only show in browser/dev (not Electron) */}
+              {onShowProjectMenu && !isElectron && (
+                <button
+                  onClick={onShowProjectMenu}
+                  className="p-2 rounded-lg transition-colors hover:bg-white/10 text-white/80 hover:text-white"
+                  title="Project menu"
+                  style={{ WebkitAppRegion: 'no-drag' }}
+                >
+                  <HamburgerMenuIcon className="w-6 h-6" />
+                </button>
+              )}
+              <h1 className="text-3xl font-bold tracking-tight flex items-center" style={{fontFamily: "'Poppins', sans-serif"}}>
+                <MangoIcon className="w-10 h-10 mr-3 text-white" />
+                {appName} v1.1.1
+              </h1>
+            </div>
             <button
               onClick={onShowWhatsNew}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 text-white/80 hover:text-white ${
@@ -507,7 +533,7 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
                 boxShadow: '0 0 15px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.1)',
                 animation: 'subtle-glow 2s ease-in-out infinite alternate'
               } : undefined}
-              title="See what's new in v1.1.0"
+              title="See what's new in v1.1.1"
             >
               What's New
             </button>
