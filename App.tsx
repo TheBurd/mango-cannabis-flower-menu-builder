@@ -630,6 +630,8 @@ const AppContent: React.FC = () => {
     setNoUpdatesFound(false);
     setUpdateAvailable(false);
     setIsUpdateDownloaded(false);
+    setUpdateError(null);
+    setUpdateErrorUrl(null);
     
     try {
       console.log('Starting manual update check...');
@@ -1164,6 +1166,8 @@ const AppContent: React.FC = () => {
       setUpdateAvailable(false);
       setIsUpdateDownloaded(false);
       setIsDownloadingUpdate(false);
+      setUpdateError(null);
+      setUpdateErrorUrl(null);
       
       // If this was a manual check, immediately stop checking and show "no updates"
       if (isManualCheck && isCheckingForUpdates) {
@@ -1176,6 +1180,11 @@ const AppContent: React.FC = () => {
         
         // No need to set version for "no updates" display since we simplified the message
       }
+
+      // If main process provided additional context (e.g., no prerelease available), store it
+      if (info && typeof info === 'object' && 'message' in info) {
+        console.log('Update info message:', info.message);
+      }
     };
 
     const handleUpdateDebug = (_event: any, debug: { type: string; message: string; [key: string]: any }) => {
@@ -1185,6 +1194,21 @@ const AppContent: React.FC = () => {
 
     const handleUpdateError = (_event: any, errorInfo: { message: string; originalError: string; manualDownloadUrl: string }) => {
       console.error('Update error received:', errorInfo);
+      const original = (errorInfo?.originalError || '').toLowerCase();
+      const looksLikeMissingRelease = original.includes('404') || original.includes('cannot find') || original.includes('no published release') || original.includes('no assets found') || original.includes('update info not found');
+
+      if (looksLikeMissingRelease && allowPrereleaseUpdates) {
+        console.log('Update error appears to be a missing pre-release. Treating as not-available.');
+        setUpdateAvailable(false);
+        setIsUpdateDownloaded(false);
+        setIsDownloadingUpdate(false);
+        setIsCheckingForUpdates(false);
+        setNoUpdatesFound(true);
+        setUpdateError(null);
+        setUpdateErrorUrl(null);
+        return;
+      }
+
       setUpdateError(errorInfo.message);
       setUpdateErrorUrl(errorInfo.manualDownloadUrl);
       setIsDownloadingUpdate(false);
