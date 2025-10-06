@@ -23,6 +23,8 @@ interface PrePackagedPanelProps {
   onMoveProductDown?: (shelfId: string, productIndex: number) => void;
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isControlsDisabled?: boolean;
+  scrollTarget?: { mode: 'bulk' | 'prepackaged'; shelfId: string; itemId: string } | null;
+  onScrollTargetHandled?: () => void;
 }
 
 export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PrePackagedPanelProps>(({
@@ -42,6 +44,8 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
   onMoveProductDown,
   currentState,
   isControlsDisabled,
+  scrollTarget,
+  onScrollTargetHandled,
 }, ref) => {
   const [containerElement, setContainerElement] = useState<HTMLElement | null>(null);
   const [overlayEnabled, setOverlayEnabled] = useState(() => {
@@ -100,7 +104,35 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
     setOverlayEnabled(enabled);
     localStorage.setItem('prepackagedScrollOverlayEnabled', JSON.stringify(enabled));
   }, []);
-  
+
+  // Scroll newly created or duplicated products into view reliably
+  useEffect(() => {
+    if (!scrollTarget || scrollTarget.mode !== 'prepackaged') return;
+    if (!containerElement) return;
+
+    const { shelfId, itemId } = scrollTarget;
+
+    const scrollIntoView = () => {
+      const shelfElement = containerElement.querySelector(`[data-shelf-id="${shelfId}"]`);
+      if (!shelfElement) return false;
+      const itemElement = shelfElement.querySelector<HTMLElement>(`[data-product-id="${itemId}"]`);
+      if (!itemElement) return false;
+      itemElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      onScrollTargetHandled?.();
+      return true;
+    };
+
+    if (scrollIntoView()) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      scrollIntoView();
+    }, 75);
+
+    return () => window.clearTimeout(timeout);
+  }, [scrollTarget, containerElement, onScrollTargetHandled]);
+
   
   return (
     <>

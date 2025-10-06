@@ -9,6 +9,7 @@ import { getLogoPath } from '../utils/assets';
 // import { HeaderTabs } from './HeaderTabs';
 // import { HeaderTabsDebug } from './HeaderTabsDebug';
 import { HeaderTabsSimple } from './HeaderTabsSimple';
+import { APP_VERSION } from '../version';
 
 interface HeaderProps {
   appName: string;
@@ -38,6 +39,8 @@ interface HeaderProps {
   onClearAllSoldOut?: () => void;
   onAddStrain?: (shelfId?: string) => void;
   onCheckUpdates?: () => void;
+  allowPrereleaseUpdates?: boolean;
+  onTogglePreReleaseUpdates?: (enabled: boolean) => void;
   onJumpToShelf?: (shelfId: string) => void;
   shelves?: { id: string; name: string }[];
   hasUnsavedWork?: boolean;
@@ -80,6 +83,8 @@ export const Header: React.FC<HeaderProps> = ({
   onClearAllSoldOut,
   onAddStrain,
   onCheckUpdates,
+  allowPrereleaseUpdates,
+  onTogglePreReleaseUpdates,
   onJumpToShelf,
   onShowProjectMenu,
   shelves,
@@ -131,6 +136,8 @@ export const Header: React.FC<HeaderProps> = ({
         onClearAllSoldOut={onClearAllSoldOut}
         onAddStrain={onAddStrain}
         onCheckUpdates={onCheckUpdates}
+        allowPrereleaseUpdates={allowPrereleaseUpdates}
+        onTogglePreReleaseUpdates={onTogglePreReleaseUpdates}
         onJumpToShelf={onJumpToShelf}
         shelves={shelves}
         hasUnsavedWork={hasUnsavedWork}
@@ -183,7 +190,7 @@ export const Header: React.FC<HeaderProps> = ({
           
           <h1 className="text-3xl font-bold tracking-tight flex items-center" style={{fontFamily: "'Poppins', sans-serif"}}>
             <MangoIcon className="w-10 h-10 mr-3 text-white" />
-            {appName} v1.1.1
+            {appName} v{APP_VERSION}
           </h1>
         </div>
         <button
@@ -195,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({
             boxShadow: '0 0 15px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.1)',
             animation: 'subtle-glow 2s ease-in-out infinite alternate'
           } : undefined}
-                      title="See what's new in v1.1.1"
+                      title={`See what's new in v${APP_VERSION}`}
         >
           What's New
         </button>

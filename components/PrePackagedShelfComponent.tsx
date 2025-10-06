@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { PrePackagedShelf, PrePackagedProduct, PrePackagedSortCriteria, Theme, SupportedStates } from '../types';
 import { PrePackagedProductInputRow } from './PrePackagedProductInputRow';
 import { Icon } from './common/Icon';
@@ -43,18 +43,6 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
   
   // Track when any dropdown is open to prevent hover conflicts
   const [isAnyDropdownOpen, setIsAnyDropdownOpen] = useState(false);
-
-  // Auto-scroll to newly added product
-  useEffect(() => {
-    if (newlyAddedProductId && shelf.products.some(p => p.id === newlyAddedProductId)) {
-      setTimeout(() => {
-        const productElement = document.querySelector(`[data-product-id="${newlyAddedProductId}"]`);
-        if (productElement) {
-          productElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-    }
-  }, [newlyAddedProductId, shelf.products]);
 
 
   const sortOptions: Array<{ value: PrePackagedSortCriteria['key']; label: string }> = [

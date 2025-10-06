@@ -3,6 +3,7 @@ import { Theme } from '../types';
 import { TabContainer, TabItem } from './common/TabContainer';
 import { FeedbackPopup } from './FeedbackPopup';
 import { HamburgerMenuIcon } from './common/Icon';
+import { APP_VERSION } from '../version';
 
 interface WhatsNewModalTabsProps {
   isOpen: boolean;
@@ -41,9 +42,23 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
     }`}>
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">What's New in v1.1.1</h2>
+          <h2 className="text-2xl font-bold mb-2">What's New in v{APP_VERSION}</h2>
           <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-            Multi-Page Menus, Professional Project Management & Team Collaboration
+            Hotfix updates layered on top of the v1.1.1 multi-page release
+          </p>
+        </div>
+
+        <div className={`p-4 rounded-lg border-l-4 border-lime-400 ${
+          theme === 'dark' ? 'bg-lime-900/20 text-gray-100 border-opacity-70' : 'bg-lime-50 text-gray-800'
+        }`}>
+          <h3 className="font-semibold text-lime-600 mb-2">🌿 Hotfix Highlights (v{APP_VERSION})</h3>
+          <ul className={`text-sm space-y-1 list-disc list-inside ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+            <li><strong>Global Sort Stability:</strong> Brand / low-stock sorts respect shelf overrides across every page.</li>
+            <li><strong>Copy + Add Flow:</strong> Duplicate a strain or product and the next “Add” scrolls to the new blank row.</li>
+            <li><strong>Auto-Scroll Consistency:</strong> Newly created items stay in view for smoother long-shelf editing.</li>
+          </ul>
+          <p className={`text-xs mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+            Keep reading for the full v1.1.1 feature tour below.
           </p>
         </div>
 
@@ -497,7 +512,7 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
   const tabs: TabItem[] = [
     {
       id: 'highlights',
-      label: 'v1.1.1 Highlights',
+      label: `v${APP_VERSION} Highlights`,
       icon: <span className="text-lg">🎉</span>,
       content: <HighlightsTab />
     },
@@ -534,7 +549,7 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
           <h1 className="text-xl font-semibold">
-            What's New in v1.1.1
+            What's New in v{APP_VERSION}
           </h1>
           <button
             onClick={onClose}
@@ -564,10 +579,10 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
         }`}>
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <div className={`text-sm ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                🥭 Flower Menu Builder v1.1.1
+            <div className={`text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+                🥭 Flower Menu Builder v{APP_VERSION}
               </div>
               <button
                 ref={feedbackButtonRef}

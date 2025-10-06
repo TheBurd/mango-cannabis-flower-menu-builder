@@ -21,6 +21,7 @@ import { ViewTabContent } from './tabs/ViewTabContent';
 import { FormatTabContent } from './tabs/FormatTabContent';
 import { ToolsTabContent } from './tabs/ToolsTabContent';
 import { WindowTabContent } from './tabs/WindowTabContent';
+import { APP_VERSION } from '../version';
 
 interface HeaderTabsProps {
   theme: Theme;
@@ -246,7 +247,7 @@ export const HeaderTabs: React.FC<HeaderTabsProps> = ({
             <span className={`text-sm font-medium ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}>
-              Mango Cannabis Menu Builder v1.1.1
+              Mango Cannabis Menu Builder v{APP_VERSION}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded ${
               theme === 'dark' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-800'

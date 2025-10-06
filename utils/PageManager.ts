@@ -253,7 +253,11 @@ export class PageManager {
     const page = this.pages.get(pageNumber);
     if (!page) return;
 
-    page.shelfSortOverrides.set(shelfId, criteria);
+    if (criteria === null || criteria === undefined) {
+      page.shelfSortOverrides.delete(shelfId);
+    } else {
+      page.shelfSortOverrides.set(shelfId, criteria);
+    }
     page.lastModified = Date.now();
   }
 

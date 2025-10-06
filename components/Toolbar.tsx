@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './common/Button';
 import { DownloadIcon, UploadIcon, SortAscendingIcon, SortDescendingIcon, FlowerJarIcon, TrashXmarkIcon } from './common/Icon';
-import { SortCriteria, Theme, MenuMode } from '../types';
+import { SortCriteria, Theme, MenuMode, PrePackagedSortCriteria } from '../types';
 
 interface ToolbarProps {
   onClearAllShelves: () => void;
@@ -12,7 +12,7 @@ interface ToolbarProps {
   onImportCSVRequest: () => void;
   isExporting: boolean;
   globalSortCriteria: SortCriteria | null;
-  onUpdateGlobalSortCriteria: (key: SortCriteria['key']) => void;
+  onUpdateGlobalSortCriteria: (key: SortCriteria['key'] | PrePackagedSortCriteria['key']) => void;
   theme: Theme;
   menuMode: MenuMode;
   // Page-aware sorting
@@ -31,7 +31,7 @@ const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
 
 const SortButton: React.FC<{
   label: string;
-  sortKey: SortCriteria['key'];
+  sortKey: SortCriteria['key'] | PrePackagedSortCriteria['key'];
   currentPageNumber: number;
   pageManager: any;
   onClick: () => void;
@@ -134,12 +134,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     return () => clearTimeout(timerSoldOut);
   }, [confirmClearSoldOut]);
   
-  const sortOptions: Array<{ label: string; key: SortCriteria['key'] }> = [
+  const sortOptions: Array<{ label: string; key: SortCriteria['key'] | PrePackagedSortCriteria['key'] }> = [
     { label: "Name", key: "name" },
-    { label: "Grower", key: "grower" },
+    { label: menuMode === MenuMode.PREPACKAGED ? "Brand" : "Grower", key: menuMode === MenuMode.PREPACKAGED ? "brand" : "grower" },
     { label: "Class", key: "type" },
     { label: "THC%", key: "thc" },
-    { label: menuMode === MenuMode.PREPACKAGED ? "Low Stock" : "Last Jar", key: "isLastJar" },
+    { label: menuMode === MenuMode.PREPACKAGED ? "Low Stock" : "Last Jar", key: menuMode === MenuMode.PREPACKAGED ? "isLowStock" : "isLastJar" },
     { label: "Sold Out", key: "isSoldOut" },
   ];
 

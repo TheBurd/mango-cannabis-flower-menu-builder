@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Shelf, Strain, SortCriteria, Theme, SupportedStates } from '../types';
 import { StrainInputRow } from './StrainInputRow';
 import { DropZone } from './common/DropZone';

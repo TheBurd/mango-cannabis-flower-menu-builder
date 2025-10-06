@@ -3,6 +3,7 @@ import { Theme, MenuMode, SupportedStates } from '../types';
 import { TabContainer, TabItem } from './common/TabContainer';
 import { FeedbackPopup } from './FeedbackPopup';
 import { HamburgerMenuIcon } from './common/Icon';
+import { APP_VERSION } from '../version';
 
 interface InstructionsModalTabsProps {
   isOpen: boolean;
@@ -54,7 +55,7 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
         <div className={`p-4 rounded-lg ${
           theme === 'dark' ? 'bg-orange-900/20 border border-orange-700' : 'bg-orange-50 border border-orange-200'
         }`}>
-          <h3 className="font-semibold mb-3 text-orange-600">NEW in v1.1.1:</h3>
+          <h3 className="font-semibold mb-3 text-orange-600">NEW in v{APP_VERSION}:</h3>
           <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
             <li>• Create unlimited menu pages - each page works independently</li>
             <li>• Professional Save/Load system like Microsoft Word</li>
@@ -591,7 +592,7 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
               <div className={`text-sm ${
                 theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
               }`}>
-                🥭 Mango Cannabis Flower Menu Builder v1.1.1
+                🥭 Mango Cannabis Flower Menu Builder v{APP_VERSION}
               </div>
               <button
                 ref={feedbackButtonRef}

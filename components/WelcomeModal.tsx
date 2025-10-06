@@ -1,6 +1,7 @@
 import React from 'react';
 import { SupportedStates, Theme } from '../types';
 import { STATE_THC_ICONS } from '../constants';
+import { APP_VERSION } from '../version';
 
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -162,7 +163,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onStateSelec
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
           <div className="text-sm text-gray-500">
-                          🥭 Mango Cannabis Flower Menu Builder v1.1.1
+                          🥭 Mango Cannabis Flower Menu Builder v{APP_VERSION}
           </div>
           <button
             onClick={onClose}

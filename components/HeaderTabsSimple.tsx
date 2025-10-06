@@ -5,6 +5,7 @@ import { CustomDropdown } from './common/CustomDropdown';
 import { ModeToggle } from './common/ModeToggle';
 import { SunIcon, MoonIcon, QuestionMarkCircleIcon, HamburgerMenuIcon, MangoIcon } from './common/Icon';
 import { getLogoPath } from '../utils/assets';
+import { APP_VERSION } from '../version';
 
 interface HeaderTabsSimpleProps {
   theme: Theme;
@@ -34,6 +35,8 @@ interface HeaderTabsSimpleProps {
   onClearAllSoldOut?: () => void;
   onAddStrain?: (shelfId?: string) => void;
   onCheckUpdates?: () => void;
+  allowPrereleaseUpdates?: boolean;
+  onTogglePreReleaseUpdates?: (enabled: boolean) => void;
   onJumpToShelf?: (shelfId: string) => void;
   shelves?: { id: string; name: string }[]; // For jump to shelf functionality
   hasUnsavedWork?: boolean;
@@ -77,6 +80,8 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
   onClearAllSoldOut,
   onAddStrain,
   onCheckUpdates,
+  allowPrereleaseUpdates = false,
+  onTogglePreReleaseUpdates,
   onJumpToShelf,
   shelves = [],
   hasUnsavedWork = false,
@@ -174,10 +179,10 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
           label: 'Global Sort', 
           submenu: [
             { label: 'Sort by Name', onClick: () => onGlobalSort?.('name') },
-            { label: 'Sort by Grower', onClick: () => onGlobalSort?.('grower') },
+            { label: menuMode === MenuMode.PREPACKAGED ? 'Sort by Brand' : 'Sort by Grower', onClick: () => onGlobalSort?.(menuMode === MenuMode.PREPACKAGED ? 'brand' : 'grower') },
             { label: 'Sort by Class', onClick: () => onGlobalSort?.('type') },
             { label: 'Sort by THC%', onClick: () => onGlobalSort?.('thc') },
-            { label: `Sort by ${menuMode === MenuMode.PREPACKAGED ? 'Low Stock' : 'Last Jar'}`, onClick: () => onGlobalSort?.('isLastJar') },
+            { label: `Sort by ${menuMode === MenuMode.PREPACKAGED ? 'Low Stock' : 'Last Jar'}`, onClick: () => onGlobalSort?.(menuMode === MenuMode.PREPACKAGED ? 'isLowStock' : 'isLastJar') },
             { label: 'Sort by Sold Out', onClick: () => onGlobalSort?.('isSoldOut') },
           ]
         },
@@ -243,6 +248,11 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
       name: 'Help',
       items: [
         { label: 'Check for Updates', onClick: onCheckUpdates, hotkey: 'Ctrl+U' },
+        {
+          label: 'Opt into Pre-Release/Beta Updates',
+          onClick: () => onTogglePreReleaseUpdates?.(!allowPrereleaseUpdates),
+          checked: !!allowPrereleaseUpdates
+        },
         { type: 'separator' },
         { label: 'Reset App Data', onClick: handleResetAppData, hotkey: 'Ctrl+Shift+R' },
         { type: 'separator' },
@@ -348,9 +358,9 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
               : isDark
                 ? 'text-gray-200 hover:bg-gray-700'
                 : 'text-gray-700 hover:bg-gray-100'
-          }`}
+          } ${item.checked ? (isDark ? 'bg-gray-700' : 'bg-gray-100') : ''}`}
         >
-          <span>{item.label}</span>
+          <span>{item.checked ? '✓ ' : ''}{item.label}</span>
           {item.hotkey && (
             <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               {item.hotkey}
@@ -521,7 +531,7 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
               )}
               <h1 className="text-3xl font-bold tracking-tight flex items-center" style={{fontFamily: "'Poppins', sans-serif"}}>
                 <MangoIcon className="w-10 h-10 mr-3 text-white" />
-                {appName} v1.1.1
+            {appName} v{APP_VERSION}
               </h1>
             </div>
             <button
@@ -533,7 +543,7 @@ export const HeaderTabsSimple: React.FC<HeaderTabsSimpleProps> = ({
                 boxShadow: '0 0 15px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.1)',
                 animation: 'subtle-glow 2s ease-in-out infinite alternate'
               } : undefined}
-              title="See what's new in v1.1.1"
+                title={`See what's new in v${APP_VERSION}`}
             >
               What's New
             </button>

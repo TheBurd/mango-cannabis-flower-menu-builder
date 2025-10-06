@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Theme } from '../types';
 import { FeedbackPopup } from './FeedbackPopup';
+import { APP_VERSION } from '../version';
 
 interface InstructionsModalProps {
   isOpen: boolean;
@@ -380,7 +381,7 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
         }`}>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
-              🥭 Mango Cannabis Flower Menu Builder v1.1.1
+              🥭 Mango Cannabis Flower Menu Builder v{APP_VERSION}
             </div>
             <button
               ref={feedbackButtonRef}

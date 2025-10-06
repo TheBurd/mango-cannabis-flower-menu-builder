@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Theme } from '../types';
 import { FeedbackPopup } from './FeedbackPopup';
+import { APP_VERSION } from '../version';
 
 interface WhatsNewModalProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         <div className={`px-6 py-4 border-b flex items-center justify-between ${
           theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
         }`}>
-          <h2 className="text-2xl font-bold text-orange-500">🎉 What's New in v1.1.1</h2>
+          <h2 className="text-2xl font-bold text-orange-500">🎉 What's New in v{APP_VERSION}</h2>
           <button
             onClick={onClose}
             className={`p-2 rounded-lg hover:bg-opacity-80 transition-colors ${
@@ -65,7 +66,18 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         {/* Content */}
         <div className="overflow-y-auto max-h-[calc(90vh-160px)]">
           <div className="p-6 space-y-6">
-            
+            <section className={`p-4 rounded-lg border-l-4 border-lime-400 ${
+              theme === 'dark' ? 'bg-lime-900/20 text-gray-200 border-opacity-70' : 'bg-lime-50 text-gray-700'
+            }`}>
+              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Hotfix v{APP_VERSION} — Quick Stability Patch</h3>
+              <ul className="text-sm space-y-1 list-disc list-inside">
+                <li><strong>Global Sort Reliability:</strong> Shelf-level overrides now clear correctly so brand and low-stock sorts snap into place across every page.</li>
+                <li><strong>Copy → Add Flow:</strong> Duplicating a strain/product and then adding a new one scrolls to the fresh blank row instead of jumping back up the list.</li>
+                <li><strong>Consistent Auto-Scroll:</strong> Newly created items are always brought into view, keeping long shelves manageable.</li>
+              </ul>
+              <p className="text-xs opacity-75 mt-3">Released alongside the original v1.1.1 feature set so your team sees both the big upgrades and the latest fixes in one place.</p>
+            </section>
+
             {/* Main Feature */}
             <section>
               <h3 className="text-xl font-semibold mb-3 text-orange-500">🚀 Auto-Format Menu</h3>
@@ -204,7 +216,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
         }`}>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
-              🥭 Flower Menu Builder v1.1.1
+              🥭 Flower Menu Builder v{APP_VERSION}
             </div>
             <button
               ref={feedbackButtonRef}

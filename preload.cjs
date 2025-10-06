@@ -80,6 +80,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke('open-external', url);
   },
 
+  getUpdateSettings: () => {
+    return ipcRenderer.invoke('get-update-settings');
+  },
+
+  setUpdateSettings: (settings) => {
+    return ipcRenderer.invoke('set-update-settings', settings);
+  },
+
+  onUpdateSettingsChanged: (callback) => {
+    return ipcRenderer.on('update-settings-changed', callback);
+  },
+
+  removeUpdateSettingsListeners: () => {
+    ipcRenderer.removeAllListeners('update-settings-changed');
+  },
+
   // Window controls for custom title bar
   windowMinimize: () => {
     return ipcRenderer.invoke('window-minimize');

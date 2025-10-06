@@ -54,6 +54,10 @@ declare global {
       onUpdateDebug?: (callback: (event: any, debug: { type: string; message: string; [key: string]: any }) => void) => void;
       onUpdateNotAvailable?: (callback: (event: any, info: any) => void) => void;
       removeUpdateListeners: () => void;
+      getUpdateSettings?: () => Promise<{ allowPrerelease?: boolean }>;
+      setUpdateSettings?: (settings: { allowPrerelease?: boolean }) => Promise<{ allowPrerelease?: boolean }>;
+      onUpdateSettingsChanged?: (callback: (event: any, settings: { allowPrerelease?: boolean }) => void) => void;
+      removeUpdateSettingsListeners?: () => void;
     };
   }
 }
@@ -74,7 +78,7 @@ import { UpdateNotification } from './components/UpdateNotification';
 import { DebugConsole } from './components/DebugConsole';
 import { FiftyPercentOffToggle } from './components/FiftyPercentOffToggle';
 import { ToastProvider, useToast } from './components/ToastContainer';
-import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme, MenuMode, PrePackagedShelf, PrePackagedProduct, PrePackagedSortCriteria, PrePackagedWeight } from './types';
+import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme, MenuMode, PrePackagedShelf, PrePackagedProduct, PrePackagedSortCriteria, PrePackagedWeight, AnyShelf, AnySortCriteria } from './types';
 import { 
   INITIAL_PREVIEW_SETTINGS, 
   getDefaultShelves, 
@@ -93,6 +97,7 @@ import { getOverflowDrivenAutoFormat, AutoFormatState } from './utils/autoFormat
 import { PageManager } from './utils/PageManager';
 import { ZipExporter, SequentialExporter } from './utils/ZipExporter';
 import { SessionManager, ProjectData, ProjectState } from './utils/SessionManager';
+import { APP_VERSION } from './version';
 
 
 
@@ -342,23 +347,27 @@ const AppContent: React.FC = () => {
   // Setter for current shelves - PageManager as single source of truth
   const setShelves = useCallback((updater: React.SetStateAction<Shelf[]> | React.SetStateAction<PrePackagedShelf[]>) => {
     const currentPageNumber = pageManager.getCurrentPageNumber();
-    
+
     // Calculate new shelves value
-    let newShelves: Shelf[] | PrePackagedShelf[];
+    let newShelves: AnyShelf[];
     if (typeof updater === 'function') {
-      const currentShelves = shelves;
-      newShelves = (updater as (prev: any[]) => any[])(currentShelves);
+      const currentShelves = shelves as AnyShelf[];
+      newShelves = (updater as (prev: AnyShelf[]) => AnyShelf[])(currentShelves);
     } else {
-      newShelves = updater;
+      newShelves = updater as AnyShelf[];
     }
 
-    // Update PageManager only - single source of truth
+    // Update PageManager content and keep per-shelf sort overrides in sync
     pageManager.updatePageShelves(currentPageNumber, newShelves);
-    
+    newShelves.forEach(shelf => {
+      const shelfSort = (shelf as Shelf | PrePackagedShelf).sortCriteria ?? null;
+      pageManager.updatePageShelfSort(currentPageNumber, shelf.id, shelfSort as AnySortCriteria | null);
+    });
+
     // Mark project as having unsaved changes
     sessionManager.markDirty();
     setProjectState(sessionManager.getProjectState());
-    
+
     // Force re-render to update UI
     forcePageUpdate();
   }, [pageManager, shelves, sessionManager, forcePageUpdate]);
@@ -409,8 +418,9 @@ const AppContent: React.FC = () => {
     const savedState = localStorage.getItem('mango-fifty-percent-off-enabled');
     return savedState === 'true';
   });
-  
+
   const [newlyAddedStrainId, setNewlyAddedStrainId] = useState<string | null>(null);
+  const [pendingScrollTarget, setPendingScrollTarget] = useState<{ mode: 'bulk' | 'prepackaged'; shelfId: string; itemId: string } | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [initMessage, setInitMessage] = useState<string>('');
   const [skippedRows, setSkippedRows] = useState<{rowIndex: number, rowData: any, reason: string}[]>([]);
@@ -427,7 +437,7 @@ const AppContent: React.FC = () => {
   const [showHeaderMenu, setShowHeaderMenu] = useState<boolean>(false);
   const [hasViewedWhatsNew, setHasViewedWhatsNew] = useState<boolean>(() => {
     const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
-    return viewedVersion === '1.1.1'; // Check if current version has been viewed
+    return viewedVersion === APP_VERSION; // Check if current version has been viewed
   });
   const [hasContentOverflow, setHasContentOverflow] = useState<boolean>(false);
   const [autoFormatState, setAutoFormatState] = useState<AutoFormatState | null>(null);
@@ -593,7 +603,7 @@ const AppContent: React.FC = () => {
     // Mark this version as viewed
     if (!hasViewedWhatsNew) {
       setHasViewedWhatsNew(true);
-      localStorage.setItem('mango-whats-new-viewed-version', '1.0.2');
+      localStorage.setItem('mango-whats-new-viewed-version', APP_VERSION);
     }
   }, [hasViewedWhatsNew]);
 
@@ -916,6 +926,12 @@ const AppContent: React.FC = () => {
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateErrorUrl, setUpdateErrorUrl] = useState<string | null>(null);
   const manualCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [allowPrereleaseUpdates, setAllowPrereleaseUpdates] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('mango-allow-prerelease-updates') === 'true';
+    }
+    return false;
+  });
 
 
   // Helper function to check if the menu has any content
@@ -948,6 +964,40 @@ const AppContent: React.FC = () => {
   // Track last interacted shelf
   const handleShelfInteraction = useCallback((shelfId: string) => {
     setLastInteractedShelfId(shelfId);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUpdateSettings = async () => {
+      try {
+        if (window.electronAPI?.getUpdateSettings) {
+          const settings = await window.electronAPI.getUpdateSettings();
+          if (isMounted && settings && typeof settings.allowPrerelease === 'boolean') {
+            setAllowPrereleaseUpdates(settings.allowPrerelease);
+            localStorage.setItem('mango-allow-prerelease-updates', String(settings.allowPrerelease));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load update settings:', error);
+      }
+    };
+
+    fetchUpdateSettings();
+
+    const handleSettingsChanged = (_event: any, settings: { allowPrerelease?: boolean }) => {
+      if (settings && typeof settings.allowPrerelease === 'boolean') {
+        setAllowPrereleaseUpdates(settings.allowPrerelease);
+        localStorage.setItem('mango-allow-prerelease-updates', String(settings.allowPrerelease));
+      }
+    };
+
+    window.electronAPI?.onUpdateSettingsChanged?.(handleSettingsChanged);
+
+    return () => {
+      isMounted = false;
+      window.electronAPI?.removeUpdateSettingsListeners?.();
+    };
   }, []);
 
 
@@ -1015,6 +1065,16 @@ const AppContent: React.FC = () => {
   const handleFiftyPercentOffToggle = useCallback((enabled: boolean) => {
     setFiftyPercentOffEnabled(enabled);
     localStorage.setItem('mango-fifty-percent-off-enabled', enabled.toString());
+  }, []);
+
+  const handleTogglePreReleaseUpdates = useCallback((enabled: boolean) => {
+    setAllowPrereleaseUpdates(enabled);
+    localStorage.setItem('mango-allow-prerelease-updates', String(enabled));
+    if (window.electronAPI?.setUpdateSettings) {
+      window.electronAPI.setUpdateSettings({ allowPrerelease: enabled }).catch(error => {
+        console.error('Failed to update pre-release preference:', error);
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -1194,8 +1254,15 @@ const AppContent: React.FC = () => {
         })
       );
     });
-    setNewlyAddedStrainId(newItemId);
-  }, [handleShelfInteraction, setShelves, menuMode]);
+
+    if (menuMode === MenuMode.BULK) {
+      setNewlyAddedStrainId(newItemId);
+      setPendingScrollTarget({ mode: 'bulk', shelfId, itemId: newItemId });
+    } else {
+      setNewlyAddedProductId(newItemId);
+      setPendingScrollTarget({ mode: 'prepackaged', shelfId, itemId: newItemId });
+    }
+  }, [handleShelfInteraction, setShelves, menuMode, setPendingScrollTarget]);
 
   // Backward compatibility alias for existing code
   const handleAddStrain = handleAddItem;
@@ -1272,63 +1339,60 @@ const AppContent: React.FC = () => {
   // Generic item copy handler that works for both modes
   const handleCopyItem = useCallback((shelfId: string, itemId: string, direction: 'above' | 'below') => {
     recordChange(() => {
-      if (menuMode === MenuMode.BULK) {
-        // Copy strain in bulk shelf
-        setBulkShelves(prevShelves => {
-          const shelfIndex = prevShelves.findIndex(s => s.id === shelfId);
-          if (shelfIndex === -1) return prevShelves;
+      const newItemId = crypto.randomUUID();
 
-          const currentShelf = prevShelves[shelfIndex];
-          const strainIndex = currentShelf.strains.findIndex(s => s.id === itemId);
-          if (strainIndex === -1) return prevShelves;
-
-          const strainToCopy = { ...currentShelf.strains[strainIndex], id: crypto.randomUUID() };
-          const newStrains = [...currentShelf.strains];
-
-          if (direction === 'above') {
-            newStrains.splice(strainIndex, 0, strainToCopy);
-          } else {
-            newStrains.splice(strainIndex + 1, 0, strainToCopy);
+      setShelves(prevShelves =>
+        prevShelves.map(shelf => {
+          if (shelf.id !== shelfId) {
+            return shelf;
           }
-          
-          const updatedShelves = [...prevShelves];
-          updatedShelves[shelfIndex] = { 
-            ...currentShelf, 
-            strains: newStrains,
-            sortCriteria: null // Reset sort criteria when copying strain
-          };
-          return updatedShelves;
-        });
-      } else {
-        // Copy product in pre-packaged shelf
-        setPrePackagedShelves(prevShelves => {
-          const shelfIndex = prevShelves.findIndex(s => s.id === shelfId);
-          if (shelfIndex === -1) return prevShelves;
 
-          const currentShelf = prevShelves[shelfIndex];
-          const productIndex = currentShelf.products.findIndex(p => p.id === itemId);
-          if (productIndex === -1) return prevShelves;
+          if (menuMode === MenuMode.BULK) {
+            const strainIndex = shelf.strains.findIndex(s => s.id === itemId);
+            if (strainIndex === -1) {
+              return shelf;
+            }
 
-          const productToCopy = { ...currentShelf.products[productIndex], id: crypto.randomUUID() };
-          const newProducts = [...currentShelf.products];
+            const strainToCopy = { ...shelf.strains[strainIndex], id: newItemId };
+            const newStrains = [...shelf.strains];
+            const insertIndex = direction === 'above' ? strainIndex : strainIndex + 1;
+            newStrains.splice(insertIndex, 0, strainToCopy);
 
-          if (direction === 'above') {
-            newProducts.splice(productIndex, 0, productToCopy);
-          } else {
-            newProducts.splice(productIndex + 1, 0, productToCopy);
+            return {
+              ...shelf,
+              strains: newStrains,
+              sortCriteria: null // Reset sort criteria when copying strain
+            };
           }
-          
-          const updatedShelves = [...prevShelves];
-          updatedShelves[shelfIndex] = { 
-            ...currentShelf, 
+
+          const typedShelf = shelf as PrePackagedShelf;
+          const productIndex = typedShelf.products.findIndex(p => p.id === itemId);
+          if (productIndex === -1) {
+            return shelf;
+          }
+
+          const productToCopy = { ...typedShelf.products[productIndex], id: newItemId };
+          const newProducts = [...typedShelf.products];
+          const insertIndex = direction === 'above' ? productIndex : productIndex + 1;
+          newProducts.splice(insertIndex, 0, productToCopy);
+
+          return {
+            ...typedShelf,
             products: newProducts,
             sortCriteria: null // Reset sort criteria when copying product
-          };
-          return updatedShelves;
-        });
+          } as PrePackagedShelf;
+        })
+      );
+
+      if (menuMode === MenuMode.BULK) {
+        setNewlyAddedStrainId(newItemId);
+        setPendingScrollTarget({ mode: 'bulk', shelfId, itemId: newItemId });
+      } else {
+        setNewlyAddedProductId(newItemId);
+        setPendingScrollTarget({ mode: 'prepackaged', shelfId, itemId: newItemId });
       }
     });
-  }, [menuMode]);
+  }, [menuMode, setShelves, recordChange, setPendingScrollTarget]);
 
   // Backward compatibility alias for existing code
   const handleCopyStrain = useCallback((shelfId: string, strainId: string, direction: 'above' | 'below') => {
@@ -1388,26 +1452,28 @@ const AppContent: React.FC = () => {
   // PrePackaged sorting handler
   const handleUpdatePrePackagedShelfSortCriteria = useCallback((shelfId: string, key: PrePackagedSortCriteria['key']) => {
     recordChange(() => {
-      setPrePackagedShelves(prevShelves =>
+      setShelves(prevShelves =>
         prevShelves.map(shelf => {
-          if (shelf.id === shelfId) {
-            const currentCriteria = shelf.sortCriteria;
-            let newDirection: 'asc' | 'desc' = 'asc';
-            
-            if (currentCriteria && currentCriteria.key === key) {
-              newDirection = currentCriteria.direction === 'asc' ? 'desc' : 'asc';
-            }
-            
-            return {
-              ...shelf,
-              sortCriteria: { key, direction: newDirection }
-            };
+          if (shelf.id !== shelfId || menuMode !== MenuMode.PREPACKAGED) {
+            return shelf;
           }
-          return shelf;
+
+          const typedShelf = shelf as PrePackagedShelf;
+          const currentCriteria = typedShelf.sortCriteria;
+          let newDirection: 'asc' | 'desc' = 'asc';
+
+          if (currentCriteria && currentCriteria.key === key) {
+            newDirection = currentCriteria.direction === 'asc' ? 'desc' : 'asc';
+          }
+
+          return {
+            ...typedShelf,
+            sortCriteria: { key, direction: newDirection }
+          } as PrePackagedShelf;
         })
       );
     });
-  }, []);
+  }, [menuMode, setShelves]);
 
   // PrePackaged drag and drop handlers
   const handleMoveProduct = useCallback((fromShelfId: string, toShelfId: string, productIndex: number, targetIndex?: number) => {
@@ -1747,7 +1813,19 @@ const AppContent: React.FC = () => {
     setTimeout(() => setIsUpdatingPageCount(false), 500);
   }, []);
 
-  const handleUpdateGlobalSortCriteria = useCallback((key: SortCriteria['key']) => {
+  const handleUpdateGlobalSortCriteria = useCallback((rawKey: SortCriteria['key'] | PrePackagedSortCriteria['key']) => {
+    const normalizeKeyForMode = (inputKey: SortCriteria['key'] | PrePackagedSortCriteria['key']): SortCriteria['key'] | PrePackagedSortCriteria['key'] => {
+      if (menuMode === MenuMode.PREPACKAGED) {
+        if (inputKey === 'grower') return 'brand';
+        if (inputKey === 'isLastJar') return 'isLowStock';
+      } else {
+        if (inputKey === 'brand') return 'grower';
+        if (inputKey === 'isLowStock') return 'isLastJar';
+      }
+      return inputKey;
+    };
+
+    const key = normalizeKeyForMode(rawKey) as AnySortCriteria['key'];
     const currentPageNumber = pageManager.getCurrentPageNumber();
     const currentSort = pageManager.getPageGlobalSort(currentPageNumber);
     
@@ -1759,7 +1837,7 @@ const AppContent: React.FC = () => {
         ? { key, direction: 'desc' }
         : null; // Third click clears sort
     } else {
-      // New sort - default to desc for THC and Last Jar/Low Stock
+      // New sort - default to desc for THC and stock indicators
       const defaultDirection = (key === 'thc' || key === 'isLastJar' || key === 'isLowStock') ? 'desc' : 'asc';
       newCriteria = { key, direction: defaultDirection };
     }
@@ -1772,7 +1850,7 @@ const AppContent: React.FC = () => {
     
     // Force re-render to show updated sort
     forcePageUpdate();
-  }, [pageManager, setShelves, forcePageUpdate]);
+  }, [menuMode, pageManager, setShelves, forcePageUpdate]);
 
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
@@ -2325,7 +2403,7 @@ const AppContent: React.FC = () => {
       
       // Create JSON content
       const exportData = {
-        version: '1.1.1',
+        version: APP_VERSION,
         exported: new Date().toISOString(),
         project: projectData
       };
@@ -2568,7 +2646,7 @@ const AppContent: React.FC = () => {
         
         // Create JSON content
         const exportData = {
-          version: '1.1.1',
+          version: APP_VERSION,
           exported: new Date().toISOString(),
           project: projectData
         };
@@ -3563,12 +3641,14 @@ const AppContent: React.FC = () => {
           break;
 
         case 'global-sort':
-          const sortMap: Record<string, SortCriteria['key']> = {
+          const sortMap: Record<string, SortCriteria['key'] | PrePackagedSortCriteria['key']> = {
             'name': 'name',
             'grower': 'grower',
+            'brand': 'brand',
             'class': 'type',
             'thc': 'thc',
             'lastjar': 'isLastJar',
+            'lowstock': 'isLowStock',
             'originalshelf': 'originalShelf'
           };
           const sortKey = sortMap[data];
@@ -3699,7 +3779,7 @@ const AppContent: React.FC = () => {
           break;
 
         case 'show-about':
-          alert('🥭 Mango Cannabis Flower Menu Builder v1.1.1\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com');
+          alert(`🥭 Mango Cannabis Flower Menu Builder v${APP_VERSION}\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com`);
           break;
 
         case 'reset-welcome':
@@ -3860,6 +3940,8 @@ const AppContent: React.FC = () => {
         onClearAllSoldOut={handleClearAllSoldOut}
         onAddStrain={handleAddStrain}
         onCheckUpdates={handleManualCheckForUpdates}
+        allowPrereleaseUpdates={allowPrereleaseUpdates}
+        onTogglePreReleaseUpdates={handleTogglePreReleaseUpdates}
         onJumpToShelf={handleScrollToShelf}
         onShowProjectMenu={handleShowProjectMenu}
         shelves={processedShelves.map(shelf => ({ id: shelf.id, name: shelf.name }))}
@@ -3872,7 +3954,6 @@ const AppContent: React.FC = () => {
         onResetZoom={handleResetZoom}
         onFitToWindow={handleFitToWindow}
         onResetAppData={handleResetAppData}
-        onShowProjectMenu={handleShowProjectMenu}
       />
       <Toolbar
         onClearAllShelves={handleClearAllShelves}
@@ -3925,6 +4006,8 @@ const AppContent: React.FC = () => {
               onMoveStrainDown={handleMoveStrainDown}
               currentState={currentAppState}
               isControlsDisabled={autoFormatState?.isOptimizing || false}
+              scrollTarget={pendingScrollTarget}
+              onScrollTargetHandled={() => setPendingScrollTarget(null)}
             />
           ) : (
             <PrePackagedPanel
@@ -3945,6 +4028,8 @@ const AppContent: React.FC = () => {
               onMoveProductDown={handleMoveProductDown}
               currentState={currentAppState}
               isControlsDisabled={autoFormatState?.isOptimizing || false}
+              scrollTarget={pendingScrollTarget}
+              onScrollTargetHandled={() => setPendingScrollTarget(null)}
             />
           )}
         </div>

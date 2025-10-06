@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const fs = require('fs');
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -363,6 +364,19 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
           accelerator: 'CmdOrCtrl+U',
           click: () => sendToRenderer('check-for-updates-manual')
         },
+        {
+          id: 'allow-prerelease-updates',
+          label: 'Opt into Pre-Release/Beta Updates',
+          type: 'checkbox',
+          checked: !!updateSettings.allowPrerelease,
+          click: (menuItem) => {
+            updateSettings.allowPrerelease = menuItem.checked;
+            applyUpdateSettings();
+            broadcastUpdateSettings();
+            syncPrereleaseMenuItem();
+            saveUpdateSettings();
+          }
+        },
         { type: 'separator' },
         {
           label: 'Reset App Data',
@@ -416,6 +430,7 @@ function createMenu(dynamicData = { shelves: [], darkMode: false, fiftyPercentOf
   // but hide the menu bar since we use custom HeaderTabs
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+  syncPrereleaseMenuItem();
   
   // Hide the menu bar on Windows/Linux (macOS always shows app menu)
   if (mainWindow) {
@@ -439,6 +454,22 @@ async function updateMenuWithDynamicData(dynamicData) {
 // IPC handlers - keeping original handlers only for now
 ipcMain.handle('show-confirm-dialog', async (event, message, detail) => {
   return await showConfirmDialog(message, detail);
+});
+
+ipcMain.handle('get-update-settings', async () => {
+  return updateSettings;
+});
+
+ipcMain.handle('set-update-settings', async (event, newSettings = {}) => {
+  updateSettings = {
+    ...updateSettings,
+    ...newSettings
+  };
+  applyUpdateSettings();
+  syncPrereleaseMenuItem();
+  broadcastUpdateSettings();
+  saveUpdateSettings();
+  return updateSettings;
 });
 
 ipcMain.handle('update-menu-state', async (event, updates) => {
@@ -528,6 +559,78 @@ ipcMain.handle('update-dynamic-menus', async (event, menuData) => {
 
 // Auto-updater configuration and handlers
 let updateInfo = null;
+let updateSettings = {
+  allowPrerelease: false
+};
+
+function applyUpdateSettings() {
+  try {
+    const allowPrerelease = !!updateSettings.allowPrerelease;
+    autoUpdater.allowPrerelease = allowPrerelease;
+    console.log(`[Updater] allowPrerelease set to ${allowPrerelease}`);
+  } catch (error) {
+    console.warn('[Updater] Failed to apply update settings:', error);
+  }
+}
+
+function broadcastUpdateSettings() {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('update-settings-changed', updateSettings);
+  }
+}
+
+function syncPrereleaseMenuItem() {
+  const menu = Menu.getApplicationMenu();
+  if (menu) {
+    const menuItem = menu.getMenuItemById('allow-prerelease-updates');
+    if (menuItem) {
+      menuItem.checked = !!updateSettings.allowPrerelease;
+    }
+  }
+}
+
+function getUpdateSettingsFilePath() {
+  return path.join(app.getPath('userData'), 'update-settings.json');
+}
+
+function loadUpdateSettings() {
+  try {
+    const filePath = getUpdateSettingsFilePath();
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(data);
+      if (typeof parsed.allowPrerelease === 'boolean') {
+        updateSettings.allowPrerelease = parsed.allowPrerelease;
+      }
+    }
+  } catch (error) {
+    console.warn('[Updater] Failed to load update settings:', error);
+  }
+}
+
+function saveUpdateSettings() {
+  try {
+    const filePath = getUpdateSettingsFilePath();
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(updateSettings, null, 2), 'utf8');
+  } catch (error) {
+    console.warn('[Updater] Failed to save update settings:', error);
+  }
+}
+
+loadUpdateSettings();
+
+function isIgnorableUpdateError(err) {
+  if (!err) return false;
+  const msg = String(err.message || err).toLowerCase();
+  return (
+    msg.includes('404') ||
+    msg.includes('cannot find') ||
+    msg.includes('no published release') ||
+    msg.includes('no assets found') ||
+    msg.includes('update info not found')
+  );
+}
 
 // Configure auto-updater (only in production)
 if (!isDev) {
@@ -545,6 +648,7 @@ if (!isDev) {
   // Configure auto-updater to download but not apply automatically
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
+  applyUpdateSettings();
 
   // Auto-updater event handlers
   autoUpdater.on('checking-for-update', () => {
@@ -600,6 +704,27 @@ if (!isDev) {
     console.error('🚨 Auto-updater error:', err);
     console.error('Error stack:', err.stack);
     updateInfo = null;
+
+    if (isIgnorableUpdateError(err)) {
+      console.log('[Updater] No eligible release found. allowPrerelease:', updateSettings.allowPrerelease);
+      if (mainWindow && mainWindow.webContents) {
+        const payload = {
+          reason: 'not-found',
+          allowPrerelease: updateSettings.allowPrerelease,
+          message: updateSettings.allowPrerelease
+            ? 'No pre-release builds available yet. Hang tight!'
+            : 'No newer release available right now.'
+        };
+        mainWindow.webContents.send('update-not-available', payload);
+        mainWindow.webContents.send('update-debug', {
+          type: 'not-available',
+          message: payload.message,
+          allowPrerelease: updateSettings.allowPrerelease
+        });
+      }
+      return;
+    }
+
     // Send enhanced error info to renderer with manual fallback
     if (mainWindow && mainWindow.webContents) {
       mainWindow.webContents.send('update-error', {

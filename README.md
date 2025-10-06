@@ -10,7 +10,7 @@ Create professional, compliant flower menus for in-store display and inventory m
 
 ### Choose Your Platform
 1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
-2. Find the latest version (v1.1.1)
+2. Find the latest version (v1.1.1-hf1)
 3. Choose your operating system below:
 
 ---
@@ -135,7 +135,7 @@ Create professional, compliant flower menus for in-store display and inventory m
 
 ---
 
-## What's New in v1.1.1
+## What's New in v1.1.1 (and hotfix v1.1.1-hf1)
 
 ### Multi-Page Menu System
 Create unlimited independent menu pages. Each page maintains its own content, settings, and sorting preferences.

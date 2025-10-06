@@ -24,6 +24,8 @@ interface FlowerShelvesPanelProps {
   isControlsDisabled?: boolean;
   onMoveStrainUp?: (shelfId: string, strainIndex: number) => void;
   onMoveStrainDown?: (shelfId: string, strainIndex: number) => void;
+  scrollTarget?: { mode: 'bulk' | 'prepackaged'; shelfId: string; itemId: string } | null;
+  onScrollTargetHandled?: () => void;
 }
 
 export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelvesPanelProps>(({
@@ -43,6 +45,8 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
   onMoveStrainDown,
   currentState,
   isControlsDisabled,
+  scrollTarget,
+  onScrollTargetHandled,
 }, ref) => {
   const [containerElement, setContainerElement] = useState<HTMLElement | null>(null);
   const [overlayEnabled, setOverlayEnabled] = useState(() => {
@@ -85,7 +89,35 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
     setOverlayEnabled(enabled);
     localStorage.setItem('scrollOverlayEnabled', JSON.stringify(enabled));
   }, []);
-  
+
+  // Scroll newly created or duplicated strains into view reliably
+  useEffect(() => {
+    if (!scrollTarget || scrollTarget.mode !== 'bulk') return;
+    if (!containerElement) return;
+
+    const { shelfId, itemId } = scrollTarget;
+
+    const scrollIntoView = () => {
+      const shelfElement = containerElement.querySelector(`[data-shelf-id="${shelfId}"]`);
+      if (!shelfElement) return false;
+      const itemElement = shelfElement.querySelector<HTMLElement>(`[data-strain-id="${itemId}"]`);
+      if (!itemElement) return false;
+      itemElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      onScrollTargetHandled?.();
+      return true;
+    };
+
+    if (scrollIntoView()) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      scrollIntoView();
+    }, 75);
+
+    return () => window.clearTimeout(timeout);
+  }, [scrollTarget, containerElement, onScrollTargetHandled]);
+
   
   return (
     <>
