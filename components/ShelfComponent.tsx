@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Shelf, Strain, SortCriteria, Theme, SupportedStates } from '../types';
 import { StrainInputRow } from './StrainInputRow';
 import { DropZone } from './common/DropZone';
@@ -19,6 +19,7 @@ interface ShelfComponentProps {
   onMoveStrain?: (fromShelfId: string, toShelfId: string, strainIndex: number, targetIndex?: number) => void;
   onMoveStrainUp?: (shelfId: string, strainIndex: number) => void;
   onMoveStrainDown?: (shelfId: string, strainIndex: number) => void;
+  onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
   availableShelves?: Shelf[]; // For 50% OFF shelf original shelf selection
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isControlsDisabled?: boolean;

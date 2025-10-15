@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { MANGO_MAIN_ORANGE, MANGO_SUPPORT_ORANGE } from '../../constants';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'warning' | 'custom';
@@ -17,7 +16,7 @@ export const Button: React.FC<ButtonProps> = ({
   const baseStyle = 'font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors transition-opacity duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed shadow';
 
   const variantStyles = {
-    primary: `bg-gradient-to-r from-[${MANGO_MAIN_ORANGE}] to-[${MANGO_SUPPORT_ORANGE}] text-white hover:opacity-90 focus:ring-[${MANGO_MAIN_ORANGE}]`,
+    primary: 'bg-gradient-to-r from-[#fe9426] to-[#f9541a] text-white hover:opacity-90 focus:ring-[#fe9426]',
     secondary: 'bg-gray-500 hover:bg-gray-400 text-white focus:ring-gray-500',
     danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
     warning: 'bg-yellow-500 hover:bg-yellow-600 text-gray-800 focus:ring-yellow-400',

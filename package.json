@@ -43,6 +43,7 @@
     "electron:quick": "npm run build && electron .",
     "build-electron": "npm run build && electron-builder",
     "dist": "npm run build && electron-builder --win --publish=never",
+    "dist:mac": "npm run build && electron-builder --mac --publish=never",
     "dist-full": "npm run build && electron-builder --publish=never",
     "pack": "npm run build && electron-builder --dir",
     "pack-quick": "npm run build && electron-builder --dir --config.compression=store",
@@ -66,11 +67,14 @@
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
+    "postcss": "^8.4.47",
     "rimraf": "^6.0.1",
+    "tailwindcss": "^3.4.13",
     "typescript": "~5.3.3",
     "vite": "^5.0.0",
     "wait-on": "^7.2.0"
@@ -108,10 +112,11 @@
     },
     "mac": {
       "category": "public.app-category.business",
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
+      "identity": null,
       "entitlements": "assets/entitlements.mac.plist",
       "entitlementsInherit": "assets/entitlements.mac.plist",
-      "icon": "assets/icons/appIcon.icns",
+      "icon": "assets/icons/appIcon-512.png",
       "artifactName": "Mango-Cannabis-Flower-Menu-Builder-MAC-${version}-${arch}.${ext}",
       "target": [
         {
