@@ -71,11 +71,11 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
             }`}>
               <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Hotfix v{APP_VERSION} — Quick Stability Patch</h3>
               <ul className="text-sm space-y-1 list-disc list-inside">
-                <li><strong>Global Sort Reliability:</strong> Shelf-level overrides now clear correctly so brand and low-stock sorts snap into place across every page.</li>
-                <li><strong>Copy → Add Flow:</strong> Duplicating a strain/product and then adding a new one scrolls to the fresh blank row instead of jumping back up the list.</li>
-                <li><strong>Consistent Auto-Scroll:</strong> Newly created items are always brought into view, keeping long shelves manageable.</li>
+                <li><strong>Cross-State Stability:</strong> Fixes the crash non-Oklahoma states hit when opening the Bulk builder by restoring required React hooks.</li>
+                <li><strong>Reliable Shelf Controls:</strong> Keeps the clear-shelf confirmation timer running so bulk shelves reset without breaking the UI.</li>
+                <li><strong>Verified Templates:</strong> Double-checks default shelf templates so every state loads the correct structure during hotfix rollout.</li>
               </ul>
-              <p className="text-xs opacity-75 mt-3">Released alongside the original v1.1.1 feature set so your team sees both the big upgrades and the latest fixes in one place.</p>
+              <p className="text-xs opacity-75 mt-3">Layered on top of the v1.1.1 multi-page release so every location can keep building without interruption.</p>
             </section>
 
             {/* Main Feature */}

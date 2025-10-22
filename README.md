@@ -10,7 +10,7 @@ Create professional, compliant flower menus for in-store display and inventory m
 
 ### Choose Your Platform
 1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
-2. Find the latest version (v1.1.1-hf1)
+2. Find the latest version (v1.1.1-hf2)
 3. Choose your operating system below:
 
 ---
@@ -135,7 +135,17 @@ Create professional, compliant flower menus for in-store display and inventory m
 
 ---
 
-## What's New in v1.1.1 (and hotfix v1.1.1-hf1)
+## What's New in v1.1.1 (hotfix v1.1.1-hf2)
+
+### Hotfix v1.1.1-hf2 — Bulk Flower Builder Stability
+- Restores the Bulk Flower menu builder for every supported state after the Oklahoma-focused hf1 rollout
+- Keeps shelf management tools responsive by repairing the clear-confirmation timer logic
+- Verifies default shelf templates load correctly so teams outside Oklahoma can keep building menus
+
+### Hotfix v1.1.1-hf1 — Quick Stability Patch
+- Keeps brand and low-stock sorts aligned after clearing shelf overrides
+- Ensures duplicated strains stay in view when adding new rows
+- Improves auto-scroll behavior for newly created items on longer shelves
 
 ### Multi-Page Menu System
 Create unlimited independent menu pages. Each page maintains its own content, settings, and sorting preferences.

@@ -19,6 +19,45 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const feedbackButtonRef = useRef<HTMLButtonElement>(null);
 
+  const hotfixEntries = [
+    {
+      version: APP_VERSION,
+      title: 'Bulk Flower Builder Stability',
+      description: 'Restores the Bulk Flower builder for every supported state while keeping shelf tools responsive.',
+      highlights: [
+        'Fixes the crash non-Oklahoma states hit when opening the Bulk builder by restoring required React hooks.',
+        'Ensures the clear-shelf confirmation timer runs safely so bulk shelves can reset without errors.',
+        'Double-checks default shelf templates load correctly across states as we expand hotfix coverage.'
+      ],
+      footnote: 'Layered on top of the v1.1.1 multi-page release so teams everywhere can build without interruption.'
+    },
+    {
+      version: '1.1.1-hf1',
+      title: 'Quick Stability Patch',
+      description: 'Keeps the v1.1.1 launch feeling smooth while teams explore the multi-page upgrade.',
+      highlights: [
+        'Shelf overrides reset correctly so brand and low-stock sorts stay aligned across every page.',
+        'Copying a strain/product keeps the follow-up “Add” scroll anchored on the new blank row.',
+        'Auto-scroll now always brings freshly created items into view on longer shelves.'
+      ],
+      footnote: 'Still available for reference below—expand it any time you need a refresher.'
+    }
+  ] as const;
+
+  const [expandedHotfixes, setExpandedHotfixes] = useState<Record<string, boolean>>(() =>
+    hotfixEntries.reduce((acc, entry) => {
+      acc[entry.version] = entry.version === APP_VERSION;
+      return acc;
+    }, {} as Record<string, boolean>)
+  );
+
+  const toggleHotfixSection = (version: string) => {
+    setExpandedHotfixes(prev => ({
+      ...prev,
+      [version]: !prev[version]
+    }));
+  };
+
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -36,31 +75,89 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
   if (!isOpen) return null;
 
   // Tab content components
-  const HighlightsTab = () => (
-    <div className={`p-6 overflow-y-auto max-h-[60vh] ${
-      theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-    }`}>
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">What's New in v{APP_VERSION}</h2>
-          <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-            Hotfix updates layered on top of the v1.1.1 multi-page release
-          </p>
-        </div>
+  const HighlightsTab = () => {
+    return (
+      <div className={`p-6 overflow-y-auto max-h-[60vh] ${
+        theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+      }`}>
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">What's New in v{APP_VERSION}</h2>
+            <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+              Hotfix updates layered on top of the v1.1.1 multi-page release
+            </p>
+          </div>
 
-        <div className={`p-4 rounded-lg border-l-4 border-lime-400 ${
-          theme === 'dark' ? 'bg-lime-900/20 text-gray-100 border-opacity-70' : 'bg-lime-50 text-gray-800'
-        }`}>
-          <h3 className="font-semibold text-lime-600 mb-2">🌿 Hotfix Highlights (v{APP_VERSION})</h3>
-          <ul className={`text-sm space-y-1 list-disc list-inside ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
-            <li><strong>Global Sort Stability:</strong> Brand / low-stock sorts respect shelf overrides across every page.</li>
-            <li><strong>Copy + Add Flow:</strong> Duplicate a strain or product and the next “Add” scrolls to the new blank row.</li>
-            <li><strong>Auto-Scroll Consistency:</strong> Newly created items stay in view for smoother long-shelf editing.</li>
-          </ul>
-          <p className={`text-xs mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Keep reading for the full v1.1.1 feature tour below.
-          </p>
-        </div>
+          <div className={`rounded-lg border ${
+            theme === 'dark' ? 'border-gray-700 bg-gray-900/40' : 'border-gray-200 bg-white'
+          }`}>
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {hotfixEntries.map(entry => {
+                const isOpen = expandedHotfixes[entry.version];
+                return (
+                  <div key={entry.version}>
+                    <button
+                      type="button"
+                      onClick={() => toggleHotfixSection(entry.version)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                        theme === 'dark'
+                          ? 'hover:bg-gray-800/70'
+                          : 'hover:bg-orange-100'
+                      }`}
+                    >
+                      <svg
+                        className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
+                          isOpen ? 'rotate-90 text-orange-500' : 'text-gray-400'
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold">
+                            Hotfix v{entry.version}
+                          </span>
+                          {entry.version === APP_VERSION && (
+                            <span className="text-xs font-medium text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {entry.title}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {isOpen ? 'Hide' : 'Show'}
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className={`px-6 pb-5 space-y-3 ${
+                        theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                      }`}>
+                        <p className="text-sm">{entry.description}</p>
+                        <ul className="list-disc list-inside text-sm space-y-1">
+                          {entry.highlights.map((highlight, index) => (
+                            <li key={index}>{highlight}</li>
+                          ))}
+                        </ul>
+                        {entry.footnote && (
+                          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {entry.footnote}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div className={`p-4 rounded-lg ${
@@ -173,6 +270,7 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
       </div>
     </div>
   );
+  };
 
   const ImportExportTab = () => (
     <div className={`p-6 overflow-y-auto max-h-[60vh] ${

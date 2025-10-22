@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Shelf, Strain, SortCriteria, Theme, SupportedStates } from '../types';
 import { StrainInputRow } from './StrainInputRow';
 import { DropZone } from './common/DropZone';
@@ -22,6 +22,7 @@ interface ShelfComponentProps {
   availableShelves?: Shelf[]; // For 50% OFF shelf original shelf selection
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isControlsDisabled?: boolean;
+  onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -68,6 +69,7 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   onMoveStrain,
   onMoveStrainUp,
   onMoveStrainDown,
+  onReorderStrain,
   availableShelves = [],
   currentState,
   isControlsDisabled,

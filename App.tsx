@@ -332,6 +332,13 @@ const AppContent: React.FC = () => {
     setPageChangeCounter(prev => prev + 1);
   }, []);
 
+  const syncMenuMode = useCallback((mode: MenuMode) => {
+    pageManager.setMode(mode);
+    setMenuMode(mode);
+    localStorage.setItem('mango-oklahoma-menu-mode', mode);
+    localStorage.setItem('mango-menu-mode', mode);
+  }, [pageManager]);
+
   // Current active shelves based on current page - always maintain consistent structure
   const shelves = useMemo(() => {
     const currentPage = pageManager.getCurrentPage();
@@ -583,14 +590,11 @@ const AppContent: React.FC = () => {
     }
     
     // CRITICAL: Clear PageManager to prevent type mixing during mode switch
-    pageManager.setMode(newMode);
-    
-    setMenuMode(newMode);
-    localStorage.setItem('mango-oklahoma-menu-mode', newMode);
+    syncMenuMode(newMode);
     
     // Force re-render to initialize with clean state for new mode
     forcePageUpdate();
-  }, [menuMode, bulkShelves, prePackagedShelves, pageManager, forcePageUpdate]);
+  }, [menuMode, bulkShelves, prePackagedShelves, forcePageUpdate, syncMenuMode, currentAppState, fiftyPercentOffEnabled]);
 
   // Instructions modal handler
   const handleShowInstructions = useCallback(() => {
@@ -1038,10 +1042,10 @@ const AppContent: React.FC = () => {
     
     // Auto-switch to Pre-Packaged mode if switching to New York (which doesn't support Bulk mode)
     if (newState === SupportedStates.NEW_YORK && menuMode === MenuMode.BULK) {
-      setMenuMode(MenuMode.PREPACKAGED);
-      localStorage.setItem('mango-menu-mode', MenuMode.PREPACKAGED);
+      syncMenuMode(MenuMode.PREPACKAGED);
+      forcePageUpdate();
     }
-  }, [currentAppState, hasMenuContent, menuMode]);
+  }, [currentAppState, hasMenuContent, menuMode, syncMenuMode, forcePageUpdate]);
 
   // Welcome modal handlers
   const handleWelcomeStateSelect = useCallback((selectedState: SupportedStates) => {
@@ -1051,12 +1055,12 @@ const AppContent: React.FC = () => {
     
     // Auto-switch to Pre-Packaged mode if selecting New York (which doesn't support Bulk mode)
     if (selectedState === SupportedStates.NEW_YORK && menuMode === MenuMode.BULK) {
-      setMenuMode(MenuMode.PREPACKAGED);
-      localStorage.setItem('mango-menu-mode', MenuMode.PREPACKAGED);
+      syncMenuMode(MenuMode.PREPACKAGED);
+      forcePageUpdate();
     }
     
     setShowWelcomeModal(false);
-  }, [menuMode]);
+  }, [menuMode, syncMenuMode, forcePageUpdate]);
 
   const handleWelcomeModalClose = useCallback(() => {
     localStorage.setItem('mango-has-seen-welcome', 'true');
@@ -1926,7 +1930,7 @@ const AppContent: React.FC = () => {
       
       // Reset all React state to initial values
       setCurrentAppState(SupportedStates.OKLAHOMA);
-      setMenuMode(MenuMode.BULK);
+      syncMenuMode(MenuMode.BULK);
       setBulkShelves(getDefaultShelves(SupportedStates.OKLAHOMA));
       setPrePackagedShelves(getDefaultPrePackagedShelves(SupportedStates.OKLAHOMA));
       setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
@@ -1941,13 +1945,14 @@ const AppContent: React.FC = () => {
       
       // Show welcome modal (app fresh state)
       setShowWelcomeModal(true);
+      forcePageUpdate();
       
       // Force app reload to ensure clean state
       setTimeout(() => {
         window.location.reload();
       }, 100);
     }
-  }, []);
+  }, [syncMenuMode, forcePageUpdate]);
 
   const handleUpdateShelfSortCriteria = useCallback((shelfId: string, key: SortCriteria['key']) => {
     // Applying a shelf sort will reset global sort.
@@ -2370,7 +2375,7 @@ const AppContent: React.FC = () => {
     try {
       // Restore menu mode and state
       if (projectData.metadata.menuMode !== menuMode) {
-        setMenuMode(projectData.metadata.menuMode);
+        syncMenuMode(projectData.metadata.menuMode);
       }
       if (projectData.metadata.currentState !== currentAppState) {
         setCurrentAppState(projectData.metadata.currentState);
@@ -2406,7 +2411,7 @@ const AppContent: React.FC = () => {
         type: 'error'
       });
     }
-  }, [menuMode, currentAppState, theme, pageManager, setMenuMode, setCurrentAppState, setTheme, setPreviewSettings, forcePageUpdate, addToast]);
+  }, [menuMode, currentAppState, theme, pageManager, syncMenuMode, setCurrentAppState, setTheme, setPreviewSettings, forcePageUpdate, addToast]);
 
   // Enhanced session management handlers
   const handleSaveAs = useCallback(async () => {
@@ -2854,8 +2859,8 @@ const AppContent: React.FC = () => {
         );
         
         if (switchConfirm) {
-          setMenuMode(detectedMode);
-          localStorage.setItem('mango-menu-mode', detectedMode);
+          syncMenuMode(detectedMode);
+          forcePageUpdate();
         } else {
           detectedMode = menuMode; // Use current mode if user doesn't want to switch
         }
@@ -3096,7 +3101,7 @@ const AppContent: React.FC = () => {
       }
     };
     reader.readAsText(file);
-  }, [menuMode, bulkShelves, prePackagedShelves, currentAppState]);
+  }, [menuMode, bulkShelves, prePackagedShelves, currentAppState, syncMenuMode, forcePageUpdate]);
 
   // Function to load CSV from file path (for Electron native dialog)
   const loadCSVFromFilePath = useCallback(async (filePath: string) => {
@@ -3515,15 +3520,15 @@ const AppContent: React.FC = () => {
         `Are you sure you want to continue?`;
         
       if (confirm(confirmMessage)) {
-        setMenuMode(newMode);
-        localStorage.setItem('mango-menu-mode', newMode);
+        syncMenuMode(newMode);
+        forcePageUpdate();
         recordChange(() => {});
       }
     } else {
-      setMenuMode(newMode);
-      localStorage.setItem('mango-menu-mode', newMode);
+      syncMenuMode(newMode);
+      forcePageUpdate();
     }
-  }, [menuMode, bulkShelves, prePackagedShelves, recordChange]);
+  }, [menuMode, bulkShelves, prePackagedShelves, recordChange, syncMenuMode, forcePageUpdate]);
 
   // Function to update dynamic menu items
   const updateDynamicMenus = useCallback(() => {
@@ -3839,7 +3844,7 @@ const AppContent: React.FC = () => {
             
             // Reset all React state to initial values
             setCurrentAppState(SupportedStates.OKLAHOMA);
-            setMenuMode(MenuMode.BULK);
+            syncMenuMode(MenuMode.BULK);
             setBulkShelves(getDefaultShelves(SupportedStates.OKLAHOMA));
             setPrePackagedShelves(getDefaultPrePackagedShelves(SupportedStates.OKLAHOMA));
             setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
@@ -3854,6 +3859,7 @@ const AppContent: React.FC = () => {
             
             // Show welcome modal (app fresh state)
             setShowWelcomeModal(true);
+            forcePageUpdate();
             
             // Force app reload to ensure clean state
             setTimeout(() => {
@@ -3928,6 +3934,8 @@ const AppContent: React.FC = () => {
     recordChange,
     handleManualCheckForUpdates,
     handleResetAppData,
+    syncMenuMode,
+    forcePageUpdate,
     menuMode,
     bulkShelves,
     prePackagedShelves,
