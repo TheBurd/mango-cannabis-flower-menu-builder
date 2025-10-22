@@ -51,8 +51,11 @@ npm run electron-dev
 # Build for production
 npm run build
 
-# Build Electron app
+# Package Electron app for Windows
 npm run dist
+
+# Package Electron app for macOS (DMG + ZIP outputs)
+npm run dist:mac
 ```
 
 ## Code Style

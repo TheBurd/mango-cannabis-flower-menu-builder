@@ -113,6 +113,7 @@ ehthumbs.db
 Thumbs.db
 Desktop.ini
 Icon?
+!assets/icons/
 
 # Screenshots and temporary files
 Screenshots/
@@ -122,6 +123,7 @@ Screenshots/
 **/Screenshots/
 **/Pictures/Screenshots/
 C:/Users/*/Pictures/Screenshots/
+!assets/icons/appIcon-512.png
 
 # Windows specific
 $RECYCLE.BIN/
