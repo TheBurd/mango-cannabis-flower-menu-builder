@@ -22,6 +22,17 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
   const hotfixEntries = [
     {
       version: APP_VERSION,
+      title: 'Michigan Pricing & Shelf Visibility',
+      description: 'Updates Michigan bulk flower pricing with side-by-side recreational and medical totals and adds pricing visibility controls everywhere.',
+      highlights: [
+        'Adds dual-line pricing headers for every Michigan bulk shelf with aligned REC and MED totals.',
+        'Extends the “Show pricing in preview” toggle to every shelf in both bulk and pre-packaged builders, on by default.',
+        'Applies shelf-accent backgrounds to pricing toggles so the controls stay readable against each shelf.'
+      ],
+      footnote: 'Built on top of the v1.1.1 multi-page release so you can update Michigan menus without losing cross-state stability.'
+    },
+    {
+      version: '1.1.1-hf2',
       title: 'Bulk Flower Builder Stability',
       description: 'Restores the Bulk Flower builder for every supported state while keeping shelf tools responsive.',
       highlights: [

@@ -197,6 +197,32 @@ export const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, on
             {/* Horizontal Divider */}
             <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
 
+            {/* Pricing Visibility */}
+            <section>
+              <h3 className="text-xl font-semibold mb-3 text-orange-500">💸 Pricing Visibility</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Shelf Toggles</h4>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li>Each shelf includes a <strong>Show pricing in preview</strong> checkbox (Bulk & Pre-Packaged)</li>
+                    <li>Enabled by default so exports keep pricing unless you hide it per shelf</li>
+                    <li>Toggles inherit the shelf’s accent color for clear, state-friendly visuals</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Michigan Pricing Tables</h4>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    <li>Michigan bulk shelves display aligned <strong>REC</strong> and <strong>MED</strong> totals for 1g–28g</li>
+                    <li>Pricing headers automatically collapse when a shelf hides pricing</li>
+                    <li>Pre-packaged shelves share the same visibility controls for consistent exports</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            {/* Horizontal Divider */}
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
             {/* Layout & Design */}
             <section>
               <h3 className="text-xl font-semibold mb-3 text-orange-500">🎨 Menu Design</h3>

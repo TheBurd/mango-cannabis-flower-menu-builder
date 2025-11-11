@@ -79,23 +79,97 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
   
   // IMPROVED: More compact header styles
   const headerPaddingVertical = getScaledValue(baseFontSizePx, 0.35, 3); // Reduced from 0.4
-  const titleFontSize = Math.max(11, baseFontSizePx * 1.3); // Reduced from 1.4
-  const pricingFontSize = Math.max(7, baseFontSizePx * 0.7); // Reduced from 0.75
   const titleLineHeight = 1.0; // Reduced from 1.1
   const pricingLineHeight = 1.0; // Reduced from 1.1
-  const spaceBetween = getScaledValue(baseFontSizePx, 0.03, 1); // Reduced spacing
-  
-  const calculatedHeaderHeight = 
-    (headerPaddingVertical * 2) + 
-    (titleFontSize * titleLineHeight) + 
-    spaceBetween + 
-    (pricingFontSize * pricingLineHeight) + 
-    getScaledValue(baseFontSizePx, 0.1, 1); // Reduced extra space
 
   // IMPROVED: More compact row styles for flowing layout
   const rowHeight = getScaledValue(baseFontSizePx, 1.8, 18); // Reduced from 2.2
+  const headerGap = getScaledValue(baseFontSizePx, 0.4, 4);
   
   const elements: React.ReactElement[] = [];
+  const weightTiers = shelf.medicalPricing ? [
+    { label: '1g', rec: shelf.pricing.g, med: shelf.medicalPricing.g },
+    { label: '3.5g', rec: shelf.pricing.eighth, med: shelf.medicalPricing.eighth },
+    { label: '7g', rec: shelf.pricing.quarter, med: shelf.medicalPricing.quarter },
+    { label: '14g', rec: shelf.pricing.half, med: shelf.medicalPricing.half },
+    { label: '28g', rec: shelf.pricing.oz, med: shelf.medicalPricing.oz },
+  ].filter(tier => typeof tier.rec === 'number' && typeof tier.med === 'number') : [];
+
+  const buildPricingGrid = (tiers: typeof weightTiers) => {
+    const columnGap = `${getScaledValue(baseFontSizePx, 0.2, 2)}px`;
+    const rowGap = `${getScaledValue(baseFontSizePx, 0.1, 1)}px`;
+    const baseFont = getScaledFontSize(baseFontSizePx, 0.65, 6);
+    const baseCellStyle: React.CSSProperties = {
+      padding: '1px 4px',
+      textAlign: 'right',
+      display: 'block',
+    };
+    const headerWeightStyle: React.CSSProperties = {
+      ...baseCellStyle,
+      fontWeight: 600,
+      textAlign: 'center',
+    };
+    const labelCellStyle: React.CSSProperties = {
+      ...baseCellStyle,
+      fontWeight: 600,
+      textTransform: 'uppercase',
+    };
+
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `auto repeat(${tiers.length}, auto)`,
+          columnGap,
+          rowGap,
+          fontSize: baseFont,
+        }}
+      >
+        <span style={baseCellStyle} />
+        {tiers.map(tier => (
+          <span key={`header-weight-${tier.label}`} style={headerWeightStyle}>
+            {tier.label}
+          </span>
+        ))}
+        <span style={labelCellStyle}>Med</span>
+        {tiers.map(tier => (
+          <span key={`header-med-${tier.label}`} style={baseCellStyle}>
+            {formatPrice(tier.med ?? 0)}
+          </span>
+        ))}
+        <span style={labelCellStyle}>Rec</span>
+        {tiers.map(tier => (
+          <span key={`header-rec-${tier.label}`} style={baseCellStyle}>
+            {formatPrice(tier.rec ?? 0)}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  let pricingContent: React.ReactNode = null;
+  if (!shelf.hidePricing) {
+    if (shelf.medicalPricing && weightTiers.length > 0) {
+      pricingContent = buildPricingGrid(weightTiers);
+    } else {
+      pricingContent = (
+        <p
+          style={{
+            fontSize: getScaledFontSize(baseFontSizePx, 0.7, 7),
+            opacity: 0.9,
+            lineHeight: pricingLineHeight,
+            margin: 0,
+            textAlign: 'right',
+          }}
+        >
+          {shelf.isInfused && shelf.pricing.fiveG ?
+            `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.fiveG)}/5g` :
+            `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.eighth)}/8th | ${formatPrice(shelf.pricing.quarter)}/Qtr | ${formatPrice(shelf.pricing.half)}/Half | ${formatPrice(shelf.pricing.oz)}/Oz`
+          }
+        </p>
+      );
+    }
+  }
   
   // Add CSS for infused pattern if needed
   if (shelf.isInfused) {
@@ -114,42 +188,43 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
         padding: `${headerPaddingVertical}px ${getScaledValue(baseFontSizePx, 0.5, 5)}px`, // Reduced padding
         breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
         breakAfter: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
-        position: 'relative',
-        height: `${calculatedHeaderHeight}px`,
-        minHeight: `${calculatedHeaderHeight}px`,
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: `${headerGap}px`,
         border: `2px solid ${shelfBorderColor}`,
         borderRadius: '4px 4px 0 0', // Standard radius
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)', // Reduced shadow
       }}
     >
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '0',
-        right: '0',
-        transform: 'translateY(-50%)',
-        paddingLeft: getScaledValue(baseFontSizePx, 0.5, 5),
-        paddingRight: getScaledValue(baseFontSizePx, 0.5, 5)
-      }}>
+      <div
+        style={{
+          flex: '1 1 160px',
+          minWidth: '160px',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
         <h3 style={{
           fontSize: getScaledFontSize(baseFontSizePx, 1.3, 11), // Reduced font size
           fontWeight: 700,
-          marginBottom: `${spaceBetween}px`,
           lineHeight: titleLineHeight,
+          margin: 0,
         }}>{shelf.name}</h3>
-        {!shelf.hidePricing && (
-          <p style={{
-            fontSize: getScaledFontSize(baseFontSizePx, 0.7, 7), // Reduced font size
-            opacity: 0.9,
-            lineHeight: pricingLineHeight,
-          }}>
-            {shelf.isInfused && shelf.pricing.fiveG ? 
-              `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.fiveG)}/5g` :
-              `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.eighth)}/8th | ${formatPrice(shelf.pricing.quarter)}/Qtr | ${formatPrice(shelf.pricing.half)}/Half | ${formatPrice(shelf.pricing.oz)}/Oz`
-            }
-          </p>
-        )}
       </div>
+      {pricingContent && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: `${getScaledValue(baseFontSizePx, 0.1, 1)}px`,
+          }}
+        >
+          {pricingContent}
+        </div>
+      )}
     </div>
   );
 
@@ -438,24 +513,27 @@ export const MenuTable = React.memo<MenuTableProps>(({
 
   // IMPROVED: More compact header calculations
   const headerPaddingVertical = getScaledValue(baseFontSizePx, 0.35, 3); // Reduced from 0.4
-  const titleFontSize = Math.max(11, baseFontSizePx * 1.3); // Reduced from 1.4
-  const pricingFontSize = Math.max(7, baseFontSizePx * 0.7); // Reduced from 0.75
   const titleLineHeight = 1.0; // Reduced from 1.1
   const pricingLineHeight = 1.0; // Reduced from 1.1
-  const spaceBetween = getScaledValue(baseFontSizePx, 0.03, 1); // Reduced spacing
+  const headerGap = getScaledValue(baseFontSizePx, 0.4, 4);
 
-  const calculatedHeaderHeight = 
-    (headerPaddingVertical * 2) + 
-    (titleFontSize * titleLineHeight) + 
-    spaceBetween + 
-    (pricingFontSize * pricingLineHeight) + 
-    getScaledValue(baseFontSizePx, 0.1, 1); // Reduced extra space
+  const weightTiers = shelf.medicalPricing ? [
+    { label: '1g', rec: shelf.pricing.g, med: shelf.medicalPricing.g },
+    { label: '3.5g', rec: shelf.pricing.eighth, med: shelf.medicalPricing.eighth },
+    { label: '7g', rec: shelf.pricing.quarter, med: shelf.medicalPricing.quarter },
+    { label: '14g', rec: shelf.pricing.half, med: shelf.medicalPricing.half },
+    { label: '28g', rec: shelf.pricing.oz, med: shelf.medicalPricing.oz },
+  ].filter(tier => typeof tier.rec === 'number' && typeof tier.med === 'number') : [];
 
   const shelfActualHeaderStyle: React.CSSProperties = {
     position: 'relative',
-    height: `${calculatedHeaderHeight}px`,
-    minHeight: `${calculatedHeaderHeight}px`,
     marginBottom: '0',
+    padding: `${headerPaddingVertical}px ${getScaledValue(baseFontSizePx, 0.5, 5)}px`,
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: `${headerGap}px`,
     // When shelf splitting is disabled, keep header with its table
     breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
     breakAfter: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
@@ -464,15 +542,41 @@ export const MenuTable = React.memo<MenuTableProps>(({
   const shelfNameStyle: React.CSSProperties = {
     fontSize: getScaledFontSize(baseFontSizePx, 1.3, 11), // Reduced font size
     fontWeight: 700,
-    marginBottom: `${spaceBetween}px`,
     lineHeight: titleLineHeight,
+    margin: 0,
   };
 
   const pricingStyle: React.CSSProperties = {
     fontSize: getScaledFontSize(baseFontSizePx, 0.7, 7), // Reduced font size
     opacity: 0.9,
     lineHeight: pricingLineHeight,
+    margin: 0,
+    textAlign: 'right',
   };
+
+  const pricingWrapperStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: `${getScaledValue(baseFontSizePx, 0.1, 1)}px`,
+    flex: '0 0 auto',
+  };
+
+  let pricingContentDetailed: React.ReactNode = null;
+  if (!shelf.hidePricing) {
+    if (shelf.medicalPricing && weightTiers.length > 0) {
+      pricingContentDetailed = buildPricingGrid(weightTiers);
+    } else {
+      pricingContentDetailed = (
+        <p style={pricingStyle}>
+          {shelf.isInfused && shelf.pricing.fiveG ?
+            `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.fiveG)}/5g` :
+            `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.eighth)}/8th | ${formatPrice(shelf.pricing.quarter)}/Qtr | ${formatPrice(shelf.pricing.half)}/Half | ${formatPrice(shelf.pricing.oz)}/Oz`
+          }
+        </p>
+      );
+    }
+  }
 
   const tableHeaderStyles: React.CSSProperties = {
     display: 'table-header-group',
@@ -559,25 +663,21 @@ export const MenuTable = React.memo<MenuTableProps>(({
         className={`${shelf.color} ${shelf.textColor} rounded-t-md`}
         style={shelfActualHeaderStyle} 
       >
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '0',
-          right: '0',
-          transform: 'translateY(-50%)',
-          paddingLeft: getScaledValue(baseFontSizePx, 0.5, 5), // Reduced padding
-          paddingRight: getScaledValue(baseFontSizePx, 0.5, 5)
-        }}>
-                  <h3 style={shelfNameStyle}>{displayName}</h3>
-        {!shelf.hidePricing && (
-          <p style={pricingStyle}>
-            {shelf.isInfused && shelf.pricing.fiveG ? 
-              `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.fiveG)}/5g` :
-              `${formatPrice(shelf.pricing.g)}/g | ${formatPrice(shelf.pricing.eighth)}/8th | ${formatPrice(shelf.pricing.quarter)}/Qtr | ${formatPrice(shelf.pricing.half)}/Half | ${formatPrice(shelf.pricing.oz)}/Oz`
-            }
-          </p>
-        )}
+        <div
+          style={{
+            flex: '1 1 160px',
+            minWidth: '160px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <h3 style={shelfNameStyle}>{displayName}</h3>
         </div>
+        {pricingContentDetailed && (
+          <div style={pricingWrapperStyle}>
+            {pricingContentDetailed}
+          </div>
+        )}
       </div>
 
       {/* IMPROVED: More compact table container */}

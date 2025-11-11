@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useImperativeHandle } from 'react';
 import { PrePackagedShelf, PrePackagedProduct, PrePackagedSortCriteria, Theme, SupportedStates } from '../types';
 import { PrePackagedShelfComponent } from './PrePackagedShelfComponent';
 import { PrePackagedShelfTabs } from './PrePackagedShelfTabs';
@@ -25,35 +25,39 @@ interface PrePackagedPanelProps {
   isControlsDisabled?: boolean;
   scrollTarget?: { mode: 'bulk' | 'prepackaged'; shelfId: string; itemId: string } | null;
   onScrollTargetHandled?: () => void;
+  onToggleShelfPricingVisibility: (shelfId: string, showPricing: boolean) => void;
 }
 
-export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PrePackagedPanelProps>(({
-  shelves,
-  onAddProduct,
-  onUpdateProduct,
-  onRemoveProduct,
-  onCopyProduct,
-  onClearShelfProducts,
-  newlyAddedProductId,
-  style,
-  onUpdateShelfSortCriteria,
-  onScrollToShelf,
-  theme,
-  onMoveProduct,
-  onMoveProductUp,
-  onMoveProductDown,
-  currentState,
-  isControlsDisabled,
-  scrollTarget,
-  onScrollTargetHandled,
-}, ref) => {
+const PrePackagedPanelBase = React.forwardRef<HTMLDivElement | null, PrePackagedPanelProps>((props, ref) => {
+  const {
+    shelves,
+    onAddProduct,
+    onUpdateProduct,
+    onRemoveProduct,
+    onCopyProduct,
+    onClearShelfProducts,
+    newlyAddedProductId,
+    style,
+    onUpdateShelfSortCriteria,
+    onScrollToShelf,
+    theme,
+    onMoveProduct,
+    onMoveProductUp,
+    onMoveProductDown,
+    currentState,
+    isControlsDisabled,
+    scrollTarget,
+    onScrollTargetHandled,
+    onToggleShelfPricingVisibility,
+  } = props;
+
   const [containerElement, setContainerElement] = useState<HTMLElement | null>(null);
   const [overlayEnabled, setOverlayEnabled] = useState(() => {
     // Load preference from localStorage, default to true
     const saved = localStorage.getItem('prepackagedScrollOverlayEnabled');
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const internalRef = React.useRef<HTMLDivElement>(null);
+  const internalRef = React.useRef<HTMLDivElement | null>(null);
   
   // Combine refs - target the scrollable container
   const scrollContainerRef = React.useCallback((node: HTMLDivElement | null) => {
@@ -61,15 +65,10 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
   }, []);
   
   const divRef = React.useCallback((node: HTMLDivElement) => {
-    if (ref) {
-      if (typeof ref === 'function') {
-        ref(node);
-      } else {
-        ref.current = node;
-      }
-    }
     internalRef.current = node;
-  }, [ref]);
+  }, []);
+
+  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(ref, () => internalRef.current, [internalRef.current]);
   
   // Convert PrePackagedShelf to match Shelf interface for unified hook
   const adaptedShelves = React.useMemo(() => {
@@ -177,6 +176,7 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
                   availableShelves={shelves}
                   currentState={currentState}
                   isControlsDisabled={isControlsDisabled}
+                  onTogglePricingVisibility={(show) => onToggleShelfPricingVisibility(shelf.id, show)}
                 />
               </div>
             ))}
@@ -212,4 +212,6 @@ export const PrePackagedPanel = React.memo(React.forwardRef<HTMLDivElement, PreP
       )}
     </>
   );
-}));
+});
+
+export const PrePackagedPanel = React.memo(PrePackagedPanelBase);

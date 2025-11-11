@@ -1978,6 +1978,16 @@ const AppContent: React.FC = () => {
     setGlobalSortCriteria(null); // Clear global sort
   }, []);
 
+  const handleToggleShelfPricingVisibility = useCallback((shelfId: string, showPricing: boolean) => {
+    recordChange(() => {
+      setShelves(prevShelves =>
+        prevShelves.map(shelf =>
+          shelf.id === shelfId ? { ...shelf, hidePricing: !showPricing } : shelf
+        )
+      );
+    });
+  }, [recordChange, setShelves]);
+
 
   const handleMouseDownOnDivider = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -4040,6 +4050,7 @@ const AppContent: React.FC = () => {
               isControlsDisabled={autoFormatState?.isOptimizing || false}
               scrollTarget={pendingScrollTarget}
               onScrollTargetHandled={() => setPendingScrollTarget(null)}
+              onToggleShelfPricingVisibility={handleToggleShelfPricingVisibility}
             />
           ) : (
             <PrePackagedPanel

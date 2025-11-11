@@ -26,6 +26,7 @@ interface FlowerShelvesPanelProps {
   onMoveStrainDown?: (shelfId: string, strainIndex: number) => void;
   scrollTarget?: { mode: 'bulk' | 'prepackaged'; shelfId: string; itemId: string } | null;
   onScrollTargetHandled?: () => void;
+  onToggleShelfPricingVisibility: (shelfId: string, showPricing: boolean) => void;
 }
 
 export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelvesPanelProps>(({
@@ -47,6 +48,7 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
   isControlsDisabled,
   scrollTarget,
   onScrollTargetHandled,
+  onToggleShelfPricingVisibility,
 }, ref) => {
   const [containerElement, setContainerElement] = useState<HTMLElement | null>(null);
   const [overlayEnabled, setOverlayEnabled] = useState(() => {
@@ -163,6 +165,7 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
                   availableShelves={shelves}
                   currentState={currentState}
                   isControlsDisabled={isControlsDisabled}
+                  onTogglePricingVisibility={(show) => onToggleShelfPricingVisibility(shelf.id, show)}
                 />
               </div>
             ))}

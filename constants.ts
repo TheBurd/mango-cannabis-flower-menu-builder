@@ -16,20 +16,80 @@ export const OKLAHOMA_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCri
 ];
 
 export const MICHIGAN_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [
-  { name: "Exclusive Flower", pricing: { g: 15, eighth: 40, quarter: 75, half: 145, oz: 240 }, color: "bg-mango-gradient", textColor: "text-white" },
-  { name: "Legendary Flower", pricing: { g: 10, eighth: 30, quarter: 55, half: 105, oz: 200 }, color: "bg-amber-500", textColor: "text-amber-50" },
-  { name: "Diamond Flower", pricing: { g: 9, eighth: 25, quarter: 47, half: 90, oz: 175 }, color: "bg-sky-500", textColor: "text-sky-50" },
-  { name: "Platinum Flower", pricing: { g: 8, eighth: 22, quarter: 40, half: 75, oz: 140 }, color: "bg-slate-700", textColor: "text-slate-50" },
-  { name: "Exotic Flower", pricing: { g: 7, eighth: 18, quarter: 35, half: 65, oz: 125 }, color: "bg-rose-500", textColor: "text-rose-50" },
-  { name: "Superior Flower", pricing: { g: 6, eighth: 17, quarter: 30, half: 55, oz: 100 }, color: "bg-violet-500", textColor: "text-violet-50" },
-  { name: "Premium Flower", pricing: { g: 5, eighth: 15, quarter: 25, half: 45, oz: 80 }, color: "bg-emerald-500", textColor: "text-emerald-50" },
-  { name: "Deluxe Flower", pricing: { g: 4, eighth: 12, quarter: 20, half: 35, oz: 60 }, color: "bg-indigo-500", textColor: "text-indigo-50" },
-  { name: "Value Flower", pricing: { g: 3, eighth: 7, quarter: 13, half: 20, oz: 30 }, color: "bg-gray-500", textColor: "text-gray-50" },
-  // Infused Flower Shelves (Michigan only)
+  { 
+    name: "Exclusive Flower", 
+    pricing: { g: 16, eighth: 42, quarter: 78, half: 147, oz: 250 }, 
+    medicalPricing: { g: 13.06, eighth: 34.28, quarter: 63.66, half: 119.98, oz: 204.05 },
+    color: "bg-mango-gradient", 
+    textColor: "text-white" 
+  },
+  { 
+    name: "Legendary Flower", 
+    pricing: { g: 11, eighth: 32, quarter: 57, half: 108, oz: 210 }, 
+    medicalPricing: { g: 8.98, eighth: 26.12, quarter: 46.52, half: 88.15, oz: 171.40 },
+    color: "bg-amber-500", 
+    textColor: "text-amber-50" 
+  },
+  { 
+    name: "Diamond Flower", 
+    pricing: { g: 10, eighth: 27, quarter: 49, half: 92, oz: 180 }, 
+    medicalPricing: { g: 10, eighth: 27, quarter: 49, half: 92, oz: 180 },
+    color: "bg-sky-500", 
+    textColor: "text-sky-50" 
+  },
+  { 
+    name: "Platinum Flower", 
+    pricing: { g: 9, eighth: 24, quarter: 42, half: 78, oz: 145 }, 
+    medicalPricing: { g: 7.35, eighth: 19.59, quarter: 34.28, half: 63.66, oz: 118.35 },
+    color: "bg-slate-700", 
+    textColor: "text-slate-50" 
+  },
+  { 
+    name: "Exotic Flower", 
+    pricing: { g: 8, eighth: 20, quarter: 37, half: 67, oz: 130 }, 
+    medicalPricing: { g: 6.53, eighth: 16.32, quarter: 30.20, half: 54.69, oz: 106.11 },
+    color: "bg-rose-500", 
+    textColor: "text-rose-50" 
+  },
+  { 
+    name: "Superior Flower", 
+    pricing: { g: 7, eighth: 18, quarter: 32, half: 57, oz: 105 }, 
+    medicalPricing: { g: 5.71, eighth: 14.69, quarter: 26.12, half: 46.52, oz: 85.70 },
+    color: "bg-violet-500", 
+    textColor: "text-violet-50" 
+  },
+  { 
+    name: "Premium Flower", 
+    pricing: { g: 6, eighth: 16, quarter: 27, half: 47, oz: 85 }, 
+    medicalPricing: { g: 4.90, eighth: 13.06, quarter: 22.04, half: 38.36, oz: 69.38 },
+    color: "bg-emerald-500", 
+    textColor: "text-emerald-50" 
+  },
+  { 
+    name: "Deluxe Flower", 
+    pricing: { g: 5, eighth: 13, quarter: 22, half: 37, oz: 65 }, 
+    medicalPricing: { g: 5, eighth: 13, quarter: 22, half: 37, oz: 65 },
+    color: "bg-indigo-500", 
+    textColor: "text-indigo-50" 
+  },
+  { 
+    name: "Value Flower", 
+    pricing: { g: 3, eighth: 7, quarter: 13, half: 20, oz: 30 }, 
+    medicalPricing: { g: 2.45, eighth: 5.71, quarter: 10.61, half: 16.32, oz: 24.49 },
+    color: "bg-gray-500", 
+    textColor: "text-gray-50" 
+  },
+  // Infused Flower Shelves (Michigan only) - no medical pricing needed for infused shelves
   { name: "Exotic Live Resin Infused Flower", pricing: { g: 8, eighth: 0, quarter: 0, half: 0, oz: 0, fiveG: 35 }, color: "bg-gradient-to-r from-rose-600 to-pink-600", textColor: "text-white", isInfused: true },
   { name: "Premium Distillate Infused Flower", pricing: { g: 7, eighth: 0, quarter: 0, half: 0, oz: 0, fiveG: 30 }, color: "bg-gradient-to-r from-emerald-600 to-teal-600", textColor: "text-white", isInfused: true },
   { name: "Value Distillate Infused Flower", pricing: { g: 6, eighth: 0, quarter: 0, half: 0, oz: 0, fiveG: 25 }, color: "bg-gradient-to-r from-gray-600 to-slate-600", textColor: "text-white", isInfused: true },
-  { name: "Legendary Shake", pricing: { g: 2, eighth: 5, quarter: 8, half: 14, oz: 20 }, color: "bg-lime-600", textColor: "text-lime-50" },
+  { 
+    name: "Legendary Shake", 
+    pricing: { g: 2, eighth: 5, quarter: 8, half: 14, oz: 20 }, 
+    medicalPricing: { g: 1.63, eighth: 4.08, quarter: 6.53, half: 11.43, oz: 16.32 },
+    color: "bg-lime-600", 
+    textColor: "text-lime-50" 
+  },
 ];
 
 export const NEW_MEXICO_PRICING_HIERARCHY: Omit<Shelf, 'strains' | 'id' | 'sortCriteria'>[] = [

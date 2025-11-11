@@ -5,6 +5,7 @@ import { DropZone } from './common/DropZone';
 import { Button } from './common/Button';
 import { PlusIcon, TrashXmarkIcon, MinusCircleIcon, SortAscendingIcon, SortDescendingIcon } from './common/Icon';
 import { getPatternPath } from '../utils/assets';
+import { getShelfAccentColor, hexToRgba } from '../utils/colorUtils';
 
 interface ShelfComponentProps {
   shelf: Shelf; // shelf.strains is pre-sorted
@@ -23,7 +24,7 @@ interface ShelfComponentProps {
   availableShelves?: Shelf[]; // For 50% OFF shelf original shelf selection
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isControlsDisabled?: boolean;
-  onReorderStrain?: (shelfId: string, fromIndex: number, toIndex: number) => void;
+  onTogglePricingVisibility?: (showPricing: boolean) => void;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -73,13 +74,10 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   onReorderStrain,
   availableShelves = [],
   currentState,
-  isControlsDisabled,
+  onTogglePricingVisibility,
 }) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
   const [confirmClear, setConfirmClear] = useState(false);
-  
-  // Track when any dropdown is open to prevent hover conflicts
-  const [isAnyDropdownOpen, setIsAnyDropdownOpen] = useState(false);
 
   const handleClearStrainsClick = useCallback(() => {
     if (confirmClear) {
@@ -143,6 +141,22 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
     ...(isFiftyPercentOff ? [{ label: "Original Shelf", key: "originalShelf" as SortCriteria['key'] }] : []),
   ];
 
+  const weightTiers = shelf.medicalPricing ? [
+    { label: '1g', rec: shelf.pricing?.g, med: shelf.medicalPricing.g },
+    { label: '3.5g', rec: shelf.pricing?.eighth, med: shelf.medicalPricing.eighth },
+    { label: '7g', rec: shelf.pricing?.quarter, med: shelf.medicalPricing.quarter },
+    { label: '14g', rec: shelf.pricing?.half, med: shelf.medicalPricing.half },
+    { label: '28g', rec: shelf.pricing?.oz, med: shelf.medicalPricing.oz },
+  ].filter(tier => typeof tier.rec === 'number' && typeof tier.med === 'number') : [];
+
+  const pricingGridStyle: React.CSSProperties | undefined = weightTiers.length > 0 ? {
+    display: 'grid',
+    gridTemplateColumns: `auto repeat(${weightTiers.length}, auto)`,
+    columnGap: '6px',
+    rowGap: '2px',
+    textAlign: 'right',
+  } : undefined;
+
   const handleDropBetweenStrains = (dragData: any, targetIndex: number) => {
     if (dragData.shelfId === shelf.id) {
       // Reordering within same shelf
@@ -171,6 +185,14 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
     }
   };
 
+  const handlePricingToggleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onTogglePricingVisibility?.(event.target.checked);
+  };
+
+  const toggleAccentColor = getShelfAccentColor(shelf.color);
+  const toggleBackground = toggleAccentColor ? hexToRgba(toggleAccentColor, 0.18) : 'rgba(255,255,255,0.12)';
+  const toggleBorder = toggleAccentColor ? hexToRgba(toggleAccentColor, 0.35) : 'rgba(255,255,255,0.2)';
+
   return (
     <>
       {shelf.isInfused && (
@@ -182,27 +204,72 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
           theme === 'dark' ? 'border-gray-700' : 'border-gray-300'
         } ${shelf.color} ${shelf.isInfused ? 'infused-shelf-container' : ''}`}>
       <div className={`p-3 ${shelf.textColor} flex flex-col`}>
-        <div className="flex justify-between items-start mb-1.5">
-            <div>
+        <div className="flex flex-wrap justify-between items-start gap-3 mb-1.5">
+            <div className="flex-1 min-w-[160px] flex items-center">
                 <h3 className="text-xl font-semibold">{shelf.name}</h3>
                 {!shelf.hidePricing && (
-                  <p className="text-xs opacity-90">
-                    {shelf.isInfused && shelf.pricing?.fiveG ? 
-                      `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.fiveG || 0)}/5g` :
-                      `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.eighth || 0)}/8th | ${formatPrice(shelf.pricing?.quarter || 0)}/Qtr | ${formatPrice(shelf.pricing?.half || 0)}/Half | ${formatPrice(shelf.pricing?.oz || 0)}/Oz`
-                    }
-                  </p>
+                  shelf.medicalPricing && pricingGridStyle ? (
+                    <div className="text-xs opacity-90 mt-1 flex flex-col items-end gap-1">
+                      <div className="grid text-right" style={pricingGridStyle}>
+                        <span className="px-1 text-right font-semibold" />
+                        {weightTiers.map(tier => (
+                          <span key={`editor-weight-${tier.label}`} className="px-1 text-center font-semibold">
+                            {tier.label}
+                          </span>
+                        ))}
+                        <span className="px-1 py-0.5 text-right font-semibold uppercase">Med</span>
+                        {weightTiers.map(tier => (
+                          <span key={`editor-med-${tier.label}`} className="px-1 py-0.5 text-right">
+                            {formatPrice(tier.med ?? 0)}
+                          </span>
+                        ))}
+                        <span className="px-1 py-0.5 text-right font-semibold uppercase">Rec</span>
+                        {weightTiers.map(tier => (
+                          <span key={`editor-rec-${tier.label}`} className="px-1 py-0.5 text-right">
+                            {formatPrice(tier.rec ?? 0)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs opacity-90 text-right mt-1">
+                      {shelf.isInfused && shelf.pricing?.fiveG ? 
+                        `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.fiveG || 0)}/5g` :
+                        `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.eighth || 0)}/8th | ${formatPrice(shelf.pricing?.quarter || 0)}/Qtr | ${formatPrice(shelf.pricing?.half || 0)}/Half | ${formatPrice(shelf.pricing?.oz || 0)}/Oz`
+                      }
+                    </p>
+                  )
                 )}
             </div>
-            <Button 
-                onClick={handleClearStrainsClick} 
-                variant="custom" 
-                size="sm" 
-                className={`bg-white/10 hover:bg-white/20 text-current !py-1 !px-2 flex items-center space-x-1 min-w-[80px] justify-center ${confirmClear ? 'bg-red-500/30 hover:bg-red-400/30' : ''}`}
-            >
-              <TrashXmarkIcon className="w-4 h-4" theme="dark" />
-              <span className="text-xs">{confirmClear ? "Sure?" : "Clear"}</span>
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button 
+                  onClick={handleClearStrainsClick} 
+                  variant="custom" 
+                  size="sm" 
+                  className={`bg-white/10 hover:bg-white/20 text-current !py-1 !px-2 flex items-center space-x-1 min-w-[80px] justify-center ${confirmClear ? 'bg-red-500/30 hover:bg-red-400/30' : ''}`}
+              >
+                <TrashXmarkIcon className="w-4 h-4" theme="dark" />
+                <span className="text-xs">{confirmClear ? "Sure?" : "Clear"}</span>
+              </Button>
+              <label
+                className="flex items-center gap-2 text-xs opacity-90 flex-wrap rounded px-2 py-1 border"
+                style={{
+                  backgroundColor: toggleBackground,
+                  borderColor: toggleBorder,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={!shelf.hidePricing}
+                  onChange={handlePricingToggleChange}
+                  className="w-4 h-4 rounded border-white/40 bg-transparent"
+                  style={{ accentColor: '#ffffff' }}
+                />
+                <span className="whitespace-pre">
+                  {'Show pricing\nin preview'}
+                </span>
+              </label>
+            </div>
         </div>
         {/* Shelf Sort Controls */}
         <div className="flex items-center space-x-1 border-t border-white/10 pt-1.5 mt-1 flex-wrap gap-y-1">

@@ -68,6 +68,7 @@ export interface Shelf {
   id: string;
   name: string;
   pricing: PriceTiers;
+  medicalPricing?: PriceTiers; // Optional medical pricing for states like Michigan that have separate Rec/Med pricing
   color: string; // Tailwind background color class e.g., 'bg-purple-600'
   textColor: string; // Tailwind text color class e.g., 'text-white'
   strains: Strain[];

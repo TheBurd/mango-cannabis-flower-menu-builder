@@ -10,7 +10,7 @@ Create professional, compliant flower menus for in-store display and inventory m
 
 ### Choose Your Platform
 1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
-2. Find the latest version (v1.1.1-hf2)
+2. Find the latest version (v1.1.1-hf3)
 3. Choose your operating system below:
 
 ---
@@ -135,7 +135,12 @@ Create professional, compliant flower menus for in-store display and inventory m
 
 ---
 
-## What's New in v1.1.1 (hotfix v1.1.1-hf2)
+## What's New in v1.1.1 (hotfix v1.1.1-hf3)
+
+### Hotfix v1.1.1-hf3 — Michigan Pricing & Visibility
+- Adds dual-line recreational vs medical pricing tables for all Michigan bulk shelves with aligned column headings
+- Introduces per-shelf “Show pricing in preview” toggles across every state in both bulk and pre-packaged builders
+- Styles pricing toggles with shelf accent colors for better readability against each header’s gradient
 
 ### Hotfix v1.1.1-hf2 — Bulk Flower Builder Stability
 - Restores the Bulk Flower menu builder for every supported state after the Oklahoma-focused hf1 rollout

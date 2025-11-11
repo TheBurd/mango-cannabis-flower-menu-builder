@@ -69,13 +69,24 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
             <section className={`p-4 rounded-lg border-l-4 border-lime-400 ${
               theme === 'dark' ? 'bg-lime-900/20 text-gray-200 border-opacity-70' : 'bg-lime-50 text-gray-700'
             }`}>
-              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Hotfix v{APP_VERSION} — Quick Stability Patch</h3>
+              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Hotfix v{APP_VERSION} — Michigan Bulk Pricing</h3>
               <ul className="text-sm space-y-1 list-disc list-inside">
-                <li><strong>Cross-State Stability:</strong> Fixes the crash non-Oklahoma states hit when opening the Bulk builder by restoring required React hooks.</li>
-                <li><strong>Reliable Shelf Controls:</strong> Keeps the clear-shelf confirmation timer running so bulk shelves reset without breaking the UI.</li>
-                <li><strong>Verified Templates:</strong> Double-checks default shelf templates so every state loads the correct structure during hotfix rollout.</li>
+                <li><strong>Rec & Med Pricing Tables:</strong> Adds aligned recreational and medical totals for every Michigan bulk shelf with a two-row header layout.</li>
+                <li><strong>Universal Pricing Toggles:</strong> Gives every bulk and pre-packaged shelf a “Show pricing in preview” control, on by default for all states.</li>
+                <li><strong>Shelf-Colored Controls:</strong> Pricing toggles inherit each shelf’s accent color and updated spacing to keep headers readable.</li>
               </ul>
-              <p className="text-xs opacity-75 mt-3">Layered on top of the v1.1.1 multi-page release so every location can keep building without interruption.</p>
+              <p className="text-xs opacity-75 mt-3">Layered on top of the v1.1.1 multi-page release so teams can update Michigan menus without losing any nationwide improvements.</p>
+            </section>
+            
+            <section className={`p-4 rounded-lg border-l-4 border-amber-400 ${
+              theme === 'dark' ? 'bg-amber-900/20 text-gray-200 border-opacity-70' : 'bg-amber-50 text-gray-700'
+            }`}>
+              <h4 className="text-sm font-semibold text-amber-600 mb-2">Previously in Hotfix v1.1.1-hf2</h4>
+              <ul className="text-xs space-y-1 list-disc list-inside">
+                <li>Restored the Bulk Flower builder for every state by bringing back required React hooks.</li>
+                <li>Kept the clear-shelf confirmation timer reliable so shelves reset without breaking controls.</li>
+                <li>Verified default shelf templates to guarantee accurate starting layouts during rollout.</li>
+              </ul>
             </section>
 
             {/* Main Feature */}

@@ -3,6 +3,7 @@ import { PrePackagedShelf, PrePackagedProduct, PrePackagedSortCriteria, Theme, S
 import { PrePackagedProductInputRow } from './PrePackagedProductInputRow';
 import { Icon } from './common/Icon';
 import { CustomDropdown } from './common/CustomDropdown';
+import { getShelfAccentColor, hexToRgba } from '../utils/colorUtils';
 
 interface PrePackagedShelfComponentProps {
   shelf: PrePackagedShelf;
@@ -20,6 +21,7 @@ interface PrePackagedShelfComponentProps {
   availableShelves: PrePackagedShelf[];
   currentState?: SupportedStates;
   isControlsDisabled?: boolean;
+  onTogglePricingVisibility?: (showPricing: boolean) => void;
 }
 
 export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps> = ({
@@ -36,8 +38,9 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
   onMoveProductUp,
   onMoveProductDown,
   availableShelves,
-  currentState,
+  currentState: _currentState,
   isControlsDisabled,
+  onTogglePricingVisibility,
 }) => {
   const shelfRef = useRef<HTMLDivElement>(null);
   
@@ -56,6 +59,14 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
     { value: 'isSoldOut', label: 'Sold Out' },
   ];
 
+  const toggleAccentColor = getShelfAccentColor(shelf.color);
+  const toggleBackground = toggleAccentColor ? hexToRgba(toggleAccentColor, 0.18) : 'rgba(255,255,255,0.12)';
+  const toggleBorder = toggleAccentColor ? hexToRgba(toggleAccentColor, 0.35) : 'rgba(255,255,255,0.2)';
+
+  const handlePricingToggleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onTogglePricingVisibility?.(event.target.checked);
+  };
+
   return (
     <div
       ref={shelfRef}
@@ -66,36 +77,56 @@ export const PrePackagedShelfComponent: React.FC<PrePackagedShelfComponentProps>
     >
       {/* Shelf Header */}
       <div className={`rounded-md p-3 mb-4 ${shelf.color}`}>
-        <div className="flex items-center justify-between">
-          <h3 className={`text-lg font-bold ${shelf.textColor}`}>
-            {shelf.name} ({shelf.products?.length || 0})
-          </h3>
-          <div className="flex items-center gap-2">
-            {/* Sort Dropdown */}
-            <CustomDropdown
-              value={shelf.sortCriteria?.key || ''}
-              onChange={(value) => onUpdateShelfSortCriteria(value as PrePackagedSortCriteria['key'])}
-              options={sortOptions}
-              placeholder="Sort by..."
-              className="text-sm"
-              theme={theme}
-            />
-            
-            {/* Clear Products Button */}
-            {(shelf.products?.length || 0) > 0 && (
-              <button
-                onClick={onClearProducts}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className={`text-lg font-bold ${shelf.textColor}`}>
+              {shelf.name} ({shelf.products?.length || 0})
+            </h3>
+            <div className="flex items-center gap-2">
+              <CustomDropdown
+                value={shelf.sortCriteria?.key || ''}
+                onChange={(value) => onUpdateShelfSortCriteria(value as PrePackagedSortCriteria['key'])}
+                options={sortOptions}
+                placeholder="Sort by..."
+                className="text-sm"
+                theme={theme}
+              />
+              
+              {(shelf.products?.length || 0) > 0 && (
+                <button
+                  onClick={onClearProducts}
+                  disabled={isControlsDisabled}
+                  className={`p-2 rounded ${
+                    theme === 'dark'
+                      ? 'hover:bg-gray-700 text-gray-300'
+                      : 'hover:bg-gray-100 text-gray-600'
+                  } transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title="Clear all products"
+                >
+                  <Icon name="trash" className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <label
+              className={`flex items-center gap-2 text-xs font-medium opacity-90 flex-wrap rounded px-2 py-1 border ${shelf.textColor}`}
+              style={{
+                backgroundColor: toggleBackground,
+                borderColor: toggleBorder,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={!shelf.hidePricing}
+                onChange={handlePricingToggleChange}
                 disabled={isControlsDisabled}
-                className={`p-2 rounded ${
-                  theme === 'dark'
-                    ? 'hover:bg-gray-700 text-gray-300'
-                    : 'hover:bg-gray-100 text-gray-600'
-                } transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-                title="Clear all products"
-              >
-                <Icon name="trash" className="w-4 h-4" />
-              </button>
-            )}
+                className="w-4 h-4 rounded border-white/40 bg-transparent"
+              />
+              <span className="whitespace-pre leading-tight">
+                {'Show pricing\nin preview'}
+              </span>
+            </label>
           </div>
         </div>
       </div>
