@@ -110,6 +110,15 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove, index }) => {
     }
   };
 
+  const getTextColor = () => {
+    switch (toast.type) {
+      case 'warning':
+        return 'text-gray-900'; // Dark text for better contrast on yellow
+      default:
+        return 'text-white';
+    }
+  };
+
   return (
     <div
       className={`
@@ -126,7 +135,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove, index }) => {
     >
       <div
         className={`
-          ${getToastStyles()} text-white rounded-lg shadow-lg border overflow-hidden
+          ${getToastStyles()} ${getTextColor()} rounded-lg shadow-lg border overflow-hidden
         `}
         role="alert"
         aria-live="polite"
@@ -134,9 +143,9 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove, index }) => {
         <div className="p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm">{toast.title}</div>
+              <div className={`font-medium text-sm ${getTextColor()}`}>{toast.title}</div>
               {toast.message && (
-                <div className="mt-1 text-sm opacity-90">{toast.message}</div>
+                <div className={`mt-1 text-sm ${toast.type === 'warning' ? 'text-gray-800' : 'opacity-90'}`}>{toast.message}</div>
               )}
               {toast.actions && toast.actions.length > 0 && (
                 <div className="mt-3 flex gap-2">
@@ -146,9 +155,13 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove, index }) => {
                       onClick={action.onClick}
                       className={`
                         px-3 py-1 text-xs font-medium rounded transition-colors
-                        ${action.variant === 'primary' 
-                          ? 'bg-white/20 hover:bg-white/30' 
-                          : 'bg-white/10 hover:bg-white/20'
+                        ${toast.type === 'warning'
+                          ? action.variant === 'primary'
+                            ? 'bg-gray-900/20 hover:bg-gray-900/30 text-gray-900'
+                            : 'bg-gray-900/10 hover:bg-gray-900/20 text-gray-900'
+                          : action.variant === 'primary' 
+                            ? 'bg-white/20 hover:bg-white/30' 
+                            : 'bg-white/10 hover:bg-white/20'
                         }
                       `}
                     >
@@ -160,7 +173,11 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove, index }) => {
             </div>
             <button
               onClick={handleDismiss}
-              className="ml-4 text-white/80 hover:text-white focus:outline-none flex-shrink-0"
+              className={`ml-4 focus:outline-none flex-shrink-0 ${
+                toast.type === 'warning' 
+                  ? 'text-gray-700 hover:text-gray-900' 
+                  : 'text-white/80 hover:text-white'
+              }`}
               aria-label="Dismiss notification"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -22,6 +22,63 @@ const getScaledFontSize = (base: number, multiplier: number, min: number = 7): s
 const getScaledValue = (base: number, multiplier: number, min: number = 0): number =>
     Math.max(min, base * multiplier);
 
+// Helper function to build pricing grid for medical/recreational pricing tiers
+const buildPricingGrid = (
+  tiers: Array<{ label: string; rec: number; med: number }>,
+  baseFontSizePx: number
+): React.ReactElement => {
+  const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
+  const columnGap = `${getScaledValue(baseFontSizePx, 0.2, 2)}px`;
+  const rowGap = `${getScaledValue(baseFontSizePx, 0.1, 1)}px`;
+  const baseFont = getScaledFontSize(baseFontSizePx, 0.65, 6);
+  const baseCellStyle: React.CSSProperties = {
+    padding: '1px 4px',
+    textAlign: 'right',
+    display: 'block',
+  };
+  const headerWeightStyle: React.CSSProperties = {
+    ...baseCellStyle,
+    fontWeight: 600,
+    textAlign: 'center',
+  };
+  const labelCellStyle: React.CSSProperties = {
+    ...baseCellStyle,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+  };
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `auto repeat(${tiers.length}, auto)`,
+        columnGap,
+        rowGap,
+        fontSize: baseFont,
+      }}
+    >
+      <span style={baseCellStyle} />
+      {tiers.map(tier => (
+        <span key={`header-weight-${tier.label}`} style={headerWeightStyle}>
+          {tier.label}
+        </span>
+      ))}
+      <span style={labelCellStyle}>Med</span>
+      {tiers.map(tier => (
+        <span key={`header-med-${tier.label}`} style={baseCellStyle}>
+          {formatPrice(tier.med ?? 0)}
+        </span>
+      ))}
+      <span style={labelCellStyle}>Rec</span>
+      {tiers.map(tier => (
+        <span key={`header-rec-${tier.label}`} style={baseCellStyle}>
+          {formatPrice(tier.rec ?? 0)}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 // Function to render shelves as flowing rows when tighten shelves is enabled
 const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSizePx: number, linePaddingMultiplier: number, marginBottomStyle?: string, applyAvoidBreakStyle?: boolean, showOverflowWarning?: boolean, currentState?: SupportedStates) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
@@ -95,62 +152,10 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
     { label: '28g', rec: shelf.pricing.oz, med: shelf.medicalPricing.oz },
   ].filter(tier => typeof tier.rec === 'number' && typeof tier.med === 'number') : [];
 
-  const buildPricingGrid = (tiers: typeof weightTiers) => {
-    const columnGap = `${getScaledValue(baseFontSizePx, 0.2, 2)}px`;
-    const rowGap = `${getScaledValue(baseFontSizePx, 0.1, 1)}px`;
-    const baseFont = getScaledFontSize(baseFontSizePx, 0.65, 6);
-    const baseCellStyle: React.CSSProperties = {
-      padding: '1px 4px',
-      textAlign: 'right',
-      display: 'block',
-    };
-    const headerWeightStyle: React.CSSProperties = {
-      ...baseCellStyle,
-      fontWeight: 600,
-      textAlign: 'center',
-    };
-    const labelCellStyle: React.CSSProperties = {
-      ...baseCellStyle,
-      fontWeight: 600,
-      textTransform: 'uppercase',
-    };
-
-    return (
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `auto repeat(${tiers.length}, auto)`,
-          columnGap,
-          rowGap,
-          fontSize: baseFont,
-        }}
-      >
-        <span style={baseCellStyle} />
-        {tiers.map(tier => (
-          <span key={`header-weight-${tier.label}`} style={headerWeightStyle}>
-            {tier.label}
-          </span>
-        ))}
-        <span style={labelCellStyle}>Med</span>
-        {tiers.map(tier => (
-          <span key={`header-med-${tier.label}`} style={baseCellStyle}>
-            {formatPrice(tier.med ?? 0)}
-          </span>
-        ))}
-        <span style={labelCellStyle}>Rec</span>
-        {tiers.map(tier => (
-          <span key={`header-rec-${tier.label}`} style={baseCellStyle}>
-            {formatPrice(tier.rec ?? 0)}
-          </span>
-        ))}
-      </div>
-    );
-  };
-
   let pricingContent: React.ReactNode = null;
   if (!shelf.hidePricing) {
     if (shelf.medicalPricing && weightTiers.length > 0) {
-      pricingContent = buildPricingGrid(weightTiers);
+      pricingContent = buildPricingGrid(weightTiers, baseFontSizePx);
     } else {
       pricingContent = (
         <p
@@ -565,7 +570,7 @@ export const MenuTable = React.memo<MenuTableProps>(({
   let pricingContentDetailed: React.ReactNode = null;
   if (!shelf.hidePricing) {
     if (shelf.medicalPricing && weightTiers.length > 0) {
-      pricingContentDetailed = buildPricingGrid(weightTiers);
+      pricingContentDetailed = buildPricingGrid(weightTiers, baseFontSizePx);
     } else {
       pricingContentDetailed = (
         <p style={pricingStyle}>

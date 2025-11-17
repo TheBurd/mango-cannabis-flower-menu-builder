@@ -312,9 +312,12 @@ const AppContent: React.FC = () => {
   // Session manager for project persistence and auto-save
   const [sessionManager] = useState(() => new SessionManager());
   
-  // Auto-save state
+  // Auto-save state - defaults to false, loads from localStorage
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('mango-auto-save-enabled');
+    return saved === 'true'; // Default to false if not set
+  });
   
   // Project state management
   const [projectState, setProjectState] = useState<ProjectState>(() => ({
@@ -556,6 +559,26 @@ const AppContent: React.FC = () => {
     setTheme(newTheme);
     localStorage.setItem('mango-theme', newTheme);
   }, []);
+
+  // Auto-save toggle handler
+  const handleToggleAutoSave = useCallback(() => {
+    setAutoSaveEnabled(prev => {
+      const newValue = !prev;
+      localStorage.setItem('mango-auto-save-enabled', String(newValue));
+      
+      // Show warning toast when enabling auto-save
+      if (newValue) {
+        addToast({
+          title: 'Auto-Save Enabled',
+          message: '⚠️ Auto-Save feature is in development and may not work as intended. Use with caution, save your work often.',
+          type: 'warning',
+          duration: 8000 // Show for 8 seconds to ensure user sees it
+        });
+      }
+      
+      return newValue;
+    });
+  }, [addToast]);
 
   // Menu mode change handler
   const handleMenuModeChange = useCallback((newMode: MenuMode) => {
@@ -4017,6 +4040,8 @@ const AppContent: React.FC = () => {
         lastSaveTime={lastSaveTime}
         hasUnsavedChanges={projectState.hasUnsavedChanges}
         isNewProject={projectState.isNewProject}
+        autoSaveEnabled={autoSaveEnabled}
+        onToggleAutoSave={handleToggleAutoSave}
       />
       <main ref={mainContainerRef} className={`flex flex-1 overflow-hidden pt-2 px-2 pb-2 ${
         theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'

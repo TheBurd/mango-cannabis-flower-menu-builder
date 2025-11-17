@@ -45,6 +45,43 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
   containerElement,
   theme
 }) => {
+
+  const [overlayPosition, setOverlayPosition] = React.useState<{ left: number; top: number | '50%' }>({
+    left: 10,
+    top: '50%',
+  });
+
+  React.useLayoutEffect(() => {
+    const updatePosition = () => {
+      if (!containerElement) {
+        setOverlayPosition({ left: 10, top: '50%' });
+        return;
+      }
+      const rect = containerElement.getBoundingClientRect();
+      setOverlayPosition({
+        left: rect.right + 10,
+        top: rect.top + rect.height / 2,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if ('ResizeObserver' in window && containerElement) {
+      resizeObserver = new ResizeObserver(updatePosition);
+      resizeObserver.observe(containerElement);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      if (resizeObserver && containerElement) {
+        resizeObserver.unobserve(containerElement);
+        resizeObserver.disconnect();
+      }
+    };
+  }, [containerElement]);
+
   // Calculate which strains to show and their magnification
   const visibleStrains = useMemo(() => {
     if (strains.length === 0) return [];
@@ -80,12 +117,12 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
 
   return (
     <div
-      className={`absolute pointer-events-none transition-opacity ${
+      className={`fixed pointer-events-none transition-opacity ${
         isVisible ? 'opacity-100 duration-150' : 'opacity-0 duration-1000'
       }`}
       style={{
-        left: '10px',
-        top: '50%',
+        left: overlayPosition.left,
+        top: overlayPosition.top,
         transform: 'translateY(-50%)',
         zIndex: 100,
         maxHeight: '90%',

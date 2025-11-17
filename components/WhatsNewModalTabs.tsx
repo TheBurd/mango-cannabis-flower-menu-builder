@@ -22,11 +22,24 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
   const hotfixEntries = [
     {
       version: APP_VERSION,
+      title: 'Auto-Save Controls & UI Improvements',
+      description: 'Gives users control over auto-save with a toggle button, improves scroll overlay positioning, and enhances warning notifications.',
+      highlights: [
+        'Auto-save now defaults to OFF with a toggle button in the toolbar for user control.',
+        'Warning toast notification appears when enabling auto-save, reminding users the feature is in development.',
+        'Improved scroll overlay positioning that dynamically adjusts with panel resizing.',
+        'Enhanced warning toast text contrast for better readability on yellow backgrounds.',
+        'Fixed buildPricingGrid scope issue that caused crashes when toggling shelf splitting for Michigan shelves.'
+      ],
+      footnote: 'Built on top of the v1.1.1 multi-page release with improved user controls and UI polish.'
+    },
+    {
+      version: '1.1.1-hf3',
       title: 'Michigan Pricing & Shelf Visibility',
       description: 'Updates Michigan bulk flower pricing with side-by-side recreational and medical totals and adds pricing visibility controls everywhere.',
       highlights: [
         'Adds dual-line pricing headers for every Michigan bulk shelf with aligned REC and MED totals.',
-        'Extends the “Show pricing in preview” toggle to every shelf in both bulk and pre-packaged builders, on by default.',
+        'Extends the "Show pricing in preview" toggle to every shelf in both bulk and pre-packaged builders, on by default.',
         'Applies shelf-accent backgrounds to pricing toggles so the controls stay readable against each shelf.'
       ],
       footnote: 'Built on top of the v1.1.1 multi-page release so you can update Michigan menus without losing cross-state stability.'
@@ -48,7 +61,7 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
       description: 'Keeps the v1.1.1 launch feeling smooth while teams explore the multi-page upgrade.',
       highlights: [
         'Shelf overrides reset correctly so brand and low-stock sorts stay aligned across every page.',
-        'Copying a strain/product keeps the follow-up “Add” scroll anchored on the new blank row.',
+        'Copying a strain/product keeps the follow-up "Add" scroll anchored on the new blank row.',
         'Auto-scroll now always brings freshly created items into view on longer shelves.'
       ],
       footnote: 'Still available for reference below—expand it any time you need a refresher.'

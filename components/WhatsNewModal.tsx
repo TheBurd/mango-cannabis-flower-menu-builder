@@ -69,13 +69,26 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
             <section className={`p-4 rounded-lg border-l-4 border-lime-400 ${
               theme === 'dark' ? 'bg-lime-900/20 text-gray-200 border-opacity-70' : 'bg-lime-50 text-gray-700'
             }`}>
-              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Hotfix v{APP_VERSION} — Michigan Bulk Pricing</h3>
+              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Hotfix v{APP_VERSION} — Auto-Save Controls & UI Improvements</h3>
               <ul className="text-sm space-y-1 list-disc list-inside">
-                <li><strong>Rec & Med Pricing Tables:</strong> Adds aligned recreational and medical totals for every Michigan bulk shelf with a two-row header layout.</li>
-                <li><strong>Universal Pricing Toggles:</strong> Gives every bulk and pre-packaged shelf a “Show pricing in preview” control, on by default for all states.</li>
-                <li><strong>Shelf-Colored Controls:</strong> Pricing toggles inherit each shelf’s accent color and updated spacing to keep headers readable.</li>
+                <li><strong>Auto-Save Toggle:</strong> Auto-save now defaults to OFF with a toggle button in the toolbar for user control.</li>
+                <li><strong>Warning Notifications:</strong> Warning toast appears when enabling auto-save, reminding users the feature is in development.</li>
+                <li><strong>Scroll Overlay Improvements:</strong> Scroll overlay positioning dynamically adjusts with panel resizing for better visibility.</li>
+                <li><strong>Enhanced Toast Contrast:</strong> Warning toast text uses dark colors for better readability on yellow backgrounds.</li>
+                <li><strong>Bug Fixes:</strong> Fixed buildPricingGrid scope issue that caused crashes when toggling shelf splitting for Michigan shelves.</li>
               </ul>
-              <p className="text-xs opacity-75 mt-3">Layered on top of the v1.1.1 multi-page release so teams can update Michigan menus without losing any nationwide improvements.</p>
+              <p className="text-xs opacity-75 mt-3">Built on top of the v1.1.1 multi-page release with improved user controls and UI polish.</p>
+            </section>
+            
+            <section className={`p-4 rounded-lg border-l-4 border-amber-400 ${
+              theme === 'dark' ? 'bg-amber-900/20 text-gray-200 border-opacity-70' : 'bg-amber-50 text-gray-700'
+            }`}>
+              <h4 className="text-sm font-semibold text-amber-600 mb-2">Previously in Hotfix v1.1.1-hf3</h4>
+              <ul className="text-xs space-y-1 list-disc list-inside">
+                <li>Added dual-line recreational and medical pricing tables for all Michigan bulk shelves.</li>
+                <li>Extended "Show pricing in preview" toggles to every shelf in both bulk and pre-packaged builders.</li>
+                <li>Applied shelf-accent backgrounds to pricing toggles for better readability.</li>
+              </ul>
             </section>
             
             <section className={`p-4 rounded-lg border-l-4 border-amber-400 ${

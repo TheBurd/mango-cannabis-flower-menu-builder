@@ -25,6 +25,9 @@ interface ToolbarProps {
   lastSaveTime?: Date | null;
   hasUnsavedChanges?: boolean;
   isNewProject?: boolean;
+  // Auto-save toggle
+  autoSaveEnabled?: boolean;
+  onToggleAutoSave?: () => void;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -78,6 +81,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   lastSaveTime,
   hasUnsavedChanges = false,
   isNewProject = true,
+  autoSaveEnabled = false,
+  onToggleAutoSave,
 }) => {
   const [confirmClearShelves, setConfirmClearShelves] = useState(false);
   const [confirmClearLastJars, setConfirmClearLastJars] = useState(false);
@@ -251,6 +256,30 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <span>Save As</span>
+                </Button>
+              )}
+
+              {/* Auto-save toggle button */}
+              {onToggleAutoSave && (
+                <Button
+                  onClick={onToggleAutoSave}
+                  variant="custom"
+                  size="sm"
+                  className={`flex items-center space-x-1 text-white text-xs ${
+                    autoSaveEnabled
+                      ? 'bg-green-600 hover:bg-green-500'
+                      : 'bg-gray-500 hover:bg-gray-400'
+                  }`}
+                  title={
+                    autoSaveEnabled 
+                      ? "Auto-save is ON - Click to disable\n\n⚠️ Auto-Save feature is in development and may not work as intended. Use with caution, save your work often." 
+                      : "Auto-save is OFF - Click to enable"
+                  }
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Auto-save: {autoSaveEnabled ? 'ON' : 'OFF'}</span>
                 </Button>
               )}
             </div>
