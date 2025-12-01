@@ -133,6 +133,7 @@ const swatches = ['#111827', '#1f2937', '#6b7280', '#ef4444', '#f59e0b', '#10b98
 export const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, className = '' }) => {
   const [mode, setMode] = useState<ColorMode>('hex');
   const [rgba, setRgba] = useState<RGBA>({ r: 0, g: 0, b: 0, a: 1 });
+  const [inputValue, setInputValue] = useState<string>('');
 
   useEffect(() => {
     const parsed =
@@ -148,7 +149,26 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange
   const displayHsl = useMemo(() => rgbaToHsl(rgba), [rgba]);
   const displayCmyk = useMemo(() => rgbaToCmyk(rgba), [rgba]);
 
+  const getDisplayForMode = (m: ColorMode) => {
+    switch (m) {
+      case 'hex':
+        return displayHex;
+      case 'rgba':
+        return displayRgba;
+      case 'hsl':
+        return displayHsl;
+      case 'cmyk':
+      default:
+        return displayCmyk;
+    }
+  };
+
+  useEffect(() => {
+    setInputValue(getDisplayForMode(mode));
+  }, [mode, displayHex, displayRgba, displayHsl, displayCmyk]);
+
   const handleModeInput = (nextMode: ColorMode, text: string) => {
+    setInputValue(text);
     let parsed: RGBA | null = null;
     switch (nextMode) {
       case 'hex':
@@ -178,7 +198,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange
     if (mode === 'hex') {
       return (
         <input
-          value={displayHex}
+          value={inputValue}
           onChange={(e) => handleModeInput('hex', e.target.value)}
           className={shared}
         />
@@ -187,7 +207,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange
     if (mode === 'rgba') {
       return (
         <input
-          value={displayRgba}
+          value={inputValue}
           onChange={(e) => handleModeInput('rgba', e.target.value)}
           className={shared}
         />
@@ -196,7 +216,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange
     if (mode === 'hsl') {
       return (
         <input
-          value={displayHsl}
+          value={inputValue}
           onChange={(e) => handleModeInput('hsl', e.target.value)}
           className={shared}
         />
@@ -204,7 +224,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange
     }
     return (
       <input
-        value={displayCmyk}
+        value={inputValue}
         onChange={(e) => handleModeInput('cmyk', e.target.value)}
         className={shared}
       />

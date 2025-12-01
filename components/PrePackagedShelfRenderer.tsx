@@ -25,6 +25,11 @@ const formatPercentage = (value: number | null | undefined): string => {
   return `${value.toFixed(1)}%`;
 };
 
+const extractBracketColor = (val: string, prefix: 'bg' | 'text'): string | null => {
+  const match = val?.match(new RegExp(`^${prefix}-\\[(.+)\\]$`));
+  return match?.[1] || null;
+};
+
 export const PrePackagedShelfRenderer: React.FC<PrePackagedShelfRendererProps> = ({
   shelf,
   productsToRender,
@@ -38,6 +43,12 @@ export const PrePackagedShelfRenderer: React.FC<PrePackagedShelfRendererProps> =
   showInventoryStatus,
   showNetWeight,
 }) => {
+  const bgBracket = extractBracketColor(shelf.color, 'bg');
+  const textBracket = extractBracketColor(shelf.textColor, 'text');
+  const isBgClass = shelf.color.startsWith('bg-') && !bgBracket;
+  const isTextClass = shelf.textColor.startsWith('text-') && !textBracket;
+  const resolvedBackground = !isBgClass ? (bgBracket || shelf.color) : undefined;
+  const resolvedTextColor = !isTextClass ? (textBracket || shelf.textColor) : undefined;
   const shelfHeaderStyle: React.CSSProperties = useMemo(() => ({
     fontSize: `${baseFontSizePx * 1.6}px`,
     fontWeight: 'bold',
@@ -45,11 +56,12 @@ export const PrePackagedShelfRenderer: React.FC<PrePackagedShelfRendererProps> =
     padding: `${Math.max(3, baseFontSizePx * 0.5)}px ${Math.max(5, baseFontSizePx * 0.8)}px`,
     marginBottom: `${Math.max(3, baseFontSizePx * 0.6)}px`,
     borderRadius: '6px',
-    color: 'white',
+    color: resolvedTextColor || 'white',
     textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     lineHeight: Math.max(1.1, 1.3 + linePaddingMultiplier * 0.2), // Responsive header line height
-  }), [baseFontSizePx, linePaddingMultiplier]);
+    backgroundColor: resolvedBackground,
+  }), [baseFontSizePx, linePaddingMultiplier, resolvedBackground, resolvedTextColor]);
 
   const tableStyle: React.CSSProperties = useMemo(() => ({
     width: '100%',
@@ -127,7 +139,7 @@ export const PrePackagedShelfRenderer: React.FC<PrePackagedShelfRendererProps> =
       )}
       
       <div
-        className={shelf.color}
+        className={`${isBgClass ? shelf.color : ''} ${isTextClass ? shelf.textColor : ''}`.trim()}
         style={shelfHeaderStyle}
       >
         {shelf.name}

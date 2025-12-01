@@ -8,15 +8,17 @@ interface CsvImportModalProps {
   onClose: () => void;
   theme: Theme;
   menuMode: MenuMode;
-  onImport: (data: ImportData[], mappingConfig: ColumnMapping) => void;
+  onImport: (data: ImportData[], mappingConfig: ColumnMapping, options: { createMissingShelves: boolean }) => void;
   onMultiImport?: (files: MultiFileImportData[], shouldSplitIntoPages: boolean) => void;
   onModeSwitch?: (newMode: MenuMode) => void;
+  currentShelves: Array<{ id: string; name: string }>;
 }
 
 interface MultiFileImportData {
   filename: string;
   data: ImportData[];
   mappingConfig: ColumnMapping;
+  createMissingShelves?: boolean;
 }
 
 interface ImportData {
@@ -238,12 +240,15 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
   onImport,
   onMultiImport,
   onModeSwitch,
+  currentShelves,
 }) => {
   const [stage, setStage] = useState<ImportStage>('upload');
   const [csvData, setCsvData] = useState<string>('');
   const [parsedData, setParsedData] = useState<ImportData[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
+  const [createMissingShelves, setCreateMissingShelves] = useState(false);
+  const [unknownShelves, setUnknownShelves] = useState<string[]>([]);
   const [detectedMode, setDetectedMode] = useState<MenuMode | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [delimiter, setDelimiter] = useState<string>(',');
@@ -633,9 +638,35 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
       });
     });
 
+    // Validate shelf/category values against current configuration unless user opts to auto-create
+    const shelfColumn = Object.entries(columnMapping).find(([, appField]) => appField === 'shelf')?.[0];
+    const configuredShelves = new Set(currentShelves.map((s) => s.name.toLowerCase()));
+    const unknowns: Set<string> = new Set();
+    if (shelfColumn) {
+      parsedData.forEach((row) => {
+        const raw = (row[shelfColumn] || '').toString().trim();
+        if (!raw) return;
+        if (!configuredShelves.has(raw.toLowerCase())) {
+          unknowns.add(raw);
+        }
+      });
+    }
+    setUnknownShelves(Array.from(unknowns));
+    if (unknowns.size > 0 && !createMissingShelves) {
+      const list = Array.from(unknowns).slice(0, 5).join(', ');
+      errors.push(`Unknown shelves/categories in CSV: ${list}${unknowns.size > 5 ? '…' : ''}. Enable "Create missing shelves" or update the CSV names.`);
+    }
+
     setValidationErrors(errors);
     setStage('validation');
-  }, [columnMapping, mappingFields, parsedData]);
+  }, [columnMapping, mappingFields, parsedData, currentShelves, createMissingShelves]);
+
+  // Re-run validation when toggling creation option during validation stage
+  useEffect(() => {
+    if (stage === 'validation') {
+      validateData();
+    }
+  }, [createMissingShelves, stage, validateData]);
 
   // Reset modal state
   const resetModal = useCallback(() => {
@@ -647,6 +678,8 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
     setDetectedMode(null);
     setValidationErrors([]);
     setDelimiter(',');
+    setCreateMissingShelves(false);
+    setUnknownShelves([]);
   }, []);
 
   // Handle import - process single or multiple files
@@ -658,7 +691,8 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
       const filesForImport = allFilesData.map(fileData => ({
         filename: fileData.filename,
         data: fileData.data,
-        mappingConfig: columnMapping
+        mappingConfig: columnMapping,
+        createMissingShelves,
       }));
       
       // Use the multi-CSV import handler
@@ -666,11 +700,11 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
         onMultiImport(filesForImport, splitIntoPages);
       } else {
         // Fallback: use regular import for first file
-        onImport(parsedData, columnMapping);
+        onImport(parsedData, columnMapping, { createMissingShelves });
       }
     } else {
       // Single file import (existing logic)
-      onImport(parsedData, columnMapping);
+      onImport(parsedData, columnMapping, { createMissingShelves });
     }
     
     setStage('complete');
@@ -680,7 +714,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
       resetModal();
       onClose();
     }, 1500);
-  }, [validationErrors, parsedData, columnMapping, onImport, onClose, resetModal, isMultiFileMode, uploadedFiles, splitIntoPages, detectDelimiter, parseCsvData]);
+  }, [validationErrors, parsedData, columnMapping, onImport, onClose, resetModal, isMultiFileMode, uploadedFiles, splitIntoPages, detectDelimiter, parseCsvData, createMissingShelves, onMultiImport]);
 
   const handleClose = useCallback(() => {
     resetModal();
@@ -990,6 +1024,42 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                       </>
                     )}
                   </p>
+                </div>
+              )}
+
+              {unknownShelves.length > 0 && (
+                <div className={`p-4 rounded-lg border mb-6 ${
+                  theme === 'dark' ? 'border-amber-500/50 bg-amber-500/10 text-amber-200' : 'border-amber-400 bg-amber-50 text-amber-800'
+                }`}>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h4 className="font-medium mb-1">Unknown shelves found</h4>
+                        <p className="text-sm opacity-80">These names don&apos;t match your current shelf configuration.</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {unknownShelves.slice(0, 8).map((name) => (
+                            <span key={name} className="px-2 py-1 rounded bg-black/10 dark:bg-white/10 text-xs font-medium">
+                              {name}
+                            </span>
+                          ))}
+                          {unknownShelves.length > 8 && (
+                            <span className="text-xs opacity-70">+{unknownShelves.length - 8} more</span>
+                          )}
+                        </div>
+                      </div>
+                      <label className="flex items-center gap-2 text-sm select-none cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={createMissingShelves}
+                          onChange={(e) => setCreateMissingShelves(e.target.checked)}
+                        />
+                        <span>Create missing shelves automatically</span>
+                      </label>
+                    </div>
+                    <p className="text-xs opacity-75">
+                      Leave unchecked to block import until names match your configured shelves. Enable to auto-create new shelves using your current layout defaults.
+                    </p>
+                  </div>
                 </div>
               )}
 

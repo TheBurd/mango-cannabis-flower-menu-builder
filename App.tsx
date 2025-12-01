@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+﻿import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 
 /**
  * PANEL INTEGRATION ARCHITECTURE
@@ -456,10 +456,18 @@ const AppContent: React.FC = () => {
   const [shelfConfigVersion, setShelfConfigVersion] = useState<number>(0);
 
   const configuredShelvesForModal = useMemo(() => {
-    return menuMode === MenuMode.BULK
-      ? getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled).map((shelf) => ({ ...shelf, strains: [] }))
-      : getConfiguredPrepackagedShelves(currentAppState).map((shelf) => ({ ...shelf, products: [] }));
-  }, [menuMode, currentAppState, fiftyPercentOffEnabled, shelfConfigVersion]);
+      // Prefer the live shelves (so newly imported/created shelves remain present), but strip items for the modal.
+      if (menuMode === MenuMode.BULK) {
+        if (bulkShelves.length > 0) {
+          return bulkShelves.map((shelf) => ({ ...shelf, strains: [] }));
+        }
+        return getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled).map((shelf) => ({ ...shelf, strains: [] }));
+      }
+      if (prePackagedShelves.length > 0) {
+        return prePackagedShelves.map((shelf) => ({ ...shelf, products: [] }));
+      }
+      return getConfiguredPrepackagedShelves(currentAppState).map((shelf) => ({ ...shelf, products: [] }));
+  }, [menuMode, currentAppState, fiftyPercentOffEnabled, shelfConfigVersion, bulkShelves, prePackagedShelves]);
 
   const defaultShelvesForModal = useMemo(() => {
     return menuMode === MenuMode.BULK
@@ -609,7 +617,7 @@ const AppContent: React.FC = () => {
       if (newValue) {
         addToast({
           title: 'Auto-Save Enabled',
-          message: '⚠️ Auto-Save feature is in development and may not work as intended. Use with caution, save your work often.',
+          message: 'ΓÜá∩╕Å Auto-Save feature is in development and may not work as intended. Use with caution, save your work often.',
           type: 'warning',
           duration: 8000 // Show for 8 seconds to ensure user sees it
         });
@@ -636,7 +644,7 @@ const AppContent: React.FC = () => {
     
     if (currentModeHasContent) {
       const confirmMessage = `You have items in your current ${menuMode} menu.\n\n` +
-        `⚠️ WARNING: Switching to ${newMode} WILL DELETE your current ${menuMode.toLowerCase()} menu data.\n\n` +
+        `ΓÜá∩╕Å WARNING: Switching to ${newMode} WILL DELETE your current ${menuMode.toLowerCase()} menu data.\n\n` +
         `Are you sure you want to continue?`;
       
       if (!confirm(confirmMessage)) {
@@ -900,7 +908,7 @@ const AppContent: React.FC = () => {
       return;
     }
     
-    console.log(`Starting strain reorder in shelf ${shelfId}: ${fromIndex} → ${toIndex}`);
+    console.log(`Starting strain reorder in shelf ${shelfId}: ${fromIndex} ΓåÆ ${toIndex}`);
     isStrainReorderingRef.current = true;
     
     recordChange(() => {
@@ -1191,8 +1199,8 @@ const AppContent: React.FC = () => {
     if (!window.electronAPI) return;
 
     const handleUpdateAvailable = (_event: any, updateInfo: { version: string; releaseDate: string; releaseNotes: string }) => {
-      console.log('🎉 Update available event received:', updateInfo);
-      console.log('📄 This should NOT trigger any downloads automatically');
+      console.log('≡ƒÄë Update available event received:', updateInfo);
+      console.log('≡ƒôä This should NOT trigger any downloads automatically');
       
       setUpdateAvailable(true);
       setUpdateVersion(updateInfo.version);
@@ -1210,19 +1218,19 @@ const AppContent: React.FC = () => {
     };
 
     const handleDownloadProgress = (_event: any, progress: { percent: number; transferred: number; total: number; bytesPerSecond: number }) => {
-      console.log('📦 Download progress:', progress);
+      console.log('≡ƒôª Download progress:', progress);
       setIsDownloadingUpdate(true); // Ensure downloading state is set
       setUpdateDownloadProgress(progress.percent);
       setUpdateDownloadProgressFull(progress);
     };
 
     const handleUpdateDownloaded = (_event: any, info: { version: string }) => {
-      console.log('✅ Update download completed!', info);
+      console.log('Γ£à Update download completed!', info);
       setIsDownloadingUpdate(false);
       setIsUpdateDownloaded(true);
       setUpdateDownloadProgress(100);
       setUpdateDownloadProgressFull(null); // Clear progress since download is complete
-      console.log('📌 States after download completion: downloading=false, downloaded=true');
+      console.log('≡ƒôî States after download completion: downloading=false, downloaded=true');
     };
 
     const handleUpdateNotAvailable = (_event: any, info: any) => {
@@ -1624,7 +1632,7 @@ const AppContent: React.FC = () => {
       return; // No change needed
     }
     
-    console.log(`Starting reorder in shelf ${shelfId}: ${fromIndex} → ${toIndex}`);
+    console.log(`Starting reorder in shelf ${shelfId}: ${fromIndex} ΓåÆ ${toIndex}`);
     isReorderingRef.current = true;
     
     // Use a more direct state update approach to prevent duplicate calls
@@ -2881,19 +2889,29 @@ const AppContent: React.FC = () => {
 
   const handleSaveShelfConfig = useCallback((shelvesToSave: (Shelf | PrePackagedShelf)[]) => {
     if (menuMode === MenuMode.BULK) {
-      const sanitized = (shelvesToSave as Shelf[]).map((shelf) => ({ ...shelf, strains: [] }));
+      const existingMap = new Map(bulkShelves.map((shelf) => [shelf.id, shelf]));
+      const mergedShelves = (shelvesToSave as Shelf[]).map((shelf) => {
+        const existing = existingMap.get(shelf.id);
+        return { ...shelf, strains: existing?.strains || [] };
+      });
+      const sanitized = mergedShelves.map((shelf) => ({ ...shelf, strains: [] }));
       shelfConfigStore.save(currentAppState, MenuMode.BULK, sanitized);
-      setBulkShelves(sanitized);
-      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), sanitized);
+      setBulkShelves(mergedShelves);
+      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), mergedShelves);
     } else {
-      const sanitized = (shelvesToSave as PrePackagedShelf[]).map((shelf) => ({ ...shelf, products: [] }));
+      const existingMap = new Map(prePackagedShelves.map((shelf) => [shelf.id, shelf]));
+      const mergedShelves = (shelvesToSave as PrePackagedShelf[]).map((shelf) => {
+        const existing = existingMap.get(shelf.id);
+        return { ...shelf, products: existing?.products || [] };
+      });
+      const sanitized = mergedShelves.map((shelf) => ({ ...shelf, products: [] }));
       shelfConfigStore.save(currentAppState, MenuMode.PREPACKAGED, sanitized);
-      setPrePackagedShelves(sanitized);
-      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), sanitized);
+      setPrePackagedShelves(mergedShelves);
+      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), mergedShelves);
     }
     setShelfConfigVersion((v) => v + 1);
     setShowShelfConfigurator(false);
-  }, [menuMode, currentAppState, pageManager]);
+  }, [menuMode, currentAppState, pageManager, bulkShelves, prePackagedShelves]);
 
   const handleResetShelfConfig = useCallback(() => {
     shelfConfigStore.reset(currentAppState, menuMode);
@@ -3253,21 +3271,24 @@ const AppContent: React.FC = () => {
   }, [processImportedCSVFile]);
 
   // New CSV modal handlers
-  const handleCsvImport = useCallback((data: any[], mapping: any) => {
+  const handleCsvImport = useCallback((data: any[], mapping: any, options?: { createMissingShelves?: boolean }) => {
     // Invert the mapping to get field -> csvColumn mapping
     const fieldToColumn: Record<string, string> = {};
     Object.entries(mapping).forEach(([csvColumn, appField]) => {
       fieldToColumn[appField as string] = csvColumn;
     });
+    const allowCreateShelves = options?.createMissingShelves === true;
     
     // Convert the imported data using the column mapping
     if (menuMode === MenuMode.BULK) {
       const importedStrainsByShelf: Record<string, Strain[]> = {};
       let importedCount = 0;
       const skippedRowsData: {rowIndex: number, rowData: any, reason: string}[] = [];
+      let workingShelves = [...bulkShelves];
+      const createdShelves: Shelf[] = [];
 
       // Get the shelf name map for quick lookup
-      const shelfNameMap = new Map(bulkShelves.map(s => [s.name.toLowerCase(), s.id]));
+      const shelfNameMap = new Map(workingShelves.map(s => [s.name.toLowerCase(), s.id]));
 
       data.forEach((row, index) => {
         try {
@@ -3281,12 +3302,29 @@ const AppContent: React.FC = () => {
             return;
           }
 
-          const targetShelfId = shelfNameMap.get(shelfName.toLowerCase());
+          let targetShelfId = shelfNameMap.get(shelfName.toLowerCase());
           if (!targetShelfId) {
-            const reason = `Unknown shelf/category "${shelfName}"`;
-            skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
-            console.warn(`Skipping row ${index + 2}: ${reason}`);
-            return;
+            if (allowCreateShelves) {
+              const newShelf: Shelf = {
+                id: crypto.randomUUID(),
+                name: shelfName,
+                pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 },
+                medicalPricing: undefined,
+                color: 'bg-gray-500',
+                textColor: 'text-white',
+                strains: [],
+                sortCriteria: null,
+              };
+              workingShelves = [...workingShelves, newShelf];
+              shelfNameMap.set(shelfName.toLowerCase(), newShelf.id);
+              createdShelves.push(newShelf);
+              targetShelfId = newShelf.id;
+            } else {
+              const reason = `Unknown shelf/category "${shelfName}"`;
+              skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
+              console.warn(`Skipping row ${index + 2}: ${reason}`);
+              return;
+            }
           }
 
           // Parse THC value
@@ -3330,18 +3368,20 @@ const AppContent: React.FC = () => {
         }
       });
 
-      // Update shelves with imported data
-      setBulkShelves(prev => prev.map(shelf => ({
+      // Update shelves with imported data (including any newly created shelves)
+      const mergedShelves = workingShelves.map(shelf => ({
         ...shelf,
         strains: [...shelf.strains, ...(importedStrainsByShelf[shelf.id] || [])]
-      })));
+      }));
+      setBulkShelves(mergedShelves);
+      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), mergedShelves);
 
       // Set skipped rows data and messages
       setSkippedRows(skippedRowsData);
       addToast({
         type: 'success',
         title: 'Bulk Flower CSV Import Complete',
-        message: `${importedCount} strains loaded.`,
+        message: `${importedCount} strains loaded.${createdShelves.length ? ` Created ${createdShelves.length} new shelf${createdShelves.length > 1 ? 's' : ''}.` : ''}`,
         duration: 5000
       });
     } else {
@@ -3351,8 +3391,10 @@ const AppContent: React.FC = () => {
       let shakeCount = 0;
       let flowerCount = 0;
       const skippedRowsData: {rowIndex: number, rowData: any, reason: string}[] = [];
+      let workingShelves = [...prePackagedShelves];
+      const createdShelves: PrePackagedShelf[] = [];
 
-      const shelfNameMap = new Map(prePackagedShelves.map(s => [s.name.toLowerCase(), s.id]));
+      const shelfNameMap = new Map(workingShelves.map(s => [s.name.toLowerCase(), s.id]));
 
       data.forEach((row, index) => {
         try {
@@ -3391,10 +3433,25 @@ const AppContent: React.FC = () => {
             (shelfName.includes('g') ? shelfNameMap.get(shelfName.replace('g', '').toLowerCase()) : null);
           
           if (!targetShelfId) {
-            const reason = `Unknown weight category "${shelfName}" (tried "${smartShelfName}")`;
-            skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
-            console.warn(`Skipping row ${index + 2}: ${reason}. Available shelves: ${Array.from(shelfNameMap.keys()).join(', ')}`);
-            return;
+            if (allowCreateShelves) {
+              const newShelf: PrePackagedShelf = {
+                id: crypto.randomUUID(),
+                name: shelfName,
+                color: 'bg-gray-500',
+                textColor: 'text-white',
+                products: [],
+                sortCriteria: null,
+              };
+              workingShelves = [...workingShelves, newShelf];
+              shelfNameMap.set(shelfName.toLowerCase(), newShelf.id);
+              createdShelves.push(newShelf);
+              targetShelfId = newShelf.id;
+            } else {
+              const reason = `Unknown weight category "${shelfName}" (tried "${smartShelfName}")`;
+              skippedRowsData.push({rowIndex: index + 2, rowData: row, reason});
+              console.warn(`Skipping row ${index + 2}: ${reason}. Available shelves: ${Array.from(shelfNameMap.keys()).join(', ')}`);
+              return;
+            }
           }
 
           // Parse numeric values
@@ -3459,18 +3516,20 @@ const AppContent: React.FC = () => {
         }
       });
 
-      // Update shelves with imported data
-      setPrePackagedShelves(prev => prev.map(shelf => ({
+      // Update shelves with imported data (including any newly created shelves)
+      const mergedShelves = workingShelves.map(shelf => ({
         ...shelf,
         products: [...shelf.products, ...(importedProductsByShelf[shelf.id] || [])]
-      })));
+      }));
+      setPrePackagedShelves(mergedShelves);
+      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), mergedShelves);
 
       // Set skipped rows data and messages
       setSkippedRows(skippedRowsData);
       addToast({
         type: 'success',
         title: 'Pre-packaged CSV Import Complete',
-        message: `${importedCount} products loaded.`,
+        message: `${importedCount} products loaded.${createdShelves.length ? ` Created ${createdShelves.length} new shelf${createdShelves.length > 1 ? 's' : ''}.` : ''}`,
         duration: 5000,
         actions: shakeCount > 0 || flowerCount > 0 ? [
           {
@@ -3491,7 +3550,7 @@ const AppContent: React.FC = () => {
     sessionManager.clearAutoSave();
     
     recordChange(() => {});
-  }, [menuMode, bulkShelves, prePackagedShelves, recordChange]);
+  }, [menuMode, bulkShelves, prePackagedShelves, recordChange, pageManager]);
 
   // Helper function to process CSV data into clean shelf structures
   const processCSVIntoShelves = useCallback((data: any[], mapping: any, baseShelves: any[]) => {
@@ -3602,7 +3661,7 @@ const AppContent: React.FC = () => {
         // Clear current page first, then import combined data
         const currentPageNumber = pageManager.getCurrentPageNumber();
         pageManager.updatePageShelves(currentPageNumber, []);
-        handleCsvImport(allData, files[0].mappingConfig);
+        handleCsvImport(allData, files[0].mappingConfig, { createMissingShelves: files[0]?.createMissingShelves === true });
       }
       
       // Clear auto-save since we've imported new content
@@ -3644,7 +3703,7 @@ const AppContent: React.FC = () => {
 
     if (currentData) {
       const confirmMessage = `You have items in your current ${menuMode} menu.\n\n` +
-        `⚠️ WARNING: Switching to ${newMode} WILL DELETE your current ${menuMode.toLowerCase()} menu data.\n\n` +
+        `ΓÜá∩╕Å WARNING: Switching to ${newMode} WILL DELETE your current ${menuMode.toLowerCase()} menu data.\n\n` +
         `Are you sure you want to continue?`;
         
       if (confirm(confirmMessage)) {
@@ -3936,7 +3995,7 @@ const AppContent: React.FC = () => {
           break;
 
         case 'show-about':
-          alert(`🥭 Mango Cannabis Flower Menu Builder v${APP_VERSION}\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com`);
+          alert(`≡ƒÑ¡ Mango Cannabis Flower Menu Builder v${APP_VERSION}\n\nMango Cannabis Flower Menu Builder with dynamic pricing, state compliance, and beautiful export capabilities.\n\nDeveloped by Mango Cannabis\nContact: brad@mangocannabis.com`);
           break;
 
         case 'reset-welcome':
@@ -4005,7 +4064,7 @@ const AppContent: React.FC = () => {
           if (confirmClear) {
             const keysToRemove = ['mango-selected-state', 'mango-theme', 'mango-has-seen-welcome'];
             keysToRemove.forEach(key => localStorage.removeItem(key));
-            alert('✅ localStorage cleared! The app will reload with default settings.');
+            alert('Γ£à localStorage cleared! The app will reload with default settings.');
             window.location.reload();
           }
           break;
@@ -4297,6 +4356,7 @@ const AppContent: React.FC = () => {
           onClose={() => setShowCsvImportModal(false)}
           theme={theme}
           menuMode={menuMode}
+          currentShelves={menuMode === MenuMode.BULK ? bulkShelves : prePackagedShelves}
           onImport={handleCsvImport}
           onMultiImport={handleMultiCsvImport}
           onModeSwitch={handleMenuModeSwitch}
@@ -4330,7 +4390,7 @@ const AppContent: React.FC = () => {
                       : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  ✕
+                  Γ£ò
                 </button>
               </div>
 
@@ -4427,7 +4487,7 @@ const AppContent: React.FC = () => {
                       : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  ✕
+                  Γ£ò
                 </button>
               </div>
 
@@ -4458,15 +4518,15 @@ const AppContent: React.FC = () => {
                     <h3 className="text-lg font-medium mb-3">How Smart Classification Works</h3>
                     <div className="space-y-3 text-sm">
                       <div className={`p-3 rounded-lg border-l-4 border-purple-500 ${theme === 'dark' ? 'bg-purple-900/20' : 'bg-purple-50'}`}>
-                        <div className="font-medium">🧠 Automatic Detection</div>
+                        <div className="font-medium">≡ƒºá Automatic Detection</div>
                         <div className="mt-1">Products with "shake" in the name are automatically categorized under Shake shelves (e.g., "28g Shake")</div>
                       </div>
                       <div className={`p-3 rounded-lg border-l-4 border-green-500 ${theme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'}`}>
-                        <div className="font-medium">🌸 Default to Flower</div>
+                        <div className="font-medium">≡ƒî╕ Default to Flower</div>
                         <div className="mt-1">All other products are categorized under Flower shelves (e.g., "28g Flower", "3.5g Flower")</div>
                       </div>
                       <div className={`p-3 rounded-lg border-l-4 border-blue-500 ${theme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
-                        <div className="font-medium">⚙️ Manual Override</div>
+                        <div className="font-medium">ΓÜÖ∩╕Å Manual Override</div>
                         <div className="mt-1">You can override by using "3.5g Shake" or "28g Flower" directly in your weight/category column</div>
                       </div>
                     </div>
@@ -4598,3 +4658,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
