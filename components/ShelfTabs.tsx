@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shelf, Theme } from '../types';
+import { getShelfAccentColor } from '../utils/colorUtils';
 
 interface ShelfTabsProps {
   shelves: Shelf[];
@@ -71,6 +72,13 @@ export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, 
           const displayName = isHovered ? 
             `${shelf.name} (${strainCount})` : 
             truncateShelfName(shelf.name, strainCount);
+          const bgBracket = shelf.color.startsWith('bg-[') ? shelf.color.slice(3, -1) : null;
+          const textBracket = shelf.textColor.startsWith('text-[') ? shelf.textColor.slice(5, -1) : null;
+          const resolvedBg =
+            bgBracket ||
+            (!shelf.color.startsWith('bg-') ? shelf.color : undefined) ||
+            getShelfAccentColor(shelf.color);
+          const resolvedText = textBracket || (!shelf.textColor.startsWith('text-') ? shelf.textColor : undefined);
           
           return (
             <div
@@ -91,8 +99,9 @@ export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, 
                 ${isHovered ? 'transform scale-105 z-20 shadow-lg' : 'z-10 shadow-md'}
               `}
               style={{
-                backgroundColor: shelf.color.startsWith('bg-[') ? shelf.color.slice(3, -1) : (shelf.color.startsWith('bg-') ? undefined : shelf.color),
-                color: shelf.textColor.startsWith('text-[') ? shelf.textColor.slice(5, -1) : (shelf.textColor.startsWith('text-') ? undefined : shelf.textColor),
+                // Inline for custom/bracket and accent fallback; Tailwind handles standard classes
+                backgroundColor: resolvedBg,
+                color: resolvedText,
                 clipPath: 'polygon(0 0, 0 100%, calc(100% - 12px) 100%, 100% 0)',
                 minWidth: isHovered ? 'auto' : '40px',
                 maxWidth: isHovered ? 'none' : 'none',
@@ -104,11 +113,11 @@ export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, 
             >
               <span className={`
                 text-xs font-medium truncate block leading-5
-                ${shelf.textColor}
                 ${isHovered ? 'transform scale-105' : ''}
               `}
               style={{
-                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)'
+                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                color: resolvedText
               }}>
                 {displayName}
               </span>

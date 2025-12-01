@@ -4,6 +4,7 @@ import { Button } from './common/Button';
 import { ToggleSwitch } from './common/ToggleSwitch';
 import { ColorPicker } from './common/ColorPicker';
 import { getShelfAccentColor } from '../utils/colorUtils';
+import { useToast } from './ToastContainer';
 
 type ConfigShelf = Shelf | PrePackagedShelf;
 
@@ -65,6 +66,8 @@ export const ShelfConfiguratorModal: React.FC<ShelfConfiguratorModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [openPricing, setOpenPricing] = useState<Set<string>>(new Set());
+  const { addToast } = useToast();
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const normalizeColorForPicker = (val: string, type: 'bg' | 'text') => {
     const bracketMatch = val.match(/^bg-\[(.+)\]$/) || val.match(/^text-\[(.+)\]$/);
@@ -102,9 +105,37 @@ export const ShelfConfiguratorModal: React.FC<ShelfConfiguratorModalProps> = ({
     const validationError = validateShelves(shelvesDraft);
     if (validationError) {
       setError(validationError);
+      addToast({
+        type: 'error',
+        title: 'Cannot save shelves',
+        message: validationError,
+        duration: 4000,
+      });
       return;
     }
     onSave(shelvesDraft);
+  };
+
+  const handleReset = () => {
+    if (confirmReset) {
+      onResetToDefaults();
+      setConfirmReset(false);
+      addToast({
+        type: 'warning',
+        title: 'Shelves reset to defaults',
+        message: 'All custom shelves cleared and defaults restored.',
+        duration: 4000,
+      });
+    } else {
+      setConfirmReset(true);
+      addToast({
+        type: 'info',
+        title: 'Confirm reset',
+        message: 'Click reset again within 5 seconds to restore default shelves.',
+        duration: 4000,
+      });
+      setTimeout(() => setConfirmReset(false), 5000);
+    }
   };
 
   const updateShelf = (index: number, updates: Partial<ConfigShelf>) => {
@@ -208,7 +239,7 @@ export const ShelfConfiguratorModal: React.FC<ShelfConfiguratorModalProps> = ({
             <p className="text-xs text-gray-500 dark:text-gray-500">Defaults: {defaultShelves.length} shelves available</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={onResetToDefaults}>
+            <Button variant="secondary" size="sm" onClick={handleReset}>
               Reset to Defaults
             </Button>
             <Button variant="secondary" size="sm" onClick={handleExport}>

@@ -26,7 +26,8 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
       points: [
         'Add/remove/reorder shelves, set colors/text/pricing per state and mode.',
         'Save/load configs with export/import for reuse across clients.',
-        'Gear icon in toolbar jumps straight into configuration.'
+        'Gear icon in toolbar jumps straight into configuration.',
+        'Shelf edits keep menu items; defaults reset now require a quick double-confirm.'
       ]
     },
     {
@@ -47,6 +48,16 @@ export const WhatsNewModalTabs: React.FC<WhatsNewModalTabsProps> = ({
         'Bulk-style headers with pill sort buttons and aligned clear/toggle stack.',
         'Neutral product canvas (no shelf bleed) plus tightened spacing.',
         'Custom colors now flow through tabs/headers consistently.'
+      ]
+    },
+    {
+      title: 'CSV Imports & Shelves',
+      color: 'border-emerald-400',
+      bg: theme === 'dark' ? 'bg-emerald-900/20 text-gray-200 border-opacity-70' : 'bg-emerald-50 text-gray-700',
+      points: [
+        'Imports respect your current shelf configuration.',
+        'Option to auto-create missing shelves when enabled.',
+        'Clear feedback when CSV shelf names do not match.'
       ]
     }
   ];

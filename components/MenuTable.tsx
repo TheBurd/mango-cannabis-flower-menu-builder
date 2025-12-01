@@ -3,6 +3,7 @@ import { Shelf, Strain, SupportedStates } from '../types';
 import { StrainTypeIndicator } from './common/StrainTypeIndicator';
 import { THC_DECIMAL_PLACES, MANGO_MAIN_ORANGE, getShelfPricingByName } from '../constants';
 import { getPatternPath } from '../utils/assets';
+import { getShelfAccentColor } from '../utils/colorUtils';
 
 interface MenuTableProps {
   shelf: Shelf;
@@ -21,6 +22,26 @@ const getScaledFontSize = (base: number, multiplier: number, min: number = 7): s
 
 const getScaledValue = (base: number, multiplier: number, min: number = 0): number =>
     Math.max(min, base * multiplier);
+
+const extractBracketColor = (val: string, prefix: 'bg' | 'text'): string | null => {
+  const match = val?.match(new RegExp(`^${prefix}-\\[(.+)\\]$`));
+  return match?.[1] || null;
+};
+
+const resolveShelfColors = (shelf: Shelf) => {
+  const bgBracket = extractBracketColor(shelf.color, 'bg');
+  const textBracket = extractBracketColor(shelf.textColor, 'text');
+  const isBgClass = shelf.color.startsWith('bg-') && !bgBracket;
+  const isTextClass = shelf.textColor.startsWith('text-') && !textBracket;
+  return {
+    bgBracket,
+    textBracket,
+    isBgClass,
+    isTextClass,
+    backgroundColor: !isBgClass ? (bgBracket || shelf.color) : undefined,
+    textColor: !isTextClass ? (textBracket || shelf.textColor) : undefined,
+  };
+};
 
 // Helper function to build pricing grid for medical/recreational pricing tiers
 const buildPricingGrid = (
@@ -82,6 +103,7 @@ const buildPricingGrid = (
 // Function to render shelves as flowing rows when tighten shelves is enabled
 const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSizePx: number, linePaddingMultiplier: number, marginBottomStyle?: string, applyAvoidBreakStyle?: boolean, showOverflowWarning?: boolean, currentState?: SupportedStates) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
+  const resolvedColors = resolveShelfColors(shelf);
   
   // Add CSS for infused pattern
   const infusedPatternCSS = `
@@ -111,6 +133,10 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
   
   // Map shelf colors to actual hex values for borders
   const getShelfBorderColor = (shelfColor: string): string => {
+    const bracketMatch = shelfColor.match(/^bg-\[(.+)\]$/);
+    if (bracketMatch) return bracketMatch[1];
+    const accent = getShelfAccentColor(shelfColor);
+    if (accent) return accent;
     const colorMap: Record<string, string> = {
       'bg-purple-600': '#9333ea',
       'bg-amber-500': '#f59e0b',
@@ -189,6 +215,8 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
       key={`${shelf.id}-header`}
       className={`${shelf.color} ${shelf.textColor} shadow-md ${shelf.isInfused ? 'infused-header' : ''}`}
       style={{
+        backgroundColor: resolvedColors.backgroundColor,
+        color: resolvedColors.textColor,
         marginBottom: '0',
         padding: `${headerPaddingVertical}px ${getScaledValue(baseFontSizePx, 0.5, 5)}px`, // Reduced padding
         breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
@@ -242,6 +270,8 @@ const renderAsFlowingRows = (shelf: Shelf, strainsToRender: Strain[], baseFontSi
       key={`${shelf.id}-column-headers`}
       className={`${shelf.color} ${shelf.textColor} ${shelf.isInfused ? 'infused-column-header' : ''}`}
       style={{
+        backgroundColor: resolvedColors.backgroundColor,
+        color: resolvedColors.textColor,
         display: 'grid',
         gridTemplateColumns: gridColumns,
         alignItems: 'center',
@@ -489,6 +519,8 @@ export const MenuTable = React.memo<MenuTableProps>(({
 }) => {
 
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
+  const resolvedColors = resolveShelfColors(shelf);
+  const resolvedBorderColor = getShelfAccentColor(shelf.color) || resolvedColors.backgroundColor || '#6b7280';
 
   // When tighten shelves is ON (applyAvoidBreakStyle = false), render as flowing divs
   // When tighten shelves is OFF (applyAvoidBreakStyle = true), render as table
@@ -531,6 +563,8 @@ export const MenuTable = React.memo<MenuTableProps>(({
   ].filter(tier => typeof tier.rec === 'number' && typeof tier.med === 'number') : [];
 
   const shelfActualHeaderStyle: React.CSSProperties = {
+    backgroundColor: resolvedColors.backgroundColor,
+    color: resolvedColors.textColor,
     position: 'relative',
     marginBottom: '0',
     padding: `${headerPaddingVertical}px ${getScaledValue(baseFontSizePx, 0.5, 5)}px`,
@@ -585,6 +619,8 @@ export const MenuTable = React.memo<MenuTableProps>(({
 
   const tableHeaderStyles: React.CSSProperties = {
     display: 'table-header-group',
+    backgroundColor: resolvedColors.backgroundColor,
+    color: resolvedColors.textColor,
     // Keep table headers together with their content when shelf splitting is disabled
     breakInside: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
     breakAfter: applyAvoidBreakStyle ? 'avoid-column' : 'auto',
@@ -634,19 +670,21 @@ export const MenuTable = React.memo<MenuTableProps>(({
   const getBorderStyle = (shelfColor: string): React.CSSProperties => {
     if (shelfColor === 'bg-mango-gradient') {
       return {
-        borderColor: '#fe9426',
+        borderColor: resolvedBorderColor,
         borderWidth: '1px',
         borderStyle: 'solid',
       };
     }
     if (shelfColor === 'bg-gradient-to-r from-red-500 to-orange-500') {
       return {
-        borderColor: '#ef4444', // Tailwind red-500
+        borderColor: resolvedBorderColor,
         borderWidth: '1px',
         borderStyle: 'solid',
       };
     }
-    return {};
+    return {
+      borderColor: resolvedBorderColor,
+    };
   };
 
   const borderColorClass = getBorderColorClass(shelf.color);
@@ -654,6 +692,7 @@ export const MenuTable = React.memo<MenuTableProps>(({
 
   const tableWrapperStyle: React.CSSProperties = {
      ...borderStyle,
+     borderColor: resolvedBorderColor,
   };
 
   const displayName = shelf.name;

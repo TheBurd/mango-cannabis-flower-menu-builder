@@ -69,13 +69,15 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
             <section className={`p-4 rounded-lg border-l-4 border-lime-400 ${
               theme === 'dark' ? 'bg-lime-900/20 text-gray-200 border-opacity-70' : 'bg-lime-50 text-gray-700'
             }`}>
-              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Release v{APP_VERSION} � Shelf Configurator & Interactive Overlay</h3>
+              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Release v{APP_VERSION}  Shelf Configurator & Interactive Overlay</h3>
               <ul className="text-sm space-y-1 list-disc list-inside">
                 <li><strong>Shelf Configurator:</strong> add/remove/reorder shelves, set colors/pricing, and save per state/mode.</li>
                 <li><strong>Universal search bars:</strong> searchable by name/brand/type/shelf/any in both Bulk and Pre-Packaged modes.</li>
                 <li><strong>Pre-Packaged UI refresh:</strong> bulk-style headers with sort pills and neutral product canvas.</li>
                 <li><strong>Interactive Scroll Overlay:</strong> hover to pin it open; click any item to auto-scroll the editor.</li>
                 <li><strong>Toolbar gear icon:</strong> quick access to configure shelves from the main toolbar.</li>
+                <li><strong>Import-friendly shelves:</strong> CSV imports now respect your current shelf configuration and can auto-create missing shelves when enabled.</li>
+                <li><strong>Safer configurator:</strong> shelf edits keep existing menu items; resets now require a double-confirm and show toasts.</li>
               </ul>
               <p className="text-xs opacity-75 mt-3">Latest release highlights with configurability, search, and navigation improvements.</p>
             </section>

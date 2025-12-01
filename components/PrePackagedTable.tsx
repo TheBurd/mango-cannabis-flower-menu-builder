@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { PrePackagedShelf, PrePackagedProduct, SupportedStates } from '../types';
 import { StrainTypeIndicator } from './common/StrainTypeIndicator';
+import { getShelfAccentColor } from '../utils/colorUtils';
 
 interface PrePackagedTableProps {
   shelf: PrePackagedShelf;
@@ -23,6 +24,11 @@ const formatPrice = (price: number): string => {
 const formatPercentage = (value: number | null | undefined): string => {
   if (value === null || value === undefined) return '';
   return `${value.toFixed(1)}%`;
+};
+
+const extractBracketColor = (val: string, prefix: 'bg' | 'text'): string | null => {
+  const match = val?.match(new RegExp(`^${prefix}-\\[(.+)\\]$`));
+  return match?.[1] || null;
 };
 
 // Function to get CSS Grid column configuration based on settings
@@ -68,12 +74,22 @@ const renderAsGridRows = (
   showTerpenes: boolean,
   showNetWeight: boolean
 ) => {
+  const bgBracket = extractBracketColor(shelf.color, 'bg');
+  const textBracket = extractBracketColor(shelf.textColor, 'text');
+  const isBgClass = shelf.color.startsWith('bg-') && !bgBracket;
+  const isTextClass = shelf.textColor.startsWith('text-') && !textBracket;
+  const resolvedBackground = !isBgClass ? (bgBracket || shelf.color) : undefined;
+  const resolvedTextColor = !isTextClass ? (textBracket || shelf.textColor) : undefined;
+
   // Extract shelf color hex for styling
   const getShelfColorHex = (colorClass: string): string => {
     if (colorClass.includes('bg-[') && colorClass.includes(']')) {
       const match = colorClass.match(/bg-\[(.+)\]/);
       return match ? match[1] : '#6B7280';
     }
+    const accent = getShelfAccentColor(colorClass);
+    if (accent) return accent;
+    if (!colorClass.startsWith('bg-')) return colorClass || '#6B7280';
     return '#6B7280'; // Default gray if can't parse
   };
 
@@ -91,10 +107,14 @@ const renderAsGridRows = (
     padding: `${baseFontSizePx * 0.6}px ${baseFontSizePx * 1.0}px`,
     marginBottom: `${baseFontSizePx * 0.6}px`,
     borderRadius: '8px',
-    color: 'white',
+    color: resolvedTextColor || 'white',
     textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
     boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-    background: shelf.color.includes('gradient') ? shelf.color : `${shelf.color} linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.1))`,
+    background: resolvedBackground
+      ? resolvedBackground
+      : shelf.color.includes('gradient')
+        ? shelf.color
+        : `${shelf.color} linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.1))`,
     border: '1px solid rgba(255,255,255,0.1)',
     breakInside: 'avoid-column' as const,
   };
@@ -111,7 +131,7 @@ const renderAsGridRows = (
     borderRight: '2px solid #e5e7eb',
     fontWeight: '600',
     fontSize: `${baseFontSizePx * 0.85}px`,
-    color: '#374151',
+    color: resolvedTextColor || '#374151',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5px',
     padding: `${baseFontSizePx * 0.5}px 0`,
@@ -185,7 +205,7 @@ const renderAsGridRows = (
   elements.push(
     <div
       key={`${shelf.id}-header`}
-      className={shelf.color}
+      className={`${isBgClass ? shelf.color : ''} ${isTextClass ? shelf.textColor : ''}`.trim()}
       style={shelfHeaderStyle}
     >
       {shelf.name}

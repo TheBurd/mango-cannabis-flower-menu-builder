@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PrePackagedShelf, Theme } from '../types';
+import { getShelfAccentColor } from '../utils/colorUtils';
 
 interface PrePackagedShelfTabsProps {
   shelves: PrePackagedShelf[];
@@ -77,6 +78,25 @@ export const PrePackagedShelfTabs: React.FC<PrePackagedShelfTabsProps> = ({
             `${shelf.name} (${productCount})` : 
             truncateShelfName(shelf.name, productCount);
           
+          // Extract bracket colors (custom colors like bg-[#ff0000] or text-[rgb(255,0,0)])
+          const extractBracketColor = (val: string, prefix: string) => {
+            const match = val.match(new RegExp(`^${prefix}-\\[(.+)\\]$`));
+            return match?.[1] || null;
+          };
+          
+          const bgBracket = extractBracketColor(shelf.color, 'bg');
+          const textBracket = extractBracketColor(shelf.textColor, 'text');
+          
+          // Determine if colors are Tailwind classes or custom values
+          const isBgClass = shelf.color.startsWith('bg-') && !bgBracket;
+          const isTextClass = shelf.textColor.startsWith('text-') && !textBracket;
+          
+          // Resolve background color: use bracket color if present, otherwise use Tailwind class or fallback to accent color
+          const resolvedBg = bgBracket || (isBgClass ? undefined : shelf.color) || getShelfAccentColor(shelf.color);
+          
+          // Resolve text color: use bracket color if present, otherwise use Tailwind class or raw value
+          const resolvedText = textBracket || (isTextClass ? undefined : shelf.textColor);
+          
           return (
             <div
               key={shelf.id}
@@ -89,31 +109,32 @@ export const PrePackagedShelfTabs: React.FC<PrePackagedShelfTabsProps> = ({
                 setHoveredTab(null);
                 handleDragLeave();
               }}
-            className={`
-              relative cursor-pointer px-1.5 pr-3 py-1 flex-1 h-7 rounded-b-md
-              ${shelf.color.startsWith('bg-') ? shelf.color : ''}
-              ${shelf.textColor.startsWith('text-') ? shelf.textColor : ''}
-              ${isHovered ? 'transform scale-105 z-20 shadow-lg' : 'z-10 shadow-md'}
-            `}
-            style={{
-              backgroundColor: shelf.color.startsWith('bg-[') ? shelf.color.slice(3, -1) : (shelf.color.startsWith('bg-') ? undefined : shelf.color),
-              color: shelf.textColor.startsWith('text-[') ? shelf.textColor.slice(5, -1) : (shelf.textColor.startsWith('text-') ? undefined : shelf.textColor),
-              clipPath: 'polygon(0 0, 0 100%, calc(100% - 12px) 100%, 100% 0)',
-              minWidth: isHovered ? 'auto' : '40px',
-              maxWidth: isHovered ? 'none' : 'none',
-              marginLeft: index > 0 ? '-8px' : '0',
-              zIndex: isHovered ? 20 : 10 - index,
-              transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-            title={shelf.name}
-          >
-              <span className={`
-                text-xs font-medium truncate block leading-5
-                ${shelf.textColor}
-                ${isHovered ? 'transform scale-105' : ''}
+              className={`
+                relative cursor-pointer px-1.5 pr-3 py-1 flex-1 h-7 rounded-b-md
+                ${isBgClass ? shelf.color : ''}
+                ${isTextClass ? shelf.textColor : ''}
+                ${isHovered ? 'transform scale-105 z-20 shadow-lg' : 'z-10 shadow-md'}
               `}
               style={{
+                backgroundColor: !isBgClass ? resolvedBg : undefined,
+                color: !isTextClass ? resolvedText : undefined,
+                clipPath: 'polygon(0 0, 0 100%, calc(100% - 12px) 100%, 100% 0)',
+                minWidth: isHovered ? 'auto' : '40px',
+                maxWidth: isHovered ? 'none' : 'none',
+                marginLeft: index > 0 ? '-8px' : '0',
+                zIndex: isHovered ? 20 : 10 - index,
                 transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+              title={shelf.name}
+            >
+              <span className={`
+                text-xs font-medium truncate block leading-5
+                ${isHovered ? 'transform scale-105' : ''}
+                ${isTextClass ? shelf.textColor : ''}
+              `}
+              style={{
+                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                color: !isTextClass ? resolvedText : undefined
               }}>
                 {displayName}
               </span>
