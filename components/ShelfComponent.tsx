@@ -25,6 +25,8 @@ interface ShelfComponentProps {
   currentState?: SupportedStates; // Current app state for shelf hierarchy
   isControlsDisabled?: boolean;
   onTogglePricingVisibility?: (showPricing: boolean) => void;
+  visibleStrains?: Array<{ strain: Strain; originalIndex: number }>;
+  isSearchActive?: boolean;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -75,6 +77,8 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   availableShelves = [],
   currentState,
   onTogglePricingVisibility,
+  visibleStrains,
+  isSearchActive = false,
 }) => {
   const formatPrice = (price: number) => `$${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
   const [confirmClear, setConfirmClear] = useState(false);
@@ -193,6 +197,19 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
   const toggleBackground = toggleAccentColor ? hexToRgba(toggleAccentColor, 0.18) : 'rgba(255,255,255,0.12)';
   const toggleBorder = toggleAccentColor ? hexToRgba(toggleAccentColor, 0.35) : 'rgba(255,255,255,0.2)';
 
+  const extractBracketColor = (val: string, prefix: string) => {
+    const match = val.match(new RegExp(`^${prefix}-\\[(.+)\\]$`));
+    return match?.[1] || null;
+  };
+  const bgBracket = extractBracketColor(shelf.color, 'bg');
+  const textBracket = extractBracketColor(shelf.textColor, 'text');
+  const isBgClass = shelf.color.startsWith('bg-') && !bgBracket;
+  const isTextClass = shelf.textColor.startsWith('text-') && !textBracket;
+  const bgStyle = !isBgClass ? { backgroundColor: bgBracket || shelf.color } : undefined;
+  const textStyle = !isTextClass ? { color: textBracket || shelf.textColor } : undefined;
+  const strainsWithIndex = visibleStrains ?? shelf.strains.map((strain, index) => ({ strain, originalIndex: index }));
+  const dropEnabled = !isSearchActive;
+
   return (
     <>
       {shelf.isInfused && (
@@ -202,74 +219,75 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
         data-shelf-id={shelf.id}
         className={`rounded-lg shadow-md overflow-hidden border ${
           theme === 'dark' ? 'border-gray-700' : 'border-gray-300'
-        } ${shelf.color} ${shelf.isInfused ? 'infused-shelf-container' : ''}`}>
-      <div className={`p-3 ${shelf.textColor} flex flex-col`}>
-        <div className="flex flex-wrap justify-between items-start gap-3 mb-1.5">
-            <div className="flex-1 min-w-[160px] flex items-center">
-                <h3 className="text-xl font-semibold">{shelf.name}</h3>
-                {!shelf.hidePricing && (
-                  shelf.medicalPricing && pricingGridStyle ? (
-                    <div className="text-xs opacity-90 mt-1 flex flex-col items-end gap-1">
-                      <div className="grid text-right" style={pricingGridStyle}>
-                        <span className="px-1 text-right font-semibold" />
-                        {weightTiers.map(tier => (
-                          <span key={`editor-weight-${tier.label}`} className="px-1 text-center font-semibold">
-                            {tier.label}
-                          </span>
-                        ))}
-                        <span className="px-1 py-0.5 text-right font-semibold uppercase">Med</span>
-                        {weightTiers.map(tier => (
-                          <span key={`editor-med-${tier.label}`} className="px-1 py-0.5 text-right">
-                            {formatPrice(tier.med ?? 0)}
-                          </span>
-                        ))}
-                        <span className="px-1 py-0.5 text-right font-semibold uppercase">Rec</span>
-                        {weightTiers.map(tier => (
-                          <span key={`editor-rec-${tier.label}`} className="px-1 py-0.5 text-right">
-                            {formatPrice(tier.rec ?? 0)}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs opacity-90 text-right mt-1">
-                      {shelf.isInfused && shelf.pricing?.fiveG ? 
-                        `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.fiveG || 0)}/5g` :
-                        `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.eighth || 0)}/8th | ${formatPrice(shelf.pricing?.quarter || 0)}/Qtr | ${formatPrice(shelf.pricing?.half || 0)}/Half | ${formatPrice(shelf.pricing?.oz || 0)}/Oz`
-                      }
-                    </p>
-                  )
-                )}
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <Button 
-                  onClick={handleClearStrainsClick} 
-                  variant="custom" 
-                  size="sm" 
-                  className={`bg-white/10 hover:bg-white/20 text-current !py-1 !px-2 flex items-center space-x-1 min-w-[80px] justify-center ${confirmClear ? 'bg-red-500/30 hover:bg-red-400/30' : ''}`}
-              >
-                <TrashXmarkIcon className="w-4 h-4" theme="dark" />
-                <span className="text-xs">{confirmClear ? "Sure?" : "Clear"}</span>
-              </Button>
-              <label
-                className="flex items-center gap-2 text-xs opacity-90 flex-wrap rounded px-2 py-1 border"
-                style={{
-                  backgroundColor: toggleBackground,
-                  borderColor: toggleBorder,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={!shelf.hidePricing}
-                  onChange={handlePricingToggleChange}
-                  className="w-4 h-4 rounded border-white/40 bg-transparent"
-                  style={{ accentColor: '#ffffff' }}
-                />
-                <span className="whitespace-pre">
-                  {'Show pricing\nin preview'}
-                </span>
-              </label>
-            </div>
+        } ${isBgClass ? shelf.color : ''} ${shelf.isInfused ? 'infused-shelf-container' : ''}`}
+        style={bgStyle}>
+      <div className={`p-3 ${isTextClass ? shelf.textColor : ''} flex flex-col`} style={textStyle}>
+        <div className="flex flex-wrap justify-between items-start gap-4 mb-1.5">
+          <div className="flex-1 min-w-[220px] flex flex-col gap-1">
+            <h3 className="text-xl font-semibold leading-tight" style={textStyle}>{shelf.name}</h3>
+            {!shelf.hidePricing && (
+              shelf.medicalPricing && pricingGridStyle ? (
+                <div className="text-xs opacity-90 flex flex-col items-start gap-1">
+                  <div className="grid text-right" style={pricingGridStyle}>
+                    <span className="px-1 text-right font-semibold" />
+                    {weightTiers.map(tier => (
+                      <span key={`editor-weight-${tier.label}`} className="px-1 text-center font-semibold">
+                        {tier.label}
+                      </span>
+                    ))}
+                    <span className="px-1 py-0.5 text-right font-semibold uppercase">Med</span>
+                    {weightTiers.map(tier => (
+                      <span key={`editor-med-${tier.label}`} className="px-1 py-0.5 text-right">
+                        {formatPrice(tier.med ?? 0)}
+                      </span>
+                    ))}
+                    <span className="px-1 py-0.5 text-right font-semibold uppercase">Rec</span>
+                    {weightTiers.map(tier => (
+                      <span key={`editor-rec-${tier.label}`} className="px-1 py-0.5 text-right">
+                        {formatPrice(tier.rec ?? 0)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs opacity-90">
+                  {shelf.isInfused && shelf.pricing?.fiveG ? 
+                    `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.fiveG || 0)}/5g` :
+                    `${formatPrice(shelf.pricing?.g || 0)}/g | ${formatPrice(shelf.pricing?.eighth || 0)}/8th | ${formatPrice(shelf.pricing?.quarter || 0)}/Qtr | ${formatPrice(shelf.pricing?.half || 0)}/Half | ${formatPrice(shelf.pricing?.oz || 0)}/Oz`
+                  }
+                </p>
+              )
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-2 min-w-[140px]">
+            <Button 
+                onClick={handleClearStrainsClick} 
+                variant="custom" 
+                size="sm" 
+                className={`bg-white/10 hover:bg-white/20 text-current !py-1 !px-2 flex items-center space-x-1 min-w-[90px] justify-center ${confirmClear ? 'bg-red-500/30 hover:bg-red-400/30' : ''}`}
+            >
+              <TrashXmarkIcon className="w-4 h-4" theme="dark" />
+              <span className="text-xs">{confirmClear ? "Sure?" : "Clear"}</span>
+            </Button>
+            <label
+              className="flex items-center gap-2 text-xs opacity-90 flex-wrap rounded px-2 py-1 border text-left"
+              style={{
+                backgroundColor: toggleBackground,
+                borderColor: toggleBorder,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={!shelf.hidePricing}
+                onChange={handlePricingToggleChange}
+                className="w-4 h-4 rounded border-white/40 bg-transparent"
+                style={{ accentColor: '#ffffff' }}
+              />
+              <span className="whitespace-pre leading-tight">
+                {'Show pricing\nin preview'}
+              </span>
+            </label>
+          </div>
         </div>
         {/* Shelf Sort Controls */}
         <div className="flex items-center space-x-1 border-t border-white/10 pt-1.5 mt-1 flex-wrap gap-y-1">
@@ -289,7 +307,7 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
       <div className={`p-3 space-y-2 ${
         theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
       }`}>
-        {shelf.strains.length === 0 ? (
+        {strainsWithIndex.length === 0 ? (
           <DropZone
             onDrop={(dragData) => handleDropAtEnd(dragData)}
             theme={theme}
@@ -306,42 +324,47 @@ export const ShelfComponent: React.FC<ShelfComponentProps> = ({
           <>
             {/* Drop zone at the beginning */}
             <DropZone
-              onDrop={(dragData) => handleDropBetweenStrains(dragData, 0)}
+              onDrop={dropEnabled ? (dragData) => handleDropBetweenStrains(dragData, 0) : () => {}}
               theme={theme}
               className="h-2 rounded"
               isVisible={false}
             />
             
-            {shelf.strains.map((strain, index) => (
-              <div key={strain.id}>
-                <StrainInputRow
-                  strain={strain}
-                  onUpdate={(updatedStrain) => onUpdateStrain(strain.id, updatedStrain)}
-                  onRemove={() => onRemoveStrain(strain.id)} 
-                  onCopy={(direction) => onCopyStrain(strain.id, direction)}
-                  onMoveUp={onMoveStrainUp ? () => onMoveStrainUp(shelf.id, index) : undefined}
-                  onMoveDown={onMoveStrainDown ? () => onMoveStrainDown(shelf.id, index) : undefined}
-                  isFirst={index === 0} 
-                  isLast={index === shelf.strains.length - 1} 
-                  isNewlyAdded={newlyAddedStrainId === strain.id}
-                  theme={theme}
-                  shelfId={shelf.id}
-                  strainIndex={index}
-                  isFiftyPercentOff={isFiftyPercentOff}
-                  availableShelves={availableShelves}
-                  currentState={currentState}
-                  isInfused={shelf.isInfused}
-                />
-                
-                {/* Drop zone between strains */}
-                <DropZone
-                  onDrop={(dragData) => handleDropBetweenStrains(dragData, index + 1)}
-                  theme={theme}
-                  className="h-2 rounded"
-                  isVisible={false}
-                                 />
-               </div>
-            ))}
+            {strainsWithIndex.map(({ strain, originalIndex }, index) => {
+              const isMoveDisabled = !dropEnabled;
+              const isFirstVisible = dropEnabled ? index === 0 : true;
+              const isLastVisible = dropEnabled ? index === strainsWithIndex.length - 1 : true;
+              return (
+                <div key={strain.id}>
+                  <StrainInputRow
+                    strain={strain}
+                    onUpdate={(updatedStrain) => onUpdateStrain(strain.id, updatedStrain)}
+                    onRemove={() => onRemoveStrain(strain.id)} 
+                    onCopy={(direction) => onCopyStrain(strain.id, direction)}
+                    onMoveUp={!isMoveDisabled && onMoveStrainUp ? () => onMoveStrainUp(shelf.id, originalIndex) : undefined}
+                    onMoveDown={!isMoveDisabled && onMoveStrainDown ? () => onMoveStrainDown(shelf.id, originalIndex) : undefined}
+                    isFirst={isFirstVisible} 
+                    isLast={isLastVisible} 
+                    isNewlyAdded={newlyAddedStrainId === strain.id}
+                    theme={theme}
+                    shelfId={shelf.id}
+                    strainIndex={originalIndex}
+                    isFiftyPercentOff={isFiftyPercentOff}
+                    availableShelves={availableShelves}
+                    currentState={currentState}
+                    isInfused={shelf.isInfused}
+                  />
+                  
+                  {/* Drop zone between strains */}
+                  <DropZone
+                    onDrop={dropEnabled ? (dragData) => handleDropBetweenStrains(dragData, originalIndex + 1) : () => {}}
+                    theme={theme}
+                    className="h-2 rounded"
+                    isVisible={false}
+                  />
+                </div>
+              );
+            })}
           </>
         )}
         <Button onClick={onAddStrain} variant="secondary" size="sm" className={`w-full flex items-center justify-center space-x-2 mt-2 ${

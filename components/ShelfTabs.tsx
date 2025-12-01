@@ -86,10 +86,13 @@ export const ShelfTabs: React.FC<ShelfTabsProps> = ({ shelves, onScrollToShelf, 
               }}
               className={`
                 relative cursor-pointer px-1.5 pr-3 py-1 flex-1 h-7 rounded-b-md
-                ${shelf.color} ${shelf.textColor}
+                ${shelf.color.startsWith('bg-') ? shelf.color : ''}
+                ${shelf.textColor.startsWith('text-') ? shelf.textColor : ''}
                 ${isHovered ? 'transform scale-105 z-20 shadow-lg' : 'z-10 shadow-md'}
               `}
               style={{
+                backgroundColor: shelf.color.startsWith('bg-[') ? shelf.color.slice(3, -1) : (shelf.color.startsWith('bg-') ? undefined : shelf.color),
+                color: shelf.textColor.startsWith('text-[') ? shelf.textColor.slice(5, -1) : (shelf.textColor.startsWith('text-') ? undefined : shelf.textColor),
                 clipPath: 'polygon(0 0, 0 100%, calc(100% - 12px) 100%, 100% 0)',
                 minWidth: isHovered ? 'auto' : '40px',
                 maxWidth: isHovered ? 'none' : 'none',

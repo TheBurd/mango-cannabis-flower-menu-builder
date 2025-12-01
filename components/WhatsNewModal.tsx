@@ -69,15 +69,15 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
             <section className={`p-4 rounded-lg border-l-4 border-lime-400 ${
               theme === 'dark' ? 'bg-lime-900/20 text-gray-200 border-opacity-70' : 'bg-lime-50 text-gray-700'
             }`}>
-              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Hotfix v{APP_VERSION} — Auto-Save Controls & UI Improvements</h3>
+              <h3 className="text-lg font-semibold text-lime-600 mb-2">🌿 Release v{APP_VERSION} � Shelf Configurator & Interactive Overlay</h3>
               <ul className="text-sm space-y-1 list-disc list-inside">
-                <li><strong>Auto-Save Toggle:</strong> Auto-save now defaults to OFF with a toggle button in the toolbar for user control.</li>
-                <li><strong>Warning Notifications:</strong> Warning toast appears when enabling auto-save, reminding users the feature is in development.</li>
-                <li><strong>Scroll Overlay Improvements:</strong> Scroll overlay positioning dynamically adjusts with panel resizing for better visibility.</li>
-                <li><strong>Enhanced Toast Contrast:</strong> Warning toast text uses dark colors for better readability on yellow backgrounds.</li>
-                <li><strong>Bug Fixes:</strong> Fixed buildPricingGrid scope issue that caused crashes when toggling shelf splitting for Michigan shelves.</li>
+                <li><strong>Shelf Configurator:</strong> add/remove/reorder shelves, set colors/pricing, and save per state/mode.</li>
+                <li><strong>Universal search bars:</strong> searchable by name/brand/type/shelf/any in both Bulk and Pre-Packaged modes.</li>
+                <li><strong>Pre-Packaged UI refresh:</strong> bulk-style headers with sort pills and neutral product canvas.</li>
+                <li><strong>Interactive Scroll Overlay:</strong> hover to pin it open; click any item to auto-scroll the editor.</li>
+                <li><strong>Toolbar gear icon:</strong> quick access to configure shelves from the main toolbar.</li>
               </ul>
-              <p className="text-xs opacity-75 mt-3">Built on top of the v1.1.1 multi-page release with improved user controls and UI polish.</p>
+              <p className="text-xs opacity-75 mt-3">Latest release highlights with configurability, search, and navigation improvements.</p>
             </section>
             
             <section className={`p-4 rounded-lg border-l-4 border-amber-400 ${
@@ -276,3 +276,4 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose, t
     </div>
   );
 }; 
+

@@ -46,25 +46,10 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
     }`}>
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">🚀 Quick Start Guide</h2>
+          <h2 className="text-2xl font-bold mb-2">dYs? Quick Start Guide</h2>
           <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
             Get started in 5 simple steps
           </p>
-        </div>
-
-        <div className={`p-4 rounded-lg ${
-          theme === 'dark' ? 'bg-orange-900/20 border border-orange-700' : 'bg-orange-50 border border-orange-200'
-        }`}>
-          <h3 className="font-semibold mb-3 text-orange-600">NEW in v{APP_VERSION}:</h3>
-          <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            <li>• Create unlimited menu pages - each page works independently</li>
-            <li>• Professional Save/Load system like Microsoft Word</li>
-            <li>• Auto-save every 30 seconds protects your work automatically</li>
-            <li>• Import multiple CSV files and split them into separate pages</li>
-            <li>• Export with custom file naming and batch options</li>
-            <li>• Hamburger menu for quick access to project functions</li>
-            <li>• Recent projects list for fast access to previous work</li>
-          </ul>
         </div>
 
         <div className="grid gap-4">
@@ -239,8 +224,8 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
         }`}>
           <h3 className="font-semibold mb-3 text-purple-600">💾 Project Management:</h3>
           <ul className={`space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            <li>• <strong>Hamburger Menu:</strong> Click the <HamburgerMenuIcon className="inline w-4 h-4 mx-1" /> icon next to the logo</li>
-            <li>• <strong>Auto-Save:</strong> Your work is saved every 30 seconds automatically</li>
+            
+            <li>??? Pre-Packaged editor styled like Bulk: header layout, sort pills, neutral product background.</li>
             <li>• <strong>Save As:</strong> Create new project files (.json format)</li>
             <li>• <strong>Load:</strong> Open existing project files</li>
             <li>• <strong>Recent Projects:</strong> Quick access to recent work</li>
@@ -633,3 +618,6 @@ export const InstructionsModalTabs: React.FC<InstructionsModalTabsProps> = ({
     </div>
   );
 };
+
+
+

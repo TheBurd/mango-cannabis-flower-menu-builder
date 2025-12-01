@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './common/Button';
-import { DownloadIcon, UploadIcon, SortAscendingIcon, SortDescendingIcon, FlowerJarIcon, TrashXmarkIcon } from './common/Icon';
+import { DownloadIcon, UploadIcon, SortAscendingIcon, SortDescendingIcon, FlowerJarIcon, TrashXmarkIcon, WrenchIcon, Icon } from './common/Icon';
 import { SortCriteria, Theme, MenuMode, PrePackagedSortCriteria } from '../types';
 
 interface ToolbarProps {
@@ -28,6 +28,7 @@ interface ToolbarProps {
   // Auto-save toggle
   autoSaveEnabled?: boolean;
   onToggleAutoSave?: () => void;
+  onOpenShelfConfigurator?: () => void;
 }
 
 const CONFIRMATION_TIMEOUT = 3000; // 3 seconds
@@ -83,6 +84,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isNewProject = true,
   autoSaveEnabled = false,
   onToggleAutoSave,
+  onOpenShelfConfigurator,
 }) => {
   const [confirmClearShelves, setConfirmClearShelves] = useState(false);
   const [confirmClearLastJars, setConfirmClearLastJars] = useState(false);
@@ -293,6 +295,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             ? 'border-gray-600 bg-gray-700/50'
             : 'border-gray-300 bg-gray-100/50'
         }`}>
+          {onOpenShelfConfigurator && (
+            <Button
+              onClick={onOpenShelfConfigurator}
+              variant="custom"
+              size="sm"
+              className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-500 text-white"
+              disabled={isExporting}
+              title="Configure shelves (names, colors, pricing)"
+            >
+              <Icon name="gear" className="w-4 h-4" />
+              <span>Configure Shelves</span>
+            </Button>
+          )}
           <Button
             onClick={onImportCSVRequest}
             variant="custom"

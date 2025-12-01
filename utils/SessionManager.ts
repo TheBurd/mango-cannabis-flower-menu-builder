@@ -56,7 +56,7 @@ export class SessionManager {
       id: crypto.randomUUID(),
       name: projectName,
       description: `${menuMode} menu for ${currentState}`,
-      version: '1.1.1',
+      version: '1.1.2',
       created: new Date(),
       lastModified: new Date(),
       owner: 'User', // Will be replaced with actual user system
@@ -217,7 +217,7 @@ export class SessionManager {
   public exportProjectJSON(projectData: ProjectData, filename?: string): void {
     try {
       const exportData = {
-        version: '1.1.1',
+        version: '1.1.2',
         exported: new Date().toISOString(),
         project: projectData
       };

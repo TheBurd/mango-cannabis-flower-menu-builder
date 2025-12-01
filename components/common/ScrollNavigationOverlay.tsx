@@ -19,6 +19,7 @@ interface ScrollNavigationOverlayProps {
   containerElement: HTMLElement | null;
   theme: Theme;
   onStrainClick?: (strainId: string, shelfId: string) => void;
+  onHoverChange?: (hovering: boolean) => void;
 }
 
 // Pre-calculated style lookup for instant access
@@ -43,7 +44,9 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
   strains,
   centerStrainIndex,
   containerElement,
-  theme
+  theme,
+  onStrainClick,
+  onHoverChange,
 }) => {
 
   const [overlayPosition, setOverlayPosition] = React.useState<{ left: number; top: number | '50%' }>({
@@ -117,10 +120,11 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
 
   return (
     <div
-      className={`fixed pointer-events-none transition-opacity ${
+      className={`fixed transition-opacity ${
         isVisible ? 'opacity-100 duration-150' : 'opacity-0 duration-1000'
       }`}
       style={{
+        pointerEvents: isVisible ? 'auto' : 'none',
         left: overlayPosition.left,
         top: overlayPosition.top,
         transform: 'translateY(-50%)',
@@ -130,6 +134,8 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
         flexDirection: 'column',
         justifyContent: 'center'
       }}
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
     >
       {/* Semi-transparent background for readability */}
       <div 
@@ -163,7 +169,9 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
                 />
               )}
               <div
-                className="transition-all duration-150 ease-out whitespace-nowrap overflow-hidden"
+                className={`transition-all duration-150 ease-out whitespace-nowrap overflow-hidden cursor-pointer rounded-md px-1 ${
+                  isHeader ? '' : 'hover:bg-orange-500/15'
+                }`}
                 style={{
                   fontSize: isHeader 
                     ? `${Math.min(strain.fontSize + 1, 17)}px` 
@@ -183,10 +191,11 @@ export const ScrollNavigationOverlay: React.FC<ScrollNavigationOverlayProps> = R
                     ? `0 0 8px ${theme === 'dark' ? 'rgba(251, 146, 60, 0.3)' : 'rgba(234, 88, 12, 0.2)'}` 
                     : isHeader
                       ? `0 0 6px ${strain.shelfColor}40` // Subtle glow for headers
-                      : 'none',
-                  textTransform: isHeader ? 'uppercase' : 'none',
-                  letterSpacing: isHeader ? '0.5px' : 'normal'
-                }}
+                  : 'none',
+                textTransform: isHeader ? 'uppercase' : 'none',
+                letterSpacing: isHeader ? '0.5px' : 'normal'
+              }}
+              onClick={() => !isHeader && onStrainClick?.(strain.strainId, strain.shelfId)}
               >
                 {isHeader ? (
                   <span className="flex items-center gap-1">

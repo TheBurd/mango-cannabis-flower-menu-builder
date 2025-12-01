@@ -10,7 +10,7 @@ Create professional, compliant flower menus for in-store display and inventory m
 
 ### Choose Your Platform
 1. Go to the **[Releases Page](https://github.com/TheBurd/mango-cannabis-flower-menu-builder/releases)**
-2. Find the latest version (v1.1.1-hf4)
+2. Find the latest version (v1.1.2)
 3. Choose your operating system below:
 
 ---
@@ -18,17 +18,17 @@ Create professional, compliant flower menus for in-store display and inventory m
 ## Windows Installation
 
 #### Recommended: Full Installer
-- `Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.1.1-x64.exe`
+- `Mango-Cannabis-Flower-Menu-Builder-Setup-WIN-1.1.2-x64.exe`
 - Best choice for most users - Creates Start menu shortcuts, handles updates automatically
 - Double-click to install, then launch from Start menu
 
 #### Alternative: Portable App
-- `Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.1-x64.exe`
+- `Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.2-x64.exe`
 - No installation required - Download and run directly
 - Good for testing or if you can't install software
 
 #### ZIP Archive
-- `Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.1-x64.zip`
+- `Mango-Cannabis-Flower-Menu-Builder-WIN-1.1.2-x64.zip`
 - Contains the portable app in a compressed archive
 - Extract and run the .exe file inside
 
@@ -135,29 +135,13 @@ Create professional, compliant flower menus for in-store display and inventory m
 
 ---
 
-## What's New in v1.1.1 (hotfix v1.1.1-hf4)
+## What's New in v1.1.2
 
-### Hotfix v1.1.1-hf4 — Auto-Save Controls & UI Improvements
-- Auto-save now defaults to OFF with a toggle button in the toolbar for user control
-- Warning toast notification appears when enabling auto-save, reminding users the feature is in development
-- Improved scroll overlay positioning that dynamically adjusts with panel resizing
-- Enhanced warning toast text contrast for better readability on yellow backgrounds
-- Fixed buildPricingGrid scope issue that caused crashes when toggling shelf splitting for Michigan shelves
-
-### Hotfix v1.1.1-hf3 — Michigan Pricing & Visibility
-- Adds dual-line recreational vs medical pricing tables for all Michigan bulk shelves with aligned column headings
-- Introduces per-shelf "Show pricing in preview" toggles across every state in both bulk and pre-packaged builders
-- Styles pricing toggles with shelf accent colors for better readability against each header's gradient
-
-### Hotfix v1.1.1-hf2 — Bulk Flower Builder Stability
-- Restores the Bulk Flower menu builder for every supported state after the Oklahoma-focused hf1 rollout
-- Keeps shelf management tools responsive by repairing the clear-confirmation timer logic
-- Verifies default shelf templates load correctly so teams outside Oklahoma can keep building menus
-
-### Hotfix v1.1.1-hf1 — Quick Stability Patch
-- Keeps brand and low-stock sorts aligned after clearing shelf overrides
-- Ensures duplicated strains stay in view when adding new rows
-- Improves auto-scroll behavior for newly created items on longer shelves
+- **Shelf Configurator modal**: add/remove/reorder shelves, set colors/text/pricing, and save per state/mode with export/import.
+- **Universal search bars** for Bulk and Pre-Packaged with field switcher (name, brand, type, shelf, any) plus better no-result states.
+- **Pre-Packaged editor refresh**: bulk-style header layout with sort pills, neutral product canvas, and tidy clear/toggle alignment.
+- **Interactive Scroll Overlay**: hover to keep it open; click any strain/product in the overlay to auto-scroll the editor.
+- **Gear icon shortcut**: toolbar access to configure shelves; custom colors now flow through tabs/headers in both modes.
 
 ### Multi-Page Menu System
 Create unlimited independent menu pages. Each page maintains its own content, settings, and sorting preferences.
@@ -392,3 +376,5 @@ The app will notify you when updates are available. New versions are released to
 - **v1.0.2** - Fixed critical bug where all input fields became unresponsive after CSV import. Resolved React state synchronization conflicts in Electron production builds. Added loading overlays and success notifications for better UX.
 - **v1.0.1** - Enhanced user experience with 6-column support, image feedback system, smart notifications, and improved zoom controls
 - **v1.0.0** - Initial release with cross-platform support and feedback system
+
+

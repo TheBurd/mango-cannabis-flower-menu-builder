@@ -74,6 +74,7 @@ import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
 import { PrePackagedPanel } from './components/PrePackagedPanel';
 import { PrePackagedCanvas } from './components/PrePackagedCanvas';
+import { ShelfConfiguratorModal } from './components/ShelfConfiguratorModal';
 import { UpdateNotification } from './components/UpdateNotification';
 import { DebugConsole } from './components/DebugConsole';
 import { FiftyPercentOffToggle } from './components/FiftyPercentOffToggle';
@@ -98,6 +99,7 @@ import { PageManager } from './utils/PageManager';
 import { ZipExporter, SequentialExporter } from './utils/ZipExporter';
 import { SessionManager, ProjectData, ProjectState } from './utils/SessionManager';
 import { APP_VERSION } from './version';
+import { shelfConfigStore } from './utils/shelfConfigStore';
 
 
 
@@ -235,6 +237,29 @@ const sortPrePackagedProducts = (products: PrePackagedProduct[], criteria: PrePa
   return sortedProducts;
 };
 
+const getConfiguredBulkShelves = (state: SupportedStates, fiftyPercentOffEnabled: boolean): Shelf[] => {
+  const stored = shelfConfigStore.get(state, MenuMode.BULK) as Shelf[] | null;
+  if (stored && Array.isArray(stored)) {
+    return stored.map((shelf) => ({ ...shelf, strains: shelf.strains || [] }));
+  }
+  return getDefaultShelves(state, fiftyPercentOffEnabled);
+};
+
+const getConfiguredPrepackagedShelves = (state: SupportedStates): PrePackagedShelf[] => {
+  const stored = shelfConfigStore.get(state, MenuMode.PREPACKAGED) as PrePackagedShelf[] | null;
+  if (stored && Array.isArray(stored)) {
+    return stored.map((shelf) => ({ ...shelf, products: shelf.products || [] }));
+  }
+  return getDefaultPrePackagedShelves(state);
+};
+
+const buildEmptyShelvesForMode = (state: SupportedStates, mode: MenuMode, fiftyPercentOffEnabled: boolean) => {
+  if (mode === MenuMode.BULK) {
+    return getConfiguredBulkShelves(state, fiftyPercentOffEnabled).map((shelf) => ({ ...shelf, strains: [] }));
+  }
+  return getConfiguredPrepackagedShelves(state).map((shelf) => ({ ...shelf, products: [] }));
+};
+
 
 const AppContent: React.FC = () => {
   const { addToast } = useToast();
@@ -281,7 +306,7 @@ const AppContent: React.FC = () => {
       }
     }
     const savedFiftyPercentOffEnabled = localStorage.getItem('mango-fifty-percent-off-enabled') === 'true';
-    const defaultShelves = getDefaultShelves(currentAppState, savedFiftyPercentOffEnabled);
+    const defaultShelves = getConfiguredBulkShelves(currentAppState, savedFiftyPercentOffEnabled);
     console.log('Using default bulk shelves:', defaultShelves.length, 'shelves');
     return defaultShelves;
   });
@@ -301,7 +326,7 @@ const AppContent: React.FC = () => {
         console.error('Error loading imported pre-packaged shelves:', error);
       }
     }
-    const defaultShelves = getDefaultPrePackagedShelves(currentAppState);
+    const defaultShelves = getConfiguredPrepackagedShelves(currentAppState);
     console.log('Using default pre-packaged shelves:', defaultShelves.length, 'shelves');
     return defaultShelves;
   });
@@ -428,6 +453,19 @@ const AppContent: React.FC = () => {
     const savedState = localStorage.getItem('mango-fifty-percent-off-enabled');
     return savedState === 'true';
   });
+  const [shelfConfigVersion, setShelfConfigVersion] = useState<number>(0);
+
+  const configuredShelvesForModal = useMemo(() => {
+    return menuMode === MenuMode.BULK
+      ? getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled).map((shelf) => ({ ...shelf, strains: [] }))
+      : getConfiguredPrepackagedShelves(currentAppState).map((shelf) => ({ ...shelf, products: [] }));
+  }, [menuMode, currentAppState, fiftyPercentOffEnabled, shelfConfigVersion]);
+
+  const defaultShelvesForModal = useMemo(() => {
+    return menuMode === MenuMode.BULK
+      ? getDefaultShelves(currentAppState, fiftyPercentOffEnabled)
+      : getDefaultPrePackagedShelves(currentAppState);
+  }, [menuMode, currentAppState, fiftyPercentOffEnabled]);
 
   const [newlyAddedStrainId, setNewlyAddedStrainId] = useState<string | null>(null);
   const [pendingScrollTarget, setPendingScrollTarget] = useState<{ mode: 'bulk' | 'prepackaged'; shelfId: string; itemId: string } | null>(null);
@@ -445,6 +483,7 @@ const AppContent: React.FC = () => {
   const [showCsvExportModal, setShowCsvExportModal] = useState<boolean>(false);
   const [showUnifiedExportModal, setShowUnifiedExportModal] = useState<boolean>(false);
   const [showHeaderMenu, setShowHeaderMenu] = useState<boolean>(false);
+  const [showShelfConfigurator, setShowShelfConfigurator] = useState<boolean>(false);
   const [hasViewedWhatsNew, setHasViewedWhatsNew] = useState<boolean>(() => {
     const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
     return viewedVersion === APP_VERSION; // Check if current version has been viewed
@@ -606,9 +645,9 @@ const AppContent: React.FC = () => {
       
       // User confirmed - immediately clear the old content to free memory
       if (menuMode === MenuMode.BULK) {
-        setBulkShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+        setBulkShelves(getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled));
       } else {
-        setPrePackagedShelves(getDefaultPrePackagedShelves(currentAppState));
+        setPrePackagedShelves(getConfiguredPrepackagedShelves(currentAppState));
       }
     }
     
@@ -1109,9 +1148,9 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     // Update shelves based on current mode when state or 50% off toggle changes
     if (menuMode === MenuMode.BULK) {
-      setBulkShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+      setBulkShelves(getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled));
     } else {
-      setPrePackagedShelves(getDefaultPrePackagedShelves(currentAppState));
+      setPrePackagedShelves(getConfiguredPrepackagedShelves(currentAppState));
     }
     setGlobalSortCriteria(null); // Reset global sort on state change
   }, [currentAppState, fiftyPercentOffEnabled, menuMode]);
@@ -1786,9 +1825,7 @@ const AppContent: React.FC = () => {
     const newPageNumber = pageManager.addPage();
     
     // Initialize new page with empty shelves (proper structure) and default settings
-    const emptyShelvesForMode = menuMode === MenuMode.BULK 
-      ? getDefaultShelves(currentAppState, fiftyPercentOffEnabled).map(shelf => ({ ...shelf, strains: [] }))
-      : getDefaultPrePackagedShelves(currentAppState).map(shelf => ({ ...shelf, products: [] }));
+    const emptyShelvesForMode = buildEmptyShelvesForMode(currentAppState, menuMode, fiftyPercentOffEnabled);
     pageManager.updatePageShelves(newPageNumber, emptyShelvesForMode);
     // Don't set custom settings - let it use defaults
     
@@ -1954,8 +1991,8 @@ const AppContent: React.FC = () => {
       // Reset all React state to initial values
       setCurrentAppState(SupportedStates.OKLAHOMA);
       syncMenuMode(MenuMode.BULK);
-      setBulkShelves(getDefaultShelves(SupportedStates.OKLAHOMA));
-      setPrePackagedShelves(getDefaultPrePackagedShelves(SupportedStates.OKLAHOMA));
+      setBulkShelves(getConfiguredBulkShelves(SupportedStates.OKLAHOMA, false));
+      setPrePackagedShelves(getConfiguredPrepackagedShelves(SupportedStates.OKLAHOMA));
       setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
       setTheme('dark');
       setFiftyPercentOffEnabled(false);
@@ -2838,12 +2875,70 @@ const AppContent: React.FC = () => {
     setShowHeaderMenu(true);
   }, []);
 
+  const handleOpenShelfConfigurator = useCallback(() => {
+    setShowShelfConfigurator(true);
+  }, []);
+
+  const handleSaveShelfConfig = useCallback((shelvesToSave: (Shelf | PrePackagedShelf)[]) => {
+    if (menuMode === MenuMode.BULK) {
+      const sanitized = (shelvesToSave as Shelf[]).map((shelf) => ({ ...shelf, strains: [] }));
+      shelfConfigStore.save(currentAppState, MenuMode.BULK, sanitized);
+      setBulkShelves(sanitized);
+      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), sanitized);
+    } else {
+      const sanitized = (shelvesToSave as PrePackagedShelf[]).map((shelf) => ({ ...shelf, products: [] }));
+      shelfConfigStore.save(currentAppState, MenuMode.PREPACKAGED, sanitized);
+      setPrePackagedShelves(sanitized);
+      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), sanitized);
+    }
+    setShelfConfigVersion((v) => v + 1);
+    setShowShelfConfigurator(false);
+  }, [menuMode, currentAppState, pageManager]);
+
+  const handleResetShelfConfig = useCallback(() => {
+    shelfConfigStore.reset(currentAppState, menuMode);
+    const defaults = menuMode === MenuMode.BULK
+      ? getDefaultShelves(currentAppState, fiftyPercentOffEnabled)
+      : getDefaultPrePackagedShelves(currentAppState);
+    if (menuMode === MenuMode.BULK) {
+      const emptyDefaults = defaults.map((shelf) => ({ ...shelf, strains: [] }));
+      setBulkShelves(emptyDefaults);
+      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), emptyDefaults);
+    } else {
+      const emptyDefaults = defaults.map((shelf) => ({ ...shelf, products: [] }));
+      setPrePackagedShelves(emptyDefaults);
+      pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), emptyDefaults);
+    }
+    setShelfConfigVersion((v) => v + 1);
+  }, [currentAppState, menuMode, fiftyPercentOffEnabled, pageManager]);
+
+  const handleExportShelfConfig = useCallback(() => {
+    return shelfConfigStore.export();
+  }, []);
+
+  const handleImportShelfConfig = useCallback((payload: string) => {
+    const result = shelfConfigStore.importFromString(payload);
+    if (result.success) {
+      if (menuMode === MenuMode.BULK) {
+        const updated = getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled);
+        setBulkShelves(updated);
+        pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), updated);
+      } else {
+        const updated = getConfiguredPrepackagedShelves(currentAppState);
+        setPrePackagedShelves(updated);
+        pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), updated);
+      }
+      setShelfConfigVersion((v) => v + 1);
+    }
+    return result;
+  }, [menuMode, currentAppState, fiftyPercentOffEnabled, pageManager]);
+
   const handleNewMenu = useCallback(() => {
     recordChange(() => {
       if (menuMode === MenuMode.BULK) {
-        setBulkShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+        setBulkShelves(getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled));
       } else {
-        setPrePackagedShelves(getDefaultPrePackagedShelves(currentAppState));
+        setPrePackagedShelves(getConfiguredPrepackagedShelves(currentAppState));
       }
     });
   }, [menuMode, currentAppState, fiftyPercentOffEnabled]);
@@ -3470,8 +3565,8 @@ const AppContent: React.FC = () => {
         files.forEach((fileData, index) => {
           // Get fresh default shelves for this CSV
           const defaultShelves = menuMode === MenuMode.BULK 
-            ? getDefaultShelves(currentAppState, fiftyPercentOffEnabled)
-            : getDefaultPrePackagedShelves(currentAppState);
+            ? getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled)
+            : getConfiguredPrepackagedShelves(currentAppState);
           
           if (index === 0) {
             // Use current page for first file
@@ -3631,9 +3726,9 @@ const AppContent: React.FC = () => {
           }
           recordChange(() => {
             if (menuMode === MenuMode.BULK) {
-              setBulkShelves(getDefaultShelves(currentAppState, fiftyPercentOffEnabled));
+              setBulkShelves(getConfiguredBulkShelves(currentAppState, fiftyPercentOffEnabled));
             } else {
-              setPrePackagedShelves(getDefaultPrePackagedShelves(currentAppState));
+              setPrePackagedShelves(getConfiguredPrepackagedShelves(currentAppState));
             }
           });
           break;
@@ -3878,8 +3973,8 @@ const AppContent: React.FC = () => {
             // Reset all React state to initial values
             setCurrentAppState(SupportedStates.OKLAHOMA);
             syncMenuMode(MenuMode.BULK);
-            setBulkShelves(getDefaultShelves(SupportedStates.OKLAHOMA));
-            setPrePackagedShelves(getDefaultPrePackagedShelves(SupportedStates.OKLAHOMA));
+            setBulkShelves(getConfiguredBulkShelves(SupportedStates.OKLAHOMA, false));
+            setPrePackagedShelves(getConfiguredPrepackagedShelves(SupportedStates.OKLAHOMA));
             setPreviewSettings(INITIAL_PREVIEW_SETTINGS);
             setTheme('dark');
             setFiftyPercentOffEnabled(false);
@@ -4042,6 +4137,7 @@ const AppContent: React.FC = () => {
         isNewProject={projectState.isNewProject}
         autoSaveEnabled={autoSaveEnabled}
         onToggleAutoSave={handleToggleAutoSave}
+        onOpenShelfConfigurator={handleOpenShelfConfigurator}
       />
       <main ref={mainContainerRef} className={`flex flex-1 overflow-hidden pt-2 px-2 pb-2 ${
         theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
@@ -4162,10 +4258,22 @@ const AppContent: React.FC = () => {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span className="text-xl font-semibold">Exporting your masterpiece...</span>
+              <span className="text-xl font-semibold">Exporting your masterpiece...</span>
+            </div>
           </div>
-        </div>
               )}
+        <ShelfConfiguratorModal
+          isOpen={showShelfConfigurator}
+          mode={menuMode}
+          currentState={currentAppState}
+          initialShelves={configuredShelvesForModal}
+          defaultShelves={defaultShelvesForModal}
+          onClose={() => setShowShelfConfigurator(false)}
+          onSave={handleSaveShelfConfig}
+          onResetToDefaults={handleResetShelfConfig}
+          onExportConfig={handleExportShelfConfig}
+          onImportConfig={handleImportShelfConfig}
+        />
         <InstructionsModalTabs
           isOpen={showInstructions}
           onClose={() => setShowInstructions(false)}

@@ -89,21 +89,24 @@ export const PrePackagedShelfTabs: React.FC<PrePackagedShelfTabsProps> = ({
                 setHoveredTab(null);
                 handleDragLeave();
               }}
-              className={`
-                relative cursor-pointer px-1.5 pr-3 py-1 flex-1 h-7 rounded-b-md
-                ${shelf.color} ${shelf.textColor}
-                ${isHovered ? 'transform scale-105 z-20 shadow-lg' : 'z-10 shadow-md'}
-              `}
-              style={{
-                clipPath: 'polygon(0 0, 0 100%, calc(100% - 12px) 100%, 100% 0)',
-                minWidth: isHovered ? 'auto' : '40px',
-                maxWidth: isHovered ? 'none' : 'none',
-                marginLeft: index > 0 ? '-8px' : '0',
-                zIndex: isHovered ? 20 : 10 - index,
-                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-              title={shelf.name}
-            >
+            className={`
+              relative cursor-pointer px-1.5 pr-3 py-1 flex-1 h-7 rounded-b-md
+              ${shelf.color.startsWith('bg-') ? shelf.color : ''}
+              ${shelf.textColor.startsWith('text-') ? shelf.textColor : ''}
+              ${isHovered ? 'transform scale-105 z-20 shadow-lg' : 'z-10 shadow-md'}
+            `}
+            style={{
+              backgroundColor: shelf.color.startsWith('bg-[') ? shelf.color.slice(3, -1) : (shelf.color.startsWith('bg-') ? undefined : shelf.color),
+              color: shelf.textColor.startsWith('text-[') ? shelf.textColor.slice(5, -1) : (shelf.textColor.startsWith('text-') ? undefined : shelf.textColor),
+              clipPath: 'polygon(0 0, 0 100%, calc(100% - 12px) 100%, 100% 0)',
+              minWidth: isHovered ? 'auto' : '40px',
+              maxWidth: isHovered ? 'none' : 'none',
+              marginLeft: index > 0 ? '-8px' : '0',
+              zIndex: isHovered ? 20 : 10 - index,
+              transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+            title={shelf.name}
+          >
               <span className={`
                 text-xs font-medium truncate block leading-5
                 ${shelf.textColor}

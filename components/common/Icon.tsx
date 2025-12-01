@@ -540,7 +540,18 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
     'sun': SunIcon,
     'moon': MoonIcon,
     'question': QuestionMarkCircleIcon,
-    'warning': ExclamationTriangleIcon,
+  'warning': ExclamationTriangleIcon,
+  'gear': (props: IconSVGProps) => {
+    const { className = 'w-4 h-4', style, title } = props;
+    return (
+      <img
+        src={getIconPath('gear-icon.svg')}
+        alt={title || 'gear'}
+        className={className}
+        style={{ ...style, filter: 'invert(1)' }}
+      />
+    );
+  },
   };
 
   const IconComponent = iconMap[name as keyof typeof iconMap];
