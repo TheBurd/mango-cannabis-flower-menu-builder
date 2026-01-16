@@ -215,3 +215,70 @@ input:focus, textarea:focus, select:focus {
   color: var(--info-text);
   border-color: var(--info-border);
 }
+
+/* ===========================================
+   PERFORMANCE OPTIMIZATION: CSS CONTAINMENT
+   =========================================== */
+
+/*
+ * CSS Containment helps browsers optimize rendering by limiting
+ * the scope of layout, paint, and style recalculations.
+ * https://developer.mozilla.org/en-US/docs/Web/CSS/contain
+ */
+
+/* Shelf containers - isolate layout and paint calculations */
+.shelf-container {
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 200px; /* Estimated height for auto-sizing */
+}
+
+/* Individual strain/product rows - optimize paint */
+.strain-row,
+.product-row {
+  contain: layout style paint;
+}
+
+/* Preview artboard - isolate entire preview from input panel */
+.preview-artboard-container {
+  contain: strict;
+  will-change: transform;
+}
+
+/* Menu table containers - optimize for scroll performance */
+.menu-table-container {
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+/* Modal containers - fully isolated from main content */
+.modal-container {
+  contain: strict;
+}
+
+/* Scrollable panels - optimize scroll performance */
+.scrollable-panel {
+  contain: layout style;
+  will-change: scroll-position;
+}
+
+/* Off-screen shelves in preview - skip rendering until visible */
+.shelf-offscreen {
+  content-visibility: hidden;
+}
+
+/* Active/visible shelves */
+.shelf-visible {
+  content-visibility: visible;
+}
+
+/* Optimize input row grid layout calculations */
+.strain-input-grid {
+  contain: layout;
+}
+
+/* Preview controls - isolate from content changes */
+.preview-controls {
+  contain: layout style;
+}

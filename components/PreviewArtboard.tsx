@@ -199,7 +199,7 @@ export const PreviewArtboard = React.memo(forwardRef<HTMLDivElement, PreviewArtb
     <div
       ref={ref}
       style={artboardStyle}
-      className="print-artboard-outer"
+      className="print-artboard-outer preview-artboard-container"
       data-testid="preview-artboard"
     >
       {headerImageDetails.src && headerImageDetails.height > 0 && (

@@ -1,11 +1,19 @@
 import { PageManager, PageData } from './PageManager';
 import { PreviewSettings, MenuMode, SupportedStates, Theme } from '../types';
+import { getIndexedDBManager, IndexedDBManager } from './IndexedDBManager';
 
 /**
  * SessionManager - Handles JSON-based session persistence and project management
- * 
+ *
  * This class provides enterprise-grade session management including auto-save,
  * quick save/load slots, project export/import, and team collaboration features.
+ *
+ * Storage Strategy:
+ * - Primary: IndexedDB (async, no size limit, better for large projects)
+ * - Fallback: localStorage (sync, 5-10MB limit, for older browsers)
+ *
+ * The manager automatically uses IndexedDB when available and falls back
+ * to localStorage for browsers that don't support it.
  */
 export class SessionManager {
   private static readonly AUTO_SAVE_KEY = 'mango-auto-save';
@@ -15,7 +23,7 @@ export class SessionManager {
   private static readonly PROJECT_STATE_KEY = 'mango-project-state';
   private static readonly MAX_SAVE_SLOTS = 5;
   private static readonly MAX_RECENT_PROJECTS = 10;
-  private static readonly AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+  public static readonly AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
   private autoSaveTimer: NodeJS.Timeout | null = null;
   private lastSaveTime: number = 0;
@@ -28,9 +36,58 @@ export class SessionManager {
     isNewProject: true
   };
 
+  // IndexedDB manager for async storage
+  private idbManager: IndexedDBManager | null = null;
+  private idbInitialized: boolean = false;
+  private idbInitPromise: Promise<boolean> | null = null;
 
   constructor() {
     this.setupAutoSave();
+    this.initIndexedDB();
+  }
+
+  /**
+   * Initialize IndexedDB asynchronously
+   */
+  private async initIndexedDB(): Promise<boolean> {
+    if (this.idbInitPromise) {
+      return this.idbInitPromise;
+    }
+
+    this.idbInitPromise = (async () => {
+      try {
+        this.idbManager = getIndexedDBManager();
+        if (this.idbManager.available) {
+          this.idbInitialized = await this.idbManager.initialize();
+          if (this.idbInitialized) {
+            console.log('IndexedDB initialized successfully');
+          }
+        }
+      } catch (error) {
+        console.warn('IndexedDB initialization failed, using localStorage fallback:', error);
+        this.idbInitialized = false;
+      }
+      return this.idbInitialized;
+    })();
+
+    return this.idbInitPromise;
+  }
+
+  /**
+   * Check if IndexedDB is available and initialized
+   */
+  public get useIndexedDB(): boolean {
+    return this.idbInitialized && this.idbManager !== null;
+  }
+
+  /**
+   * Wait for IndexedDB to be ready (for async operations)
+   */
+  public async waitForIndexedDB(): Promise<boolean> {
+    if (this.idbInitPromise) {
+      return this.idbInitPromise;
+    }
+    return false;
   }
 
   /**
@@ -92,25 +149,68 @@ export class SessionManager {
 
   /**
    * Save current session to auto-save slot
+   * Uses IndexedDB when available for better performance with large projects
    */
   public autoSave(projectData: ProjectData): void {
+    // Try IndexedDB first (async, non-blocking)
+    if (this.useIndexedDB && this.idbManager) {
+      this.idbManager.saveAutoSave(projectData)
+        .then(() => {
+          this.lastSaveTime = Date.now();
+          console.log('Auto-save completed (IndexedDB):', new Date().toLocaleTimeString());
+        })
+        .catch((error) => {
+          console.warn('IndexedDB auto-save failed, falling back to localStorage:', error);
+          this.autoSaveToLocalStorage(projectData);
+        });
+    } else {
+      // Fallback to localStorage
+      this.autoSaveToLocalStorage(projectData);
+    }
+  }
+
+  /**
+   * Save to localStorage (fallback method)
+   */
+  private autoSaveToLocalStorage(projectData: ProjectData): void {
     try {
       const autoSaveData = {
         timestamp: new Date().toISOString(),
         data: projectData
       };
-      
+
       localStorage.setItem(SessionManager.AUTO_SAVE_KEY, JSON.stringify(autoSaveData));
       this.lastSaveTime = Date.now();
-      
-      console.log('Auto-save completed:', new Date().toLocaleTimeString());
+
+      console.log('Auto-save completed (localStorage):', new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Auto-save failed:', error);
     }
   }
 
   /**
-   * Load auto-saved session
+   * Load auto-saved session (async version that tries IndexedDB first)
+   */
+  public async loadAutoSaveAsync(): Promise<ProjectData | null> {
+    // Try IndexedDB first
+    if (this.useIndexedDB && this.idbManager) {
+      try {
+        const data = await this.idbManager.loadAutoSave();
+        if (data) {
+          console.log('Loaded auto-save from IndexedDB');
+          return data;
+        }
+      } catch (error) {
+        console.warn('IndexedDB load failed, trying localStorage:', error);
+      }
+    }
+
+    // Fallback to localStorage
+    return this.loadAutoSave();
+  }
+
+  /**
+   * Load auto-saved session (sync version, localStorage only)
    */
   public loadAutoSave(): ProjectData | null {
     try {
@@ -118,7 +218,7 @@ export class SessionManager {
       if (!savedData) return null;
 
       const autoSaveData = JSON.parse(savedData);
-      
+
       // Restore Map objects from serialized arrays
       if (autoSaveData.data.pages) {
         autoSaveData.data.pages.forEach((page: any) => {
@@ -127,7 +227,7 @@ export class SessionManager {
           }
         });
       }
-      
+
       return autoSaveData.data;
     } catch (error) {
       console.error('Failed to load auto-save:', error);
@@ -137,6 +237,28 @@ export class SessionManager {
 
   /**
    * Save to numbered slot (1-5)
+   * Async version that uses IndexedDB when available
+   */
+  public async saveToSlotAsync(slotNumber: number, projectData: ProjectData, slotName: string): Promise<boolean> {
+    if (slotNumber < 1 || slotNumber > SessionManager.MAX_SAVE_SLOTS) {
+      throw new Error(`Invalid slot number. Must be between 1 and ${SessionManager.MAX_SAVE_SLOTS}`);
+    }
+
+    // Try IndexedDB first
+    if (this.useIndexedDB && this.idbManager) {
+      try {
+        return await this.idbManager.saveToSlot(slotNumber, projectData, slotName);
+      } catch (error) {
+        console.warn('IndexedDB save failed, falling back to localStorage:', error);
+      }
+    }
+
+    // Fallback to localStorage
+    return this.saveToSlot(slotNumber, projectData, slotName);
+  }
+
+  /**
+   * Save to numbered slot (1-5) - sync version (localStorage only)
    */
   public saveToSlot(slotNumber: number, projectData: ProjectData, slotName: string): boolean {
     if (slotNumber < 1 || slotNumber > SessionManager.MAX_SAVE_SLOTS) {
@@ -145,7 +267,7 @@ export class SessionManager {
 
     try {
       const saveSlots = this.getSaveSlots();
-      
+
       const saveSlot: SaveSlot = {
         id: crypto.randomUUID(),
         name: slotName,
@@ -156,7 +278,7 @@ export class SessionManager {
 
       saveSlots[slotNumber - 1] = saveSlot;
       localStorage.setItem(SessionManager.SAVE_SLOTS_KEY, JSON.stringify(saveSlots));
-      
+
       return true;
     } catch (error) {
       console.error('Failed to save to slot:', error);
@@ -165,7 +287,32 @@ export class SessionManager {
   }
 
   /**
-   * Load from numbered slot
+   * Load from numbered slot - async version
+   */
+  public async loadFromSlotAsync(slotNumber: number): Promise<ProjectData | null> {
+    if (slotNumber < 1 || slotNumber > SessionManager.MAX_SAVE_SLOTS) {
+      throw new Error(`Invalid slot number. Must be between 1 and ${SessionManager.MAX_SAVE_SLOTS}`);
+    }
+
+    // Try IndexedDB first
+    if (this.useIndexedDB && this.idbManager) {
+      try {
+        const data = await this.idbManager.loadFromSlot(slotNumber);
+        if (data) {
+          console.log('Loaded from slot (IndexedDB)');
+          return data;
+        }
+      } catch (error) {
+        console.warn('IndexedDB load failed, trying localStorage:', error);
+      }
+    }
+
+    // Fallback to localStorage
+    return this.loadFromSlot(slotNumber);
+  }
+
+  /**
+   * Load from numbered slot - sync version (localStorage only)
    */
   public loadFromSlot(slotNumber: number): ProjectData | null {
     if (slotNumber < 1 || slotNumber > SessionManager.MAX_SAVE_SLOTS) {
@@ -175,7 +322,7 @@ export class SessionManager {
     try {
       const saveSlots = this.getSaveSlots();
       const saveSlot = saveSlots[slotNumber - 1];
-      
+
       if (!saveSlot) return null;
 
       // Restore Map objects from serialized data
@@ -195,7 +342,24 @@ export class SessionManager {
   }
 
   /**
-   * Get all save slots
+   * Get all save slots - async version
+   */
+  public async getSaveSlotsAsync(): Promise<(SaveSlot | null)[]> {
+    // Try IndexedDB first
+    if (this.useIndexedDB && this.idbManager) {
+      try {
+        return await this.idbManager.getSaveSlots();
+      } catch (error) {
+        console.warn('IndexedDB getSaveSlots failed, trying localStorage:', error);
+      }
+    }
+
+    // Fallback to localStorage
+    return this.getSaveSlots();
+  }
+
+  /**
+   * Get all save slots - sync version (localStorage only)
    */
   public getSaveSlots(): (SaveSlot | null)[] {
     try {
@@ -290,21 +454,70 @@ export class SessionManager {
   }
 
   /**
-   * Clear auto-save data
+   * Clear auto-save data from both storage backends
    */
   public clearAutoSave(): void {
+    // Clear from localStorage
     localStorage.removeItem(SessionManager.AUTO_SAVE_KEY);
+
+    // Also clear from IndexedDB if available
+    if (this.useIndexedDB && this.idbManager) {
+      this.idbManager.clearAutoSave().catch((error) => {
+        console.warn('Failed to clear IndexedDB auto-save:', error);
+      });
+    }
   }
 
   /**
-   * Check if auto-save data exists
+   * Check if auto-save data exists - async version
+   */
+  public async hasAutoSaveAsync(): Promise<boolean> {
+    // Check IndexedDB first
+    if (this.useIndexedDB && this.idbManager) {
+      try {
+        const hasIDB = await this.idbManager.hasAutoSave();
+        if (hasIDB) return true;
+      } catch (error) {
+        console.warn('IndexedDB hasAutoSave check failed:', error);
+      }
+    }
+
+    // Fallback to localStorage
+    return this.hasAutoSave();
+  }
+
+  /**
+   * Check if auto-save data exists - sync version (localStorage only)
    */
   public hasAutoSave(): boolean {
     return localStorage.getItem(SessionManager.AUTO_SAVE_KEY) !== null;
   }
 
   /**
-   * Get auto-save info without loading full data
+   * Get auto-save info without loading full data - async version
+   */
+  public async getAutoSaveInfoAsync(): Promise<{ timestamp: string; hasData: boolean } | null> {
+    // Check IndexedDB first
+    if (this.useIndexedDB && this.idbManager) {
+      try {
+        const info = await this.idbManager.getAutoSaveInfo();
+        if (info) {
+          return {
+            timestamp: info.timestamp.toISOString(),
+            hasData: info.hasData
+          };
+        }
+      } catch (error) {
+        console.warn('IndexedDB getAutoSaveInfo failed:', error);
+      }
+    }
+
+    // Fallback to localStorage
+    return this.getAutoSaveInfo();
+  }
+
+  /**
+   * Get auto-save info without loading full data - sync version (localStorage only)
    */
   public getAutoSaveInfo(): { timestamp: string; hasData: boolean } | null {
     try {
@@ -319,6 +532,40 @@ export class SessionManager {
     } catch (error) {
       return null;
     }
+  }
+
+  /**
+   * Get storage usage information
+   */
+  public async getStorageInfo(): Promise<{ used: number; quota: number; percentage: number; backend: 'indexeddb' | 'localstorage' }> {
+    if (this.useIndexedDB && this.idbManager) {
+      try {
+        const estimate = await this.idbManager.getStorageEstimate();
+        return { ...estimate, backend: 'indexeddb' };
+      } catch (error) {
+        console.warn('Failed to get IndexedDB storage estimate:', error);
+      }
+    }
+
+    // Estimate localStorage usage (rough estimate)
+    let used = 0;
+    try {
+      for (const key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+          used += localStorage.getItem(key)?.length || 0;
+        }
+      }
+      used *= 2; // UTF-16 characters are 2 bytes each
+    } catch (error) {
+      console.warn('Failed to estimate localStorage usage:', error);
+    }
+
+    return {
+      used,
+      quota: 5 * 1024 * 1024, // Approximate localStorage limit (5MB)
+      percentage: Math.round((used / (5 * 1024 * 1024)) * 100),
+      backend: 'localstorage'
+    };
   }
 
   /**

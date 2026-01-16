@@ -9,6 +9,7 @@ import { MultiPageArtboardContainer } from './MultiPageArtboardContainer';
 import { FloatingPageControls } from './FloatingPageControls';
 import { ARTBOARD_DIMENSIONS_MAP, INITIAL_PREVIEW_SETTINGS } from '../constants';
 import { ExportAction } from '../App';
+import { useDebouncedPreview } from '../hooks/useDebounce';
 // import html2canvas from 'html2canvas'; // Removed - not needed for this implementation
 
 const MIN_ZOOM = 0.05;
@@ -56,7 +57,11 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [hasContentOverflow, setHasContentOverflow] = useState(false);
-  
+
+  // Debounce shelves updates to prevent excessive re-renders during typing
+  // 150ms delay provides smooth UX while reducing render load
+  const debouncedShelves = useDebouncedPreview(shelves, 150);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const artboardRef = useRef<HTMLDivElement>(null);
 
@@ -535,7 +540,7 @@ export const MenuPreviewPanel: React.FC<MenuPreviewPanelProps> = ({
           >
             <MultiPageArtboardContainer
               ref={artboardRef}
-              shelves={shelves}
+              shelves={debouncedShelves}
               settings={settings}
               currentState={currentState}
               theme={theme}

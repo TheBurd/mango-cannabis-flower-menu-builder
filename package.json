@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@tanstack/react-virtual": "^3.13.18",
     "@types/jszip": "^3.4.0",
     "dom-to-image": "^2.6.0",
     "electron-updater": "^6.1.7",

@@ -279,9 +279,9 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
         </div>
         
         {/* Scrollable content area */}
-        <div 
-          ref={scrollContainerRef} 
-          className="flex-1 overflow-y-auto"
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto scrollable-panel"
         >
           <div className="space-y-3 p-1">
             {shelvesForDisplay.length === 0 ? (
@@ -290,7 +290,7 @@ export const FlowerShelvesPanel = React.forwardRef<HTMLDivElement, FlowerShelves
               </div>
             ) : (
               shelvesForDisplay.map(({ shelf, visibleStrains }) => (
-                <div key={shelf.id} data-shelf-id={shelf.id}>
+                <div key={shelf.id} data-shelf-id={shelf.id} className="shelf-container">
                   <ShelfComponent
                     shelf={shelf}
                     visibleStrains={visibleStrains}

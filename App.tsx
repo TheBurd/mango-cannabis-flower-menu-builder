@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+﻿import React, { useState, useCallback, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 
 /**
  * PANEL INTEGRATION ARCHITECTURE
@@ -63,22 +63,25 @@ declare global {
 }
 import { Header } from './components/Header';
 import { Toolbar } from './components/Toolbar';
-import { InstructionsModalTabs } from './components/InstructionsModalTabs';
 import { WelcomeModal } from './components/WelcomeModal';
-import { WhatsNewModalTabs } from './components/WhatsNewModalTabs';
-import { CsvImportModal } from './components/CsvImportModal';
-import { CsvExportModal } from './components/CsvExportModal';
-import { HeaderMenuModal } from './components/HeaderMenuModal';
-import { UnifiedExportModal } from './components/UnifiedExportModal';
 import { FlowerShelvesPanel } from './components/FlowerShelvesPanel';
 import { MenuPreviewPanel } from './components/MenuPreviewPanel';
 import { PrePackagedPanel } from './components/PrePackagedPanel';
 import { PrePackagedCanvas } from './components/PrePackagedCanvas';
-import { ShelfConfiguratorModal } from './components/ShelfConfiguratorModal';
 import { UpdateNotification } from './components/UpdateNotification';
 import { DebugConsole } from './components/DebugConsole';
 import { FiftyPercentOffToggle } from './components/FiftyPercentOffToggle';
 import { ToastProvider, useToast } from './components/ToastContainer';
+import { ModalLoadingFallback } from './components/common/ModalLoadingFallback';
+
+// Lazy load heavy modal components for better initial load performance
+const InstructionsModalTabs = lazy(() => import('./components/InstructionsModalTabs').then(m => ({ default: m.InstructionsModalTabs })));
+const WhatsNewModalTabs = lazy(() => import('./components/WhatsNewModalTabs').then(m => ({ default: m.WhatsNewModalTabs })));
+const CsvImportModal = lazy(() => import('./components/CsvImportModal').then(m => ({ default: m.CsvImportModal })));
+const CsvExportModal = lazy(() => import('./components/CsvExportModal').then(m => ({ default: m.CsvExportModal })));
+const HeaderMenuModal = lazy(() => import('./components/HeaderMenuModal').then(m => ({ default: m.HeaderMenuModal })));
+const UnifiedExportModal = lazy(() => import('./components/UnifiedExportModal').then(m => ({ default: m.UnifiedExportModal })));
+const ShelfConfiguratorModal = lazy(() => import('./components/ShelfConfiguratorModal').then(m => ({ default: m.ShelfConfiguratorModal })));
 import { Shelf, Strain, PreviewSettings, SupportedStates, StrainType, ArtboardSize, SortCriteria, Theme, MenuMode, PrePackagedShelf, PrePackagedProduct, PrePackagedSortCriteria, PrePackagedWeight, AnyShelf, AnySortCriteria } from './types';
 import { 
   INITIAL_PREVIEW_SETTINGS, 
@@ -100,9 +103,9 @@ import { ZipExporter, SequentialExporter } from './utils/ZipExporter';
 import { SessionManager, ProjectData, ProjectState } from './utils/SessionManager';
 import { APP_VERSION } from './version';
 import { shelfConfigStore } from './utils/shelfConfigStore';
-
-
-
+import { useModalState } from './hooks/useModalState';
+import { useCsvImportWorker } from './hooks/useCsvImportWorker';
+import { ImportProgressBar } from './components/ImportProgressBar';
 
 export interface ExportAction {
   type: 'png' | 'jpeg';
@@ -442,12 +445,12 @@ const AppContent: React.FC = () => {
     return savedTheme === 'light' ? 'light' : 'dark';
   });
   
-  // Welcome modal state for first-time users
-  const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(() => {
-    const hasSeenWelcome = localStorage.getItem('mango-has-seen-welcome');
-    return !hasSeenWelcome; // Show if user hasn't seen it before
-  });
-  
+  // Consolidated modal state management
+  const modals = useModalState();
+
+  // CSV import worker for background processing
+  const csvWorker = useCsvImportWorker();
+
   // 50% OFF shelf toggle state
   const [fiftyPercentOffEnabled, setFiftyPercentOffEnabled] = useState<boolean>(() => {
     const savedState = localStorage.getItem('mango-fifty-percent-off-enabled');
@@ -480,18 +483,9 @@ const AppContent: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [initMessage, setInitMessage] = useState<string>('');
   const [skippedRows, setSkippedRows] = useState<{rowIndex: number, rowData: any, reason: string}[]>([]);
-  const [showSkippedModal, setShowSkippedModal] = useState<boolean>(false);
-  const [showImportDetailsModal, setShowImportDetailsModal] = useState<boolean>(false);
   const [importClassificationData, setImportClassificationData] = useState<{shakeCount: number, flowerCount: number, totalCount: number} | null>(null);
-  
-  // Modal states
-  const [showInstructions, setShowInstructions] = useState<boolean>(false);
-  const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
-  const [showCsvImportModal, setShowCsvImportModal] = useState<boolean>(false);
-  const [showCsvExportModal, setShowCsvExportModal] = useState<boolean>(false);
-  const [showUnifiedExportModal, setShowUnifiedExportModal] = useState<boolean>(false);
-  const [showHeaderMenu, setShowHeaderMenu] = useState<boolean>(false);
-  const [showShelfConfigurator, setShowShelfConfigurator] = useState<boolean>(false);
+
+  // Modal states are now managed by useModalState() hook - see modals variable above
   const [hasViewedWhatsNew, setHasViewedWhatsNew] = useState<boolean>(() => {
     const viewedVersion = localStorage.getItem('mango-whats-new-viewed-version');
     return viewedVersion === APP_VERSION; // Check if current version has been viewed
@@ -668,12 +662,12 @@ const AppContent: React.FC = () => {
 
   // Instructions modal handler
   const handleShowInstructions = useCallback(() => {
-    setShowInstructions(true);
+    modals.openInstructions();
   }, []);
 
   // What's New modal handler
   const handleShowWhatsNew = useCallback(() => {
-    setShowWhatsNew(true);
+    modals.openWhatsNew();
     // Mark this version as viewed
     if (!hasViewedWhatsNew) {
       setHasViewedWhatsNew(true);
@@ -984,7 +978,7 @@ const AppContent: React.FC = () => {
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [exportAction, setExportAction] = useState<ExportAction | null>(null);
   const csvImportInputRef = useRef<HTMLInputElement | null>(null);
-  const [showExportOverlay, setShowExportOverlay] = useState<boolean>(false);
+  // showExportOverlay is now managed by useModalState() hook - see modals variable
 
   const shelvesRef = useRef<HTMLDivElement | null>(null);
   const [lastInteractedShelfId, setLastInteractedShelfId] = useState<string | null>(null);
@@ -1129,12 +1123,12 @@ const AppContent: React.FC = () => {
       forcePageUpdate();
     }
     
-    setShowWelcomeModal(false);
+    modals.closeWelcomeModal();
   }, [menuMode, syncMenuMode, forcePageUpdate]);
 
   const handleWelcomeModalClose = useCallback(() => {
     localStorage.setItem('mango-has-seen-welcome', 'true');
-    setShowWelcomeModal(false);
+    modals.closeWelcomeModal();
   }, []);
 
   // 50% OFF shelf toggle handler
@@ -1186,7 +1180,7 @@ const AppContent: React.FC = () => {
         actions: [
           {
             label: 'View Details',
-            onClick: () => setShowSkippedModal(true),
+            onClick: () => modals.openSkippedModal(),
             variant: 'primary'
           }
         ]
@@ -2009,10 +2003,10 @@ const AppContent: React.FC = () => {
       setExportFilename('mango-menu');
       setIsExporting(false);
       setExportAction(null);
-      setShowExportOverlay(false);
+      modals.hideExportOverlay();
       
       // Show welcome modal (app fresh state)
-      setShowWelcomeModal(true);
+      modals.openWelcomeModal();
       forcePageUpdate();
       
       // Force app reload to ensure clean state
@@ -2110,7 +2104,7 @@ const AppContent: React.FC = () => {
   const triggerImageExport = useCallback((type: 'png' | 'jpeg') => {
     if (isExporting) return;
     setIsExporting(true);
-    setShowExportOverlay(true); // Show overlay
+    modals.showExportOverlayFn(); // Show overlay
     setExportAction({
       type,
       filename: exportFilename || 'mango-menu',
@@ -2123,7 +2117,7 @@ const AppContent: React.FC = () => {
   const handleExportPNGBatch = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
-    setShowExportOverlay(true);
+    modals.showExportOverlayFn();
     
     try {
       const pageData = pageManager.getExportData(previewSettings);
@@ -2168,14 +2162,14 @@ const AppContent: React.FC = () => {
       alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
-      setShowExportOverlay(false);
+      modals.hideExportOverlay();
     }
   }, [isExporting, pageManager, previewSettings, exportFilename]);
 
   const handleExportJPEGBatch = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
-    setShowExportOverlay(true);
+    modals.showExportOverlayFn();
     
     try {
       const pageData = pageManager.getExportData(previewSettings);
@@ -2206,7 +2200,7 @@ const AppContent: React.FC = () => {
       alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
-      setShowExportOverlay(false);
+      modals.hideExportOverlay();
     }
   }, [isExporting, pageManager, previewSettings, exportFilename]);
 
@@ -2214,7 +2208,7 @@ const AppContent: React.FC = () => {
   const handleExportPNGSequential = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
-    setShowExportOverlay(true);
+    modals.showExportOverlayFn();
     
     try {
       const pageData = pageManager.getExportData(previewSettings);
@@ -2245,14 +2239,14 @@ const AppContent: React.FC = () => {
       alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
-      setShowExportOverlay(false);
+      modals.hideExportOverlay();
     }
   }, [isExporting, pageManager, previewSettings, exportFilename]);
 
   const handleExportJPEGSequential = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
-    setShowExportOverlay(true);
+    modals.showExportOverlayFn();
     
     try {
       const pageData = pageManager.getExportData(previewSettings);
@@ -2283,7 +2277,7 @@ const AppContent: React.FC = () => {
       alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
-      setShowExportOverlay(false);
+      modals.hideExportOverlay();
     }
   }, [isExporting, pageManager, previewSettings, exportFilename]);
 
@@ -2345,7 +2339,7 @@ const AppContent: React.FC = () => {
   const handleExportCSVBatch = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
-    setShowExportOverlay(true);
+    modals.showExportOverlayFn();
     
     try {
       const pageData = pageManager.getExportData(previewSettings);
@@ -2363,14 +2357,14 @@ const AppContent: React.FC = () => {
       alert('CSV export failed. Please try again.');
     } finally {
       setIsExporting(false);
-      setShowExportOverlay(false);
+      modals.hideExportOverlay();
     }
   }, [isExporting, pageManager, previewSettings, exportFilename, menuMode, currentAppState, generateCSVContentForPage]);
 
   const handleExportCSVSequential = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
-    setShowExportOverlay(true);
+    modals.showExportOverlayFn();
     
     try {
       const pageData = pageManager.getExportData(previewSettings);
@@ -2390,7 +2384,7 @@ const AppContent: React.FC = () => {
       alert('CSV export failed. Please try again.');
     } finally {
       setIsExporting(false);
-      setShowExportOverlay(false);
+      modals.hideExportOverlay();
     }
   }, [isExporting, pageManager, previewSettings, exportFilename, menuMode, currentAppState, generateCSVContentForPage]);
 
@@ -2788,11 +2782,11 @@ const AppContent: React.FC = () => {
 
 
   const handleOpenExportModal = useCallback(() => {
-    setShowUnifiedExportModal(true);
+    modals.openUnifiedExport();
   }, []);
 
   const handleExportCSV = useCallback(() => {
-    setShowCsvExportModal(true);
+    modals.openCsvExport();
   }, []);
 
   const handleExportCSVLegacy = useCallback(() => {
@@ -2876,15 +2870,15 @@ const AppContent: React.FC = () => {
   }, [menuMode, bulkShelves, prePackagedShelves, exportFilename, globalSortCriteria, currentAppState]);
 
   const handleImportCSVRequest = useCallback(() => {
-    setShowCsvImportModal(true);
+    modals.openCsvImport();
   }, []);
 
   const handleShowProjectMenu = useCallback(() => {
-    setShowHeaderMenu(true);
+    modals.openHeaderMenu();
   }, []);
 
   const handleOpenShelfConfigurator = useCallback(() => {
-    setShowShelfConfigurator(true);
+    modals.openShelfConfigurator();
   }, []);
 
   const handleSaveShelfConfig = useCallback((shelvesToSave: (Shelf | PrePackagedShelf)[]) => {
@@ -2910,7 +2904,7 @@ const AppContent: React.FC = () => {
       pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), mergedShelves);
     }
     setShelfConfigVersion((v) => v + 1);
-    setShowShelfConfigurator(false);
+    modals.closeShelfConfigurator();
   }, [menuMode, currentAppState, pageManager, bulkShelves, prePackagedShelves]);
 
   const handleResetShelfConfig = useCallback(() => {
@@ -3270,8 +3264,158 @@ const AppContent: React.FC = () => {
     }
   }, [processImportedCSVFile]);
 
-  // New CSV modal handlers
+  // Worker-based CSV import handler for large datasets
+  const handleCsvImportWithWorker = useCallback(async (data: any[], mapping: any, options?: { createMissingShelves?: boolean }) => {
+    const allowCreateShelves = options?.createMissingShelves === true;
+    const existingShelves = menuMode === MenuMode.BULK
+      ? bulkShelves.map(s => ({ id: s.id, name: s.name }))
+      : prePackagedShelves.map(s => ({ id: s.id, name: s.name }));
+
+    try {
+      const result = await csvWorker.processCSV(
+        data,
+        mapping,
+        menuMode === MenuMode.BULK ? 'bulk' : 'prepackaged',
+        existingShelves,
+        allowCreateShelves
+      );
+
+      // Process results
+      if (menuMode === MenuMode.BULK) {
+        // Convert worker results to app format
+        let workingShelves = [...bulkShelves];
+
+        // Add any created shelves
+        for (const newShelf of result.createdShelves) {
+          const shelf: Shelf = {
+            id: newShelf.id,
+            name: newShelf.name,
+            pricing: { g: 0, eighth: 0, quarter: 0, half: 0, oz: 0 },
+            medicalPricing: undefined,
+            color: 'bg-gray-500',
+            textColor: 'text-white',
+            strains: [],
+            sortCriteria: null,
+          };
+          workingShelves = [...workingShelves, shelf];
+        }
+
+        // Merge items into shelves
+        const mergedShelves = workingShelves.map(shelf => ({
+          ...shelf,
+          strains: [
+            ...shelf.strains,
+            ...(result.shelfAssignments[shelf.id] || []).map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              grower: item.grower || '',
+              thc: item.thc,
+              type: item.type as StrainType,
+              isLastJar: item.isLastJar || false,
+              isSoldOut: item.isSoldOut || false,
+              originalShelf: item.originalShelf || '',
+            }))
+          ]
+        }));
+
+        setBulkShelves(mergedShelves);
+        pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), mergedShelves);
+        setSkippedRows(result.skippedRows);
+
+        addToast({
+          type: 'success',
+          title: 'Bulk Flower CSV Import Complete',
+          message: `${result.stats.totalProcessed} strains loaded.${result.createdShelves.length ? ` Created ${result.createdShelves.length} new shelf${result.createdShelves.length > 1 ? 's' : ''}.` : ''}`,
+          duration: 5000,
+          actions: result.skippedRows.length > 0 ? [{
+            label: 'View Skipped Rows',
+            onClick: () => modals.openSkippedModal(),
+            variant: 'secondary' as const
+          }] : undefined
+        });
+      } else {
+        // Pre-packaged mode
+        let workingShelves = [...prePackagedShelves];
+
+        // Add any created shelves
+        for (const newShelf of result.createdShelves) {
+          const shelf: PrePackagedShelf = {
+            id: newShelf.id,
+            name: newShelf.name,
+            color: 'bg-gray-500',
+            textColor: 'text-white',
+            products: [],
+            sortCriteria: null,
+          };
+          workingShelves = [...workingShelves, shelf];
+        }
+
+        // Merge items into shelves
+        const mergedShelves = workingShelves.map(shelf => ({
+          ...shelf,
+          products: [
+            ...shelf.products,
+            ...(result.shelfAssignments[shelf.id] || []).map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              brand: item.brand || '',
+              thc: item.thc,
+              terpenes: item.terpenes,
+              type: item.type as StrainType,
+              price: item.price || 0,
+              netWeight: item.netWeight || '',
+              isLowStock: item.isLowStock || false,
+              isSoldOut: item.isSoldOut || false,
+              notes: item.notes || '',
+            }))
+          ]
+        }));
+
+        setPrePackagedShelves(mergedShelves);
+        pageManager.updatePageShelves(pageManager.getCurrentPageNumber(), mergedShelves);
+        setSkippedRows(result.skippedRows);
+        setImportClassificationData({
+          shakeCount: result.stats.shakeCount || 0,
+          flowerCount: result.stats.flowerCount || 0,
+          totalCount: result.stats.totalProcessed
+        });
+
+        addToast({
+          type: 'success',
+          title: 'Pre-packaged CSV Import Complete',
+          message: `${result.stats.totalProcessed} products loaded.${result.createdShelves.length ? ` Created ${result.createdShelves.length} new shelf${result.createdShelves.length > 1 ? 's' : ''}.` : ''}`,
+          duration: 5000,
+          actions: (result.stats.shakeCount || 0) > 0 || (result.stats.flowerCount || 0) > 0 ? [{
+            label: 'View Classification Details',
+            onClick: () => modals.openImportDetailsModal(),
+            variant: 'secondary' as const
+          }] : undefined
+        });
+      }
+
+      modals.closeCsvImport();
+      sessionManager.clearAutoSave();
+      recordChange(() => {});
+    } catch (error) {
+      console.error('Worker import failed:', error);
+      addToast({
+        type: 'error',
+        title: 'Import Failed',
+        message: error instanceof Error ? error.message : 'Unknown error during import',
+        duration: 5000
+      });
+    }
+  }, [menuMode, bulkShelves, prePackagedShelves, csvWorker, pageManager, recordChange, sessionManager, modals, addToast]);
+
+  // New CSV modal handlers - delegates to worker for large datasets
   const handleCsvImport = useCallback((data: any[], mapping: any, options?: { createMissingShelves?: boolean }) => {
+    // Use worker for datasets over 50 rows for smoother UI
+    if (data.length > 50) {
+      handleCsvImportWithWorker(data, mapping, options);
+      return;
+    }
+
+    // Original synchronous implementation for small datasets
     // Invert the mapping to get field -> csvColumn mapping
     const fieldToColumn: Record<string, string> = {};
     Object.entries(mapping).forEach(([csvColumn, appField]) => {
@@ -3534,7 +3678,7 @@ const AppContent: React.FC = () => {
         actions: shakeCount > 0 || flowerCount > 0 ? [
           {
             label: 'View Classification Details',
-            onClick: () => setShowImportDetailsModal(true),
+            onClick: () => modals.openImportDetailsModal(),
             variant: 'secondary' as const
           }
         ] : undefined
@@ -3544,7 +3688,7 @@ const AppContent: React.FC = () => {
       setImportClassificationData({ shakeCount, flowerCount, totalCount: importedCount });
     }
 
-    setShowCsvImportModal(false);
+    modals.closeCsvImport();
     
     // Clear auto-save since we've imported new content
     sessionManager.clearAutoSave();
@@ -3693,7 +3837,7 @@ const AppContent: React.FC = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    setShowCsvExportModal(false);
+    modals.closeCsvExport();
   }, [exportFilename]);
 
   const handleMenuModeSwitch = useCallback((newMode: MenuMode) => {
@@ -3991,7 +4135,7 @@ const AppContent: React.FC = () => {
           break;
 
         case 'show-instructions':
-          setShowInstructions(true);
+          modals.openInstructions();
           break;
 
         case 'show-about':
@@ -4000,7 +4144,7 @@ const AppContent: React.FC = () => {
 
         case 'reset-welcome':
           localStorage.removeItem('mango-has-seen-welcome');
-          setShowWelcomeModal(true);
+          modals.openWelcomeModal();
           break;
 
         case 'check-for-updates-manual':
@@ -4042,10 +4186,10 @@ const AppContent: React.FC = () => {
             setExportFilename('mango-menu');
             setIsExporting(false);
             setExportAction(null);
-            setShowExportOverlay(false);
+            modals.hideExportOverlay();
             
             // Show welcome modal (app fresh state)
-            setShowWelcomeModal(true);
+            modals.openWelcomeModal();
             forcePageUpdate();
             
             // Force app reload to ensure clean state
@@ -4071,7 +4215,7 @@ const AppContent: React.FC = () => {
 
         case 'reset-welcome-state':
           localStorage.removeItem('mango-has-seen-welcome');
-          setShowWelcomeModal(true);
+          modals.openWelcomeModal();
           break;
 
         case 'auto-format-menu':
@@ -4277,7 +4421,7 @@ const AppContent: React.FC = () => {
             onExportComplete={() => {
               setExportAction(null);
               setIsExporting(false);
-              setShowExportOverlay(false); // Hide overlay
+              modals.hideExportOverlay(); // Hide overlay
             }}
             currentState={currentAppState}
             theme={theme}
@@ -4304,7 +4448,7 @@ const AppContent: React.FC = () => {
           }
         }}
       />
-      {showExportOverlay && (
+      {modals.showExportOverlay && (
         <div 
           className="fixed inset-0 bg-gray-900 bg-opacity-75 flex flex-col items-center justify-center z-50"
           role="alertdialog"
@@ -4321,53 +4465,86 @@ const AppContent: React.FC = () => {
             </div>
           </div>
               )}
-        <ShelfConfiguratorModal
-          isOpen={showShelfConfigurator}
-          mode={menuMode}
-          currentState={currentAppState}
-          initialShelves={configuredShelvesForModal}
-          defaultShelves={defaultShelvesForModal}
-          onClose={() => setShowShelfConfigurator(false)}
-          onSave={handleSaveShelfConfig}
-          onResetToDefaults={handleResetShelfConfig}
-          onExportConfig={handleExportShelfConfig}
-          onImportConfig={handleImportShelfConfig}
-        />
-        <InstructionsModalTabs
-          isOpen={showInstructions}
-          onClose={() => setShowInstructions(false)}
-          theme={theme}
-          currentMode={menuMode}
-          currentState={currentAppState}
-        />
-        <WhatsNewModalTabs
-          isOpen={showWhatsNew}
-          onClose={() => setShowWhatsNew(false)}
-          theme={theme}
-        />
+        {/* Lazy-loaded modals wrapped in Suspense for better initial load performance */}
+        {modals.showShelfConfigurator && (
+          <Suspense fallback={<ModalLoadingFallback theme={theme} />}>
+            <ShelfConfiguratorModal
+              isOpen={modals.showShelfConfigurator}
+              mode={menuMode}
+              currentState={currentAppState}
+              initialShelves={configuredShelvesForModal}
+              defaultShelves={defaultShelvesForModal}
+              onClose={() => modals.closeShelfConfigurator()}
+              onSave={handleSaveShelfConfig}
+              onResetToDefaults={handleResetShelfConfig}
+              onExportConfig={handleExportShelfConfig}
+              onImportConfig={handleImportShelfConfig}
+            />
+          </Suspense>
+        )}
+        {modals.showInstructions && (
+          <Suspense fallback={<ModalLoadingFallback theme={theme} />}>
+            <InstructionsModalTabs
+              isOpen={modals.showInstructions}
+              onClose={() => modals.closeInstructions()}
+              theme={theme}
+              currentMode={menuMode}
+              currentState={currentAppState}
+            />
+          </Suspense>
+        )}
+        {modals.showWhatsNew && (
+          <Suspense fallback={<ModalLoadingFallback theme={theme} />}>
+            <WhatsNewModalTabs
+              isOpen={modals.showWhatsNew}
+              onClose={() => modals.closeWhatsNew()}
+              theme={theme}
+            />
+          </Suspense>
+        )}
         <WelcomeModal
-          isOpen={showWelcomeModal}
+          isOpen={modals.showWelcomeModal}
           onStateSelect={handleWelcomeStateSelect}
           onClose={handleWelcomeModalClose}
           theme={theme}
         />
-        <CsvImportModal
-          isOpen={showCsvImportModal}
-          onClose={() => setShowCsvImportModal(false)}
-          theme={theme}
-          menuMode={menuMode}
-          currentShelves={menuMode === MenuMode.BULK ? bulkShelves : prePackagedShelves}
-          onImport={handleCsvImport}
-          onMultiImport={handleMultiCsvImport}
-          onModeSwitch={handleMenuModeSwitch}
-        />
+        {modals.showCsvImportModal && (
+          <Suspense fallback={<ModalLoadingFallback theme={theme} />}>
+            <CsvImportModal
+              isOpen={modals.showCsvImportModal}
+              onClose={() => modals.closeCsvImport()}
+              theme={theme}
+              menuMode={menuMode}
+              currentShelves={menuMode === MenuMode.BULK ? bulkShelves : prePackagedShelves}
+              onImport={handleCsvImport}
+              onMultiImport={handleMultiCsvImport}
+              onModeSwitch={handleMenuModeSwitch}
+            />
+          </Suspense>
+        )}
 
-        
+        {/* CSV Import Progress Overlay */}
+        {csvWorker.isProcessing && csvWorker.progress && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <div className="max-w-md w-full">
+              <ImportProgressBar
+                stage={csvWorker.progress.stage}
+                processed={csvWorker.progress.processed}
+                total={csvWorker.progress.total}
+                percentage={csvWorker.progress.percentage}
+                canCancel={true}
+                onCancel={csvWorker.cancel}
+                theme={theme}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Skipped Rows Modal */}
-        {showSkippedModal && (
+        {modals.showSkippedModal && (
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={(e) => e.target === e.currentTarget && setShowSkippedModal(false)}
+            onClick={(e) => e.target === e.currentTarget && modals.closeSkippedModal()}
           >
             <div className={`max-w-4xl w-full max-h-[90vh] rounded-lg shadow-2xl overflow-hidden ${
               theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'
@@ -4383,7 +4560,7 @@ const AppContent: React.FC = () => {
                   <span>Strains Not Imported ({skippedRows.length})</span>
                 </h2>
                 <button
-                  onClick={() => setShowSkippedModal(false)}
+                  onClick={() => modals.closeSkippedModal()}
                   className={`p-2 rounded-md transition-colors ${
                     theme === 'dark'
                       ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-200'
@@ -4446,7 +4623,7 @@ const AppContent: React.FC = () => {
                 theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'
               }`}>
                 <button
-                  onClick={() => setShowSkippedModal(false)}
+                  onClick={() => modals.closeSkippedModal()}
                   className={`px-4 py-2 rounded-md transition-colors ${
                     theme === 'dark'
                       ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
@@ -4461,10 +4638,10 @@ const AppContent: React.FC = () => {
         )}
         
         {/* Import Classification Details Modal */}
-        {showImportDetailsModal && importClassificationData && (
+        {modals.showImportDetailsModal && importClassificationData && (
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={(e) => e.target === e.currentTarget && setShowImportDetailsModal(false)}
+            onClick={(e) => e.target === e.currentTarget && modals.closeImportDetailsModal()}
           >
             <div className={`max-w-2xl w-full rounded-lg shadow-2xl overflow-hidden ${
               theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'
@@ -4480,7 +4657,7 @@ const AppContent: React.FC = () => {
                   <span>Smart Classification Results</span>
                 </h2>
                 <button
-                  onClick={() => setShowImportDetailsModal(false)}
+                  onClick={() => modals.closeImportDetailsModal()}
                   className={`p-2 rounded-md transition-colors ${
                     theme === 'dark'
                       ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-200'
@@ -4534,7 +4711,7 @@ const AppContent: React.FC = () => {
 
                   <div className="flex justify-end">
                     <button
-                      onClick={() => setShowImportDetailsModal(false)}
+                      onClick={() => modals.closeImportDetailsModal()}
                       className={`px-4 py-2 rounded-md font-medium transition-colors ${
                         theme === 'dark'
                           ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
@@ -4550,61 +4727,73 @@ const AppContent: React.FC = () => {
           </div>
         )}
         
-        <CsvExportModal
-          isOpen={showCsvExportModal}
-          onClose={() => setShowCsvExportModal(false)}
-          theme={theme}
-          menuMode={menuMode}
-          bulkShelves={processedShelves as Shelf[]}
-          prePackagedShelves={processedShelves as PrePackagedShelf[]}
-          onExport={handleCsvExport}
-        />
-        
-        <UnifiedExportModal
-          isOpen={showUnifiedExportModal}
-          onClose={() => setShowUnifiedExportModal(false)}
-          theme={theme}
-          menuMode={menuMode}
-          exportFilename={exportFilename}
-          onExportFilenameChange={setExportFilename}
-          onExportPNG={() => triggerImageExport('png')}
-          onExportJPEG={() => triggerImageExport('jpeg')}
-          onExportCSV={handleExportCSV}
-          isExporting={isExporting}
-          totalPages={pageManager.getPageCount()}
-          onExportPNGBatch={handleExportPNGBatch}
-          onExportJPEGBatch={handleExportJPEGBatch}
-          onExportCSVBatch={handleExportCSVBatch}
-          onExportPNGSequential={handleExportPNGSequential}
-          onExportJPEGSequential={handleExportJPEGSequential}
-          onExportCSVSequential={handleExportCSVSequential}
-        />
+        {modals.showCsvExportModal && (
+          <Suspense fallback={<ModalLoadingFallback theme={theme} />}>
+            <CsvExportModal
+              isOpen={modals.showCsvExportModal}
+              onClose={() => modals.closeCsvExport()}
+              theme={theme}
+              menuMode={menuMode}
+              bulkShelves={processedShelves as Shelf[]}
+              prePackagedShelves={processedShelves as PrePackagedShelf[]}
+              onExport={handleCsvExport}
+            />
+          </Suspense>
+        )}
 
-        <HeaderMenuModal
-          isOpen={showHeaderMenu}
-          onClose={() => setShowHeaderMenu(false)}
-          theme={theme}
-          projectState={projectState}
-          recentProjects={sessionManager.getRecentProjects()}
-          autoSaveAvailable={sessionManager.hasAutoSave()}
-          onQuickSave={handleQuickSaveUpdated}
-          onSaveAs={handleSaveAs}
-          onLoadProject={handleLoadProject}
-          onLoadRecentProject={handleLoadRecentProject}
-          onExportProject={handleExportProject}
-          onRecoverAutoSave={() => {
-            const recoveredData = sessionManager.loadAutoSave();
-            if (recoveredData) {
-              restoreProjectData(recoveredData);
-              setShowHeaderMenu(false);
-            }
-          }}
-          onExport={handleOpenExportModal}
-          onImportCSV={handleImportCSVRequest}
-          currentState={currentAppState}
-          menuMode={menuMode}
-          lastSaveTime={lastSaveTime}
-        />
+        {modals.showUnifiedExportModal && (
+          <Suspense fallback={<ModalLoadingFallback theme={theme} />}>
+            <UnifiedExportModal
+              isOpen={modals.showUnifiedExportModal}
+              onClose={() => modals.closeUnifiedExport()}
+              theme={theme}
+              menuMode={menuMode}
+              exportFilename={exportFilename}
+              onExportFilenameChange={setExportFilename}
+              onExportPNG={() => triggerImageExport('png')}
+              onExportJPEG={() => triggerImageExport('jpeg')}
+              onExportCSV={handleExportCSV}
+              isExporting={isExporting}
+              totalPages={pageManager.getPageCount()}
+              onExportPNGBatch={handleExportPNGBatch}
+              onExportJPEGBatch={handleExportJPEGBatch}
+              onExportCSVBatch={handleExportCSVBatch}
+              onExportPNGSequential={handleExportPNGSequential}
+              onExportJPEGSequential={handleExportJPEGSequential}
+              onExportCSVSequential={handleExportCSVSequential}
+            />
+          </Suspense>
+        )}
+
+        {modals.showHeaderMenu && (
+          <Suspense fallback={<ModalLoadingFallback theme={theme} />}>
+            <HeaderMenuModal
+              isOpen={modals.showHeaderMenu}
+              onClose={() => modals.closeHeaderMenu()}
+              theme={theme}
+              projectState={projectState}
+              recentProjects={sessionManager.getRecentProjects()}
+              autoSaveAvailable={sessionManager.hasAutoSave()}
+              onQuickSave={handleQuickSaveUpdated}
+              onSaveAs={handleSaveAs}
+              onLoadProject={handleLoadProject}
+              onLoadRecentProject={handleLoadRecentProject}
+              onExportProject={handleExportProject}
+              onRecoverAutoSave={() => {
+                const recoveredData = sessionManager.loadAutoSave();
+                if (recoveredData) {
+                  restoreProjectData(recoveredData);
+                  modals.closeHeaderMenu();
+                }
+              }}
+              onExport={handleOpenExportModal}
+              onImportCSV={handleImportCSVRequest}
+              currentState={currentAppState}
+              menuMode={menuMode}
+              lastSaveTime={lastSaveTime}
+            />
+          </Suspense>
+        )}
 
         {!updateDismissed && (
           <UpdateNotification
